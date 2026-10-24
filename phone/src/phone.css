@@ -69,3 +69,4 @@ body.skin-4 .f>.skt:after{content:'';position:absolute;inset:-6px;background:lin
 #pupbar{display:none;position:fixed;left:16px;right:16px;top:calc(56px + env(safe-area-inset-top,26px));z-index:70;padding:10px 12px;border-radius:12px;background:var(--y);color:#111;font:700 9px "Space Mono",monospace;letter-spacing:.1em;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5);cursor:pointer}
 #pfav{display:none;position:absolute;right:14px;top:6px;z-index:5;padding:7px 10px;border-radius:99px;background:#111;border:1px solid rgba(255,194,26,.5);color:var(--y);font:700 8px "Space Mono",monospace;letter-spacing:.12em;cursor:pointer}
 .star.heart{top:110px;font-size:20px;color:#e0281a}.star.heart.on{background:#e0281a;color:#fff}.star.heart.off{opacity:.3}
+#ptop h2{font-size:26px!important;line-height:1}#ptop h2 sup{font-size:.62em;color:var(--y);margin-left:2px;vertical-align:.62em;line-height:0}

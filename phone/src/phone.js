@@ -93,7 +93,7 @@ const _act=act;act=function(a){const p=a.split(':');
  return _act(a)};
 
 // ---------- phone chrome ----------
-const ui=document.createElement('div');ui.innerHTML=`<div id="ptop"><h2 id="ptitle">LU <em>CUBE</em></h2><div class="pr"><b id="pfind" title="search stations">🔎</b><div class="seg" id="pseg"><b data-m="lu">♫</b><b data-m="radio">📻</b><b data-m="remote">◎</b></div><b id="pgear" title="settings">⚙</b></div></div>
+const ui=document.createElement('div');ui.innerHTML=`<div id="ptop"><h2 id="ptitle">LU<sup>3</sup></h2><div class="pr"><b id="pfind" title="search stations">🔎</b><div class="seg" id="pseg"><b data-m="lu">♫</b><b data-m="radio">📻</b><b data-m="remote">◎</b></div><b id="pgear" title="settings">⚙</b></div></div>
  <div id="pdots"></div><div id="pface"></div><div id="pbot"><canvas id="pglobe"></canvas><div id="pwheel"></div><div id="plab"><small id="plk"></small><b id="pln"></b><i id="plt">TAP TO PLAY</i></div></div><div id="pwipe"></div>
  <div id="psheet"><div class="in" id="pin"></div></div>`;
 document.body.append(ui);
@@ -103,7 +103,7 @@ const dots=$('pdots');ORDER.forEach(n=>{const d=document.createElement('i');d.da
 document.querySelectorAll('#pseg b').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 $('pgear').onclick=()=>sheet(true);$('psheet').onclick=e=>{if(e.target.id==='psheet')sheet(false)};
 $('pfind').onclick=()=>{const f=document.querySelector('.find');const on=!document.body.classList.contains('pfindon');document.body.classList.toggle('pfindon',on);if(on&&f){const i=f.querySelector('input');setTimeout(()=>i&&i.focus(),50)}};
-function topUI(){const m=PM();$('ptitle').innerHTML=(m==='lu'?'LU':m==='radio'?'RADIO':'REMOTE')+' <em>CUBE</em>';document.querySelectorAll('#pseg b').forEach(b=>b.classList.toggle('on',b.dataset.m===m));document.body.classList.remove('pfindon')}
+function topUI(){const m=PM();$('ptitle').innerHTML=(m==='lu'?'LU':m==='radio'?'RADIO':'REMOTE')+'<sup>3</sup>';$('ptitle').title=(m==='lu'?'Lu':m==='radio'?'Radio':'Remote')+' Cube';document.querySelectorAll('#pseg b').forEach(b=>b.classList.toggle('on',b.dataset.m===m));document.body.classList.remove('pfindon')}
 
 // ---------- bottom: thumb wheel (Lu, Remote) or the globe (Radio) ----------
 let ptok=[];const PW2=$('pwheel'),GC=$('pglobe'),gx=GC.getContext('2d');
