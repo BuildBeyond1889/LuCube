@@ -1,7 +1,10 @@
 /* ===== the opening: origami cube → yellow → LISTEN TO THE UNIVERSE → LU ===== */
 #lintro{position:fixed;inset:0;z-index:200;background:#0b0c10;overflow:hidden;touch-action:none}
 body.lintro-on #ptitle{visibility:hidden}
-#liFlood{position:absolute;inset:0;background:#ffc21a;clip-path:circle(0px at 50% 40%)}
+#liFlood{position:absolute;inset:0;overflow:hidden}#liFlood i{position:absolute;display:block;border-radius:50%;background:#ffc21a;transform:scale(0);will-change:transform}
+#liMover{will-change:transform}
+/* while the opening plays, the app underneath isn't drawn at all (it's revealed just before the hand-off) */
+body.lintro-hide>*:not(#lintro){visibility:hidden}
 #liVeil{position:absolute;inset:0;background:#0b0c10;z-index:5;pointer-events:none}
 #liTxt{position:absolute;inset:0;z-index:2}
 .li-slot{position:absolute;left:0;top:0;overflow:hidden;visibility:hidden;transform-origin:0 0}

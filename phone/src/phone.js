@@ -78,6 +78,9 @@ function setMode(m){if(WIPING||m===PM())return;PICK[PM()]=pick;
  else{REMOTE=false;switchMode();const t0=performance.now();(function st(){const u=Math.min(1,(performance.now()-t0)/1250),e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;sweep(u,(e*100).toFixed(2));if(u<1)requestAnimationFrame(st)})()}
  pick=PICK[m]!=null?PICK[m]:(P.has?P.pl:0);document.body.dataset.mode=m;topUI();bottomUI()}
 window.luSetMode=setMode;
+// the heavy start-up jobs (unpacking the world's stations, Android Auto's lists) wait until the opening has played
+const afterIntro=fn=>{if(window.LU_INTRO_ON)addEventListener('luintroend',fn,{once:true});else fn()};
+{const _rF=radioFetch;radioFetch=function(){if(window.LU_INTRO_ON){afterIntro(()=>radioFetch());return}return _rF.apply(this,arguments)}}
 const _rf=renderFaces,_tf=tickFaces;
 renderFaces=function(){if(WIPING){WIPING=2;return}if(REMOTE)remRender();else _rf()};
 tickFaces=function(){if(REMOTE)remTick();else _tf()};
@@ -240,7 +243,7 @@ let treeK='';function pushTree(force){if(!HAS)return;const lists=[],luP=MODE==='
  if(WORLD){const fav=(MODE==='radio'?FAVS:RFAVS).map(u=>STBY[u]).filter(Boolean);if(fav.length)lists.push({id:'RF',title:'★ Favourites',group:'radio',items:fav.map(s=>({t:s.t,a:s.a||'',u:s.src,live:true}))});
   WORLD.filter(c=>c.songs.length).forEach(c=>lists.push({id:'R'+c.cc,title:c.n,group:'radio',items:c.songs.slice(0,20).map(s=>({t:s.t,a:s.a||c.n,u:s.src,live:true}))}))}
  const json=JSON.stringify({lists});if(json===treeK&&!force)return;treeK=json;N('setBrowseTree',{json})}
-setInterval(()=>{if(!document.hidden)pushTree()},15000);
+setInterval(()=>{if(!document.hidden&&!window.LU_INTRO_ON)pushTree()},15000);
 
 // ---------- start: the cube front and centre ----------
 function place(){PW=innerWidth;PH=innerHeight;CY0=Math.round(PH*.37);csz=Math.min(1,(PW-40)/300)}

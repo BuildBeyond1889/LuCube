@@ -11,7 +11,7 @@ const cl=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),P=(t,s,d)=>cl((t-s)/d),lerp=(a,b
 const io=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,out=u=>1-Math.pow(1-u,3),inn=u=>u*u*u;
 const LINES='<svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.6" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="17" x2="19" y2="17"/></svg>';
 const ov=document.createElement('div');ov.id='lintro';
-ov.innerHTML=`<div id="liFlood"></div><div id="liTxt"></div>
+ov.innerHTML=`<div id="liFlood"><i></i></div><div id="liTxt"></div>
 <div id="liVeil"></div><div id="liMover"><div class="li-scene"><div class="li-cube" id="liCube">
 <div class="lf lf-base" style="background:#ff7a1a"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="#fff"/></svg></i></div>
 <div class="lf lf-top" style="background:#ffc21a"><i><svg viewBox="0 0 24 24"><polygon points="7,4 7,20 20,12" fill="#111"/></svg></i></div>
@@ -20,7 +20,7 @@ ov.innerHTML=`<div id="liFlood"></div><div id="liTxt"></div>
 <div class="lf lf-front" style="background:#e0281a"><i>${LINES}</i><i class="bk">${LINES}</i>
 <div class="lf lf-lid" style="background:#fff"><i><svg viewBox="0 0 24 24" fill="#111"><rect x="4" y="15" width="3" height="5"/><rect x="9" y="11" width="3" height="9"/><rect x="14" y="7" width="3" height="13"/><rect x="19" y="3" width="3" height="17"/></svg></i></div></div>
 </div></div></div><div id="liMeas"></div><div class="li-skip">TAP TO SKIP</div>`;
-document.body.append(ov);document.body.classList.add('lintro-on');
+document.body.append(ov);document.body.classList.add('lintro-on','lintro-hide');window.LU_INTRO_ON=true;
 const q=s=>ov.querySelector(s),txt=$('liTxt'),meas=$('liMeas'),icons=[...ov.querySelectorAll('.lf>i')];
 const fL=q('.lf-left'),fR=q('.lf-right'),fT=q('.lf-top'),fF=q('.lf-front'),fLid=q('.lf-lid'),cube=$('liCube'),mover=$('liMover');
 let PW=innerWidth,PH=innerHeight,FS=30,L=[],SL=[],TX=0,TY=0,TH=0,PAD=0,FIN=null,ready=false;
@@ -50,7 +50,8 @@ function render(t){if(!ready)return;
  const pul=s=>{const u=P(t,s,.3);return u>0&&u<1?1+.2*Math.sin(u*Math.PI):1};
  let cx=PW/2,cy=PH*.4,cs=(.85+.15*ap)*pul(2.4);
  // 2. the pulse at 2.4 floods the screen yellow
- $('liFlood').style.clipPath=`circle(${out(P(t,2.42,.6))*Math.hypot(PW,PH)*1.1}px at ${PW/2}px ${PH*.4}px)`;
+ // (a circle that only scales: the graphics chip does it, no repainting the whole screen each frame)
+ const fd=$('liFlood').firstChild,FR=Math.hypot(PW,PH)*1.1;fd.style.cssText=`left:${PW/2-FR}px;top:${PH*.4-FR}px;width:${FR*2}px;height:${FR*2}px;transform:scale(${Math.max(.0001,out(P(t,2.42,.6)))})`;
  // 3. the cube glides to the top corner of the last E, at its true size beside the words
  const E=L[L.length-1],cw=FS*.46,ex0=E.x+E.w+cw*.75+4,ey0=TY+cw*.12;
  const g=io(P(t,2.9,.9));cx=lerp(PW/2,ex0,g);cy=lerp(PH*.4,ey0,g)-Math.sin(Math.PI*g)*30;cs=lerp(cs,cw/(S*1.42),g);
@@ -73,17 +74,19 @@ function render(t){if(!ready)return;
  if(t>=EXIT){FIN=FIN||header()||{lu:{x:16,y:20,w:24,h:22},cube:{x:51,y:26,w:17}};const hk=FIN.lu.h/TH,col=xe>.5?'#f2f4f7':'#111';
   place(0,lerp(LxT,FIN.lu.x,xe),lerp(LyT,FIN.lu.y,xe),lerp(k,hk,xe),col);place(UI,lerp(LxT+Lc.w*k,FIN.lu.x+FIN.lu.w*.5,xe),lerp(LyT,FIN.lu.y,xe),lerp(k,hk,xe),col);
   cx=lerp(fcx,FIN.cube.x,xe);cy=lerp(fcy,FIN.cube.y,xe);cs=lerp(fcw/(S*1.42),FIN.cube.w/(S*1.42),xe)}
- $('liFlood').style.opacity=1-xe;ov.style.background=t>=EXIT?'transparent':'';q('.li-skip').style.opacity=t>=EXIT?0:1;
+ $('liFlood').style.opacity=1-xe;
+ // the app is drawn once behind the solid yellow just before the reveal, so the fade itself has nothing new to paint
+ if(t>=7.9&&document.body.classList.contains('lintro-hide')){document.body.classList.remove('lintro-hide');window.dispatchEvent(new Event('luintroreveal'))}ov.style.background=t>=EXIT?'transparent':'';q('.li-skip').style.opacity=t>=EXIT?0:1;
  mover.style.transform=`translate(${cx}px,${cy}px) scale(${cs})`}
 window.luIntroRender=t=>render(t);
 // wait for the real Anton font before measuring anything (up to 3 s, behind the dark start), then run the clock
 const fontReady=()=>Promise.race([document.fonts.load('400 30px Anton').then(()=>document.fonts.ready),new Promise(r=>setTimeout(r,3000))]).catch(()=>{});
 if(window.LU_INTRO_MANUAL){fontReady().then(()=>{build();render(window.LU_INTRO_T||0)});return}   // the design mock drives the clock itself
-let t0=0,skip=0,gone=false;
-function frame(n){if(gone)return;if(!t0)t0=n;let t=(n-t0)/1000+skip;
- if(t>=T){gone=true;render(T);ov.animate([{opacity:1},{opacity:0}],{duration:160,fill:'forwards'}).onfinish=()=>{ov.remove();document.body.classList.remove('lintro-on')};return}
+let t0=0,skip=0,gone=false,clock=0,lastN=0;
+function frame(n){if(gone)return;if(!t0){t0=n;lastN=n}clock+=Math.min(1/30,(n-lastN)/1000);lastN=n;let t=clock+skip;
+ if(t>=T){gone=true;render(T);document.body.classList.remove('lintro-hide');ov.animate([{opacity:1},{opacity:0}],{duration:160,fill:'forwards'}).onfinish=()=>{ov.remove();document.body.classList.remove('lintro-on');window.LU_INTRO_ON=false;window.dispatchEvent(new Event('luintroend'))};return}
  render(t);requestAnimationFrame(frame)}
-ov.addEventListener('pointerdown',()=>{if(!t0)return;const t=(performance.now()-t0)/1000+skip;if(t<EXIT)skip+=EXIT-t});
+ov.addEventListener('pointerdown',()=>{if(!t0)return;const t=clock+skip;if(t<EXIT)skip+=EXIT-t});
 window.luIntroSkip=()=>{skip=99};
 fontReady().then(()=>{build();requestAnimationFrame(frame)});
 })();
