@@ -305,8 +305,8 @@ setInterval(()=>{if(!PLS.length)return;const k=stateJSON().replace(/"t":(\d+)/,(
 const VOLI=()=>{const n=UVOL===0?0:Math.ceil(UVOL*4);return `<svg width="18" height="14" viewBox="0 0 18 14" aria-label="volume">${[4,7,10,14].map((h,i)=>`<rect x="${i*4.6}" y="${14-h}" width="3" height="${h}" fill="currentColor" opacity="${i<n?1:.25}"/>`).join('')}</svg>`};
 function setVol(f){UVOL=Math.max(0,Math.min(1,f));mix();const b=document.getElementById('vb'),t=document.getElementById('vt');if(b)b.style.width=UVOL*100+'%';if(t)t.textContent=Math.round(UVOL*100);const m=document.querySelector('[data-act="mute"]');if(m)m.innerHTML=VOLI();saveState()}
 function buildFav(){const all=PLS.filter(p=>!p.fav),bySrc={};all.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));
- const cur=song(),wasFav=PLS[0]&&PLS[0].fav,curPl=PLS[P.pl],openObj=PLS[openPl];FAVS=FAVS.filter(x=>bySrc[x]);
- const fs=FAVS.map(x=>bySrc[x]),fo=wasFav?PLS[0]:{n:'★ FAVOURITES',fav:true,art:'radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,#111 61%)'};fo.songs=fs;if(fs.length)all.unshift(fo);
+ const cur=song(),wasFav=PLS[0]&&PLS[0].fav,curPl=PLS[P.pl],openObj=PLS[openPl];
+ const fs=FAVS.map(x=>bySrc[x]).filter(Boolean),fo=wasFav?PLS[0]:{n:'★ FAVOURITES',fav:true,art:'radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,#111 61%)'};fo.songs=fs;if(fs.length)all.unshift(fo);
  PLS.length=0;all.forEach((p,i)=>{p.i=i;PLS.push(p)});
  const find=o=>PLS.indexOf(o);
  if(P.has){let i=find(curPl);if(i<0||!PLS[i].songs.includes(cur)){i=PLS.findIndex(p=>!p.fav&&p.songs.includes(cur))}P.pl=Math.max(0,i);P.idx=Math.max(0,PLS[P.pl].songs.indexOf(cur))}else P.pl=fs.length?1:0;
@@ -317,7 +317,7 @@ const FAVART='radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,
 const mkPls=L=>L.playlists.map((p,i)=>({n:p.name.toUpperCase(),i,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i,0)}`:ART(i,0),songs:p.tracks.map((t,k)=>({t:t.t,a:t.a,d:t.d,src:t.src,lrc:t.lrc,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i+k+1,k)}`:ART(i+k+1,k)}))}));
 function applyLib(L,first){const fresh=mkPls(L);if(!fresh.length)return false;
  const cur=P.has?song().src:null,curPl=P.has&&PLS[P.pl]?PLS[P.pl].n:null,selKey=mode==='pl'&&PLS[sel]?PLS[sel].n:null,openKey=mode==='songs'&&PLS[openPl]?PLS[openPl].n:null,selSrc=openKey?(PLS[openPl].songs[sel]||{}).src:null;
- const bySrc={};fresh.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));FAVS=FAVS.filter(x=>bySrc[x]);const fs=FAVS.map(x=>bySrc[x]);if(fs.length)fresh.unshift({n:'★ FAVOURITES',fav:true,art:FAVART,songs:fs});
+ const bySrc={};fresh.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));const fs=FAVS.map(x=>bySrc[x]).filter(Boolean);if(fs.length)fresh.unshift({n:'★ FAVOURITES',fav:true,art:FAVART,songs:fs});
  PLS.length=0;fresh.forEach((p,i)=>{p.i=i;PLS.push(p)});
  if(cur){let i=PLS.findIndex(p=>p.n===curPl&&p.songs.some(x=>x.src===cur));if(i<0)i=PLS.findIndex(p=>!p.fav&&p.songs.some(x=>x.src===cur));if(i>=0){P.pl=i;P.idx=PLS[i].songs.findIndex(x=>x.src===cur)}else{P.pl=Math.min(P.pl,PLS.length-1);P.idx=0}}
  if(openKey){const o=PLS.findIndex(p=>p.n===openKey);if(o>=0){openPl=o;sel=tgt=Math.max(0,PLS[o].songs.findIndex(x=>x.src===selSrc))}else{mode='pl';backB.style.display='none';sel=tgt=0}}

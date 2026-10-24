@@ -382,8 +382,8 @@ setInterval(()=>{if(!PLS.length)return;const k=stateJSON().replace(/"t":(\d+)/,(
 const VOLI=()=>{const n=UVOL===0?0:Math.ceil(UVOL*4);return `<svg width="18" height="14" viewBox="0 0 18 14" aria-label="volume">${[4,7,10,14].map((h,i)=>`<rect x="${i*4.6}" y="${14-h}" width="3" height="${h}" fill="currentColor" opacity="${i<n?1:.25}"/>`).join('')}</svg>`};
 function setVol(f){UVOL=Math.max(0,Math.min(1,f));mix();const b=document.getElementById('vb'),t=document.getElementById('vt');if(b)b.style.width=UVOL*100+'%';if(t)t.textContent=Math.round(UVOL*100);const m=document.querySelector('[data-act="mute"]');if(m)m.innerHTML=VOLI();saveState()}
 function buildFav(){const all=PLS.filter(p=>!p.fav),bySrc={};all.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));
- const cur=song(),wasFav=PLS[0]&&PLS[0].fav,curPl=PLS[P.pl],openObj=PLS[openPl];FAVS=FAVS.filter(x=>bySrc[x]);
- const fs=FAVS.map(x=>bySrc[x]),fo=wasFav?PLS[0]:{n:'★ FAVOURITES',fav:true,art:'radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,#111 61%)'};fo.songs=fs;if(fs.length)all.unshift(fo);
+ const cur=song(),wasFav=PLS[0]&&PLS[0].fav,curPl=PLS[P.pl],openObj=PLS[openPl];
+ const fs=FAVS.map(x=>bySrc[x]).filter(Boolean),fo=wasFav?PLS[0]:{n:'★ FAVOURITES',fav:true,art:'radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,#111 61%)'};fo.songs=fs;if(fs.length)all.unshift(fo);
  PLS.length=0;all.forEach((p,i)=>{p.i=i;PLS.push(p)});
  const find=o=>PLS.indexOf(o);
  if(P.has){let i=find(curPl);if(i<0||!PLS[i].songs.includes(cur)){i=PLS.findIndex(p=>!p.fav&&p.songs.includes(cur))}P.pl=Math.max(0,i);P.idx=Math.max(0,PLS[P.pl].songs.indexOf(cur))}else P.pl=fs.length?1:0;
@@ -394,7 +394,7 @@ const FAVART='radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,
 const mkPls=L=>L.playlists.map((p,i)=>({n:p.name.toUpperCase(),i,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i,0)}`:ART(i,0),songs:p.tracks.map((t,k)=>({t:t.t,a:t.a,d:t.d,src:t.src,lrc:t.lrc,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i+k+1,k)}`:ART(i+k+1,k)}))}));
 function applyLib(L,first){const fresh=mkPls(L);if(!fresh.length)return false;
  const cur=P.has?song().src:null,curPl=P.has&&PLS[P.pl]?PLS[P.pl].n:null,selKey=mode==='pl'&&PLS[sel]?PLS[sel].n:null,openKey=mode==='songs'&&PLS[openPl]?PLS[openPl].n:null,selSrc=openKey?(PLS[openPl].songs[sel]||{}).src:null;
- const bySrc={};fresh.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));FAVS=FAVS.filter(x=>bySrc[x]);const fs=FAVS.map(x=>bySrc[x]);if(fs.length)fresh.unshift({n:'★ FAVOURITES',fav:true,art:FAVART,songs:fs});
+ const bySrc={};fresh.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));const fs=FAVS.map(x=>bySrc[x]).filter(Boolean);if(fs.length)fresh.unshift({n:'★ FAVOURITES',fav:true,art:FAVART,songs:fs});
  PLS.length=0;fresh.forEach((p,i)=>{p.i=i;PLS.push(p)});
  if(cur){let i=PLS.findIndex(p=>p.n===curPl&&p.songs.some(x=>x.src===cur));if(i<0)i=PLS.findIndex(p=>!p.fav&&p.songs.some(x=>x.src===cur));if(i>=0){P.pl=i;P.idx=PLS[i].songs.findIndex(x=>x.src===cur)}else{P.pl=Math.min(P.pl,PLS.length-1);P.idx=0}}
  if(openKey){const o=PLS.findIndex(p=>p.n===openKey);if(o>=0){openPl=o;sel=tgt=Math.max(0,PLS[o].songs.findIndex(x=>x.src===selSrc))}else{mode='pl';backB.style.display='none';sel=tgt=0}}
@@ -438,7 +438,11 @@ const GENRES=[['ALL',null],['JAZZ',/jazz/i],['ROCK',/rock|metal|grunge|punk/i],[
 const genreOf=s=>{const tg=(s.g||[]).join(' ');for(let k=1;k<GENRES.length;k++)if(GENRES[k][1].test(tg))return GENRES[k][0];return ((s.g||[])[0]||'').toUpperCase().slice(0,16)};
 const rGenreOK=s=>!GENRES[RGI][1]||GENRES[RGI][1].test((s.g||[]).join(' '));
 const genreCount=k=>WORLD?WORLD.reduce((n,c)=>n+c.songs.filter(s=>!GENRES[k][1]||GENRES[k][1].test((s.g||[]).join(' '))).length,0):0;
-function radioPLS(){const cur=P.has&&MODE==='radio'?song().src:null,out=[],fav=RFAVS.map(u=>STBY[u]).filter(Boolean);if(fav.length)out.push({n:'★ FAVOURITES',fav:true,art:FAVART,songs:fav});
+// saved stations keep their details, so a favourite never vanishes when the weekly station list changes
+var RFINFO={};
+function favStation(u){const s=STBY[u];if(s){if(!RFINFO[u])RFINFO[u]={n:s.t,u:s.url,id:s.id,t:s.g,st:s.st,br:s.br,c:s.codec,la:s.la,lo:s.lo,cc:s.city};return s}
+ const x=RFINFO[u],c=x&&CBY[x.cc];return c?mkStation(x,c):null}
+function radioPLS(){const cur=P.has&&MODE==='radio'?song().src:null,out=[],fav=RFAVS.map(favStation).filter(Boolean);if(fav.length)out.push({n:'★ FAVOURITES',fav:true,art:FAVART,songs:fav});
  WORLD.forEach(c=>{const ss=c.songs.filter(s=>rGenreOK(s)||s.src===cur);if(ss.length)out.push({n:c.N,cc:c.cc,city:c,art:c.art,songs:ss})});return out}
 function rebuildRadio(){if(!WORLD)return;const cur=P.has?song().src:null,curPl=PLS[P.pl]&&PLS[P.pl].n,openKey=mode==='songs'&&PLS[openPl]?PLS[openPl].n:null,selKey=mode==='pl'&&PLS[sel]?PLS[sel].n:null;
  const vfav=VIEWPL!=null&&PLS[VIEWPL]&&PLS[VIEWPL].fav;const L=radioPLS();PLS.length=0;L.forEach((p,i)=>{p.i=i;PLS.push(p)});VIEWPL=vfav&&PLS[0]&&PLS[0].fav?0:null;
@@ -583,7 +587,7 @@ const _al=applyLib;applyLib=function(L,first){if(MODE==='radio'){LIBPENDING=L;re
 const _sj=stateJSON;stateJSON=function(){const o=JSON.parse(_sj());o.mode=MODE;
  if(MODE==='radio'){const k=RKEEP.lu;o.favs=k?k.favs:[];const ls=k&&k.has&&k.pls[k.pl]?k.pls[k.pl].songs[k.idx]:null;o.last=ls&&ls.src?{src:ls.src,pl:k.pls[k.pl].n,t:Math.round(k.el)}:null}
  if(RBOOT){const rk=RKEEP.radio,rs=MODE==='radio'?(P.has?song().src:''):(rk&&rk.has&&rk.pls[rk.pl]?(rk.pls[rk.pl].songs[rk.idx]||{}).src:RLASTSRC);
-  o.radio={pass:PASS,al:AL,tier:bnSeen,favs:MODE==='radio'?FAVS:RFAVS,last:rs?{src:rs}:null,gi:RGI,caught:CAUGHTL}}return JSON.stringify(o)};
+  o.radio={pass:PASS,al:AL,tier:bnSeen,favs:MODE==='radio'?FAVS:RFAVS,last:rs?{src:rs}:null,gi:RGI,caught:CAUGHTL,finfo:Object.fromEntries(Object.entries(RFINFO).filter(([k])=>(MODE==='radio'?FAVS:RFAVS).includes(k)))}}return JSON.stringify(o)};
 const _ln=lookNow;lookNow=function(){if(MODE!=='radio'||!P.has)return _ln();const s=song(),c=cityOf(s),pc=placeOf(s,c)||c;if(!pc)return _ln();const h=hourAt(pc),ph=h<5||h>=20?'night':h<7?'dawn':h<17?'day':'dusk',w=((CWX[pc.key]||{}).live&&CWX[pc.key].kind)||'clear',k='r '+ph+' '+w;
  if(k===lookKey)return;lookKey=k;document.body.className=document.body.className.replace(/\b(ph|wx)-\S+/g,'').trim()+' ph-'+ph+' wx-'+w};
 addEventListener('keydown',e=>{if((e.key==='r'||e.key==='R')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/INPUT|TEXTAREA/.test((e.target||{}).tagName||''))switchMode()});
@@ -602,7 +606,7 @@ const _rrfC=radRenderFaces;radRenderFaces=function(){_rrfC();const s=song(),has=
  if(CAUGHTV){F_VIZ.style.background='var(--g)';F_VIZ.innerHTML=TB('♥ SONG CATCHER · '+n,'var(--b)')+caughtHTML(6)+`<b class="pcv" data-act="caught">‹ PASSPORT</b>`}
  else F_VIZ.insertAdjacentHTML('beforeend',`<b class="pcv" data-act="caught">♥ CAUGHT ${n}</b>`)};
 const _actC=act;act=function(a){const p=a.split(':');if(p[0]==='catch'){catchToggle();return}if(p[0]==='caught'){CAUGHTV=!CAUGHTV;renderFaces();return}if(p[0]==='cs'){openCaught(p[1],+p[2]);return}return _actC(a)};
-function radioBoot(){const r=ST.radio||{};CAUGHTL=Array.isArray(r.caught)?r.caught.filter(x=>x&&x.t):[];if(r.pass&&typeof r.pass==='object')PASS=r.pass;if(r.al)Object.assign(AL,r.al);bnSeen=r.tier||0;RFAVS=(r.favs||[]).filter(x=>typeof x==='string');RLASTSRC=(r.last||{}).src||'';RGI=Math.min(GENRES.length-1,Math.max(0,r.gi|0));RBOOT=true;
+function radioBoot(){const r=ST.radio||{};CAUGHTL=Array.isArray(r.caught)?r.caught.filter(x=>x&&x.t):[];if(r.finfo&&typeof r.finfo==='object')RFINFO=r.finfo;if(r.pass&&typeof r.pass==='object')PASS=r.pass;if(r.al)Object.assign(AL,r.al);bnSeen=r.tier||0;RFAVS=(r.favs||[]).filter(x=>typeof x==='string');RLASTSRC=(r.last||{}).src||'';RGI=Math.min(GENRES.length-1,Math.max(0,r.gi|0));RBOOT=true;
  document.getElementById('swp').onclick=()=>switchMode();if(ST.mode==='radio')switchMode(true);else if(r.last||Object.keys(PASS).length)setTimeout(radioFetch,4000)}
 
 let ST={};fetch('/api/state').then(r=>r.json()).catch(()=>({})).then(st=>{ST=st||{};setTimeout(()=>{lookNow();fetchWX()},50);if(typeof st.xf==='number')XF=st.xf;FAVS=st.favs||[];if(typeof st.vol==='number')UVOL=st.vol;mix();SHUF=!!st.shuf}).finally(()=>fetch('/api/library').then(r=>r.json()).then(L=>{

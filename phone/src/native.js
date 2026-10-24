@@ -107,7 +107,7 @@ async function state(){const st=LS.get('lu_state',{})||{};delete st.xf;await boo
  return st}
 window.fetch=function(u,o){const s=typeof u==='string'?u:(u&&u.url)||'';
  if(!s.startsWith('/api/'))return ofetch(u,o);const url=new URL(s,'https://x'),p=url.pathname,q=url.searchParams;
- if(p==='/api/state'){if(o&&o.method==='POST'){try{const nw=JSON.parse(o.body),old=LS.get('lu_state',{})||{};nw.phone=old.phone;nw.place=old.place;LS.set('lu_state',nw)}catch(e){}return Promise.resolve(J({ok:true}))}return state().then(J)}
+ if(p==='/api/state'){if(o&&o.method==='POST'){try{const nw=JSON.parse(o.body),old=LS.get('lu_state',{})||{};nw.phone=old.phone;nw.place=old.place;for(const k of ['radio','mode'])if(nw[k]===undefined&&old[k]!==undefined)nw[k]=old[k];LS.set('lu_state',nw)}catch(e){}return Promise.resolve(J({ok:true}))}return state().then(J)}
  if(p==='/api/library')return library().then(J);
  if(p==='/api/libsig')return (LN?call('libSig'):Promise.resolve({sig:'0'})).then(r=>T(r.sig||'0'));
  if(p==='/api/radio/world')return Promise.resolve(J(worldJSON()));
