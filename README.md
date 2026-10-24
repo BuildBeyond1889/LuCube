@@ -2,7 +2,15 @@
 
 **A music wheel that turns into a 3D cube.** (Pronounced "Lou Cube".)
 
-![The Lu Cube mid-spin](docs/img/cube-spin.jpg)
+### On a PC
+<p align="center"><img src="docs/img/demo-desktop.gif" width="640" alt="Opening the wheel on the edge of the screen, dragging a record out into a cube, turning its faces, then pressing R to switch to world radio"></p>
+<p align="center"><img src="docs/img/desktop-faces.jpg" width="820" alt="Eight faces: transport, cover, playlist, library, then the radio's On Air, Live From, World and Passport"></p>
+
+### On a phone
+<p align="center"><img src="docs/img/demo-phone.gif" width="300" alt="The phone app: swiping the thumb wheel to a playlist, turning the cube, switching to the radio and spinning the globe to Iceland, catching a song, then the remote for Spotify"></p>
+<p align="center"><img src="docs/img/phone-screens.jpg" width="820" alt="Eight phone screens: your music, cover, radio on air, live from Japan, the world, the passport, the remote and settings"></p>
+
+<sub>The songs and stations shown are made up for the demo.</sub>
 
 **Website:** https://buildbeyond1889.github.io/LuCube/
 
