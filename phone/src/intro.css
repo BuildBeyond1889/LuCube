@@ -4,7 +4,8 @@ body.lintro-on #ptitle{visibility:hidden}
 #liFlood{position:absolute;inset:0;background:#ffc21a;clip-path:circle(0px at 50% 40%)}
 #liVeil{position:absolute;inset:0;background:#0b0c10;z-index:5;pointer-events:none}
 #liTxt{position:absolute;inset:0;z-index:2}
-#liTxt span{position:absolute;left:0;top:0;font:400 30px/0.86 Anton,sans-serif;color:#111;transform-origin:0 0;white-space:pre;opacity:0}
+.li-slot{position:absolute;left:0;top:0;overflow:hidden;visibility:hidden;transform-origin:0 0}
+.li-slot span{position:absolute;left:0;font:400 30px/0.86 Anton,sans-serif;color:#111;white-space:pre}
 #liMeas{position:absolute;visibility:hidden;white-space:nowrap;font:400 30px/0.86 Anton,sans-serif}#liMeas span{display:inline-block}
 #liMover{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;z-index:3}
 .li-scene{position:absolute;left:-42px;top:-42px;width:84px;height:84px;perspective:900px}

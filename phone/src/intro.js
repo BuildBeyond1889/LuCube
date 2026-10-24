@@ -2,7 +2,8 @@
 // The unfolded cube folds up like origami (the white square swings up twice into the lid), pulses and floods the
 // screen yellow, glides to the corner of the E, LISTEN TO THE UNIVERSE rises out of an invisible line and sinks
 // back, leaving L, U and the cube to come together in the middle, and the logo flies into the app's header.
-// Everything is drawn from one clock, so every phone shows the same frame at the same moment.
+// Everything is drawn from one clock (render(t)), so every phone shows the same frame at the same moment, and the
+// design mock runs this very file.
 (function(){
 const S=84,T=9,EXIT=8.4,WORDS='LISTEN TO THE UNIVERSE',UI=WORDS.indexOf('UNIVERSE');
 const $=id=>document.getElementById(id);
@@ -22,18 +23,22 @@ ov.innerHTML=`<div id="liFlood"></div><div id="liTxt"></div>
 document.body.append(ov);document.body.classList.add('lintro-on');
 const q=s=>ov.querySelector(s),txt=$('liTxt'),meas=$('liMeas'),icons=[...ov.querySelectorAll('.lf>i')];
 const fL=q('.lf-left'),fR=q('.lf-right'),fT=q('.lf-top'),fF=q('.lf-front'),fLid=q('.lf-lid'),cube=$('liCube'),mover=$('liMover');
-let PW=innerWidth,PH=innerHeight,FS=30,L=[],Lt=[],TX=0,TY=0,TH=0,FIN=null;
-// the words, measured once: every letter's place on the line
+let PW=innerWidth,PH=innerHeight,FS=30,L=[],SL=[],TX=0,TY=0,TH=0,PAD=0,FIN=null,ready=false;
+// the words, measured once in the real font: every letter's place on the line.
+// Each letter sits in its own little window whose bottom edge IS the invisible line, and slides up and down inside
+// it: plain cropping, which every phone draws the same way.
 function build(){PW=innerWidth;PH=innerHeight;meas.innerHTML=[...WORDS].map(c=>`<span>${c===' '?'&nbsp;':c}</span>`).join('');
  meas.style.fontSize='30px';const w=meas.getBoundingClientRect().width;FS=Math.min(34,30*(PW-40-58)/w);meas.style.fontSize=FS+'px';
- const r=meas.getBoundingClientRect();TH=r.height;TX=(PW-r.width)/2-26;TY=PH*.5-TH/2;let x=TX;
+ const r=meas.getBoundingClientRect();TH=r.height;PAD=Math.ceil(TH*.3);TX=(PW-r.width)/2-26;TY=PH*.5-TH/2;let x=TX;
  L=[...meas.children].map((s,i)=>{const b=s.getBoundingClientRect(),o={c:WORDS[i],x,w:b.width};x+=b.width;return o});
- txt.innerHTML='';Lt=L.map(l=>{const s=document.createElement('span');s.textContent=l.c;s.style.fontSize=FS+'px';txt.append(s);return s})}
+ txt.innerHTML='';SL=L.map(l=>{if(l.c===' ')return null;const slot=document.createElement('b');slot.className='li-slot';
+  slot.style.width=(l.w+4)+'px';slot.style.height=(TH+PAD)+'px';const sp=document.createElement('span');sp.textContent=l.c;sp.style.fontSize=FS+'px';sp.style.top=PAD+'px';
+  slot.append(sp);txt.append(slot);return{slot,sp}});ready=true}
 // where the logo lands: the app's own header
 function header(){const t=$('ptitle');if(!t)return null;const sp=t.querySelector('span'),sv=t.querySelector('svg');if(!sp||!sv)return null;
  const a=sp.getBoundingClientRect(),b=sv.getBoundingClientRect();if(!a.width)return null;
  return{lu:{x:a.left,y:a.top,w:a.width,h:a.height},cube:{x:b.left+b.width/2,y:b.top+b.height/2,w:b.width}}}
-function render(t){
+function render(t){if(!ready)return;
  // 1. fade in behind a veil (never by fading the 3D cube), fold like origami, camera turns to the logo angle
  const ap=out(P(t,0,.6));$('liVeil').style.opacity=1-ap;
  const f=(s,d)=>io(P(t,s,d||.75));
@@ -47,35 +52,38 @@ function render(t){
  // 2. the pulse at 2.4 floods the screen yellow
  $('liFlood').style.clipPath=`circle(${out(P(t,2.42,.6))*Math.hypot(PW,PH)*1.1}px at ${PW/2}px ${PH*.4}px)`;
  // 3. the cube glides to the top corner of the last E, at its true size beside the words
- const E=L[L.length-1],base=TY+TH,cw=FS*.46,ex0=E.x+E.w+cw*.75+4,ey0=TY+cw*.12;
+ const E=L[L.length-1],cw=FS*.46,ex0=E.x+E.w+cw*.75+4,ey0=TY+cw*.12;
  const g=io(P(t,2.9,.9));cx=lerp(PW/2,ex0,g);cy=lerp(PH*.4,ey0,g)-Math.sin(Math.PI*g)*30;cs=lerp(cs,cw/(S*1.42),g);
- txt.style.clipPath=`inset(0 0 ${PH-base}px 0)`;   // the invisible line: nothing shows below it
- // 4. the words rise together; 5. a tiny pulse sends all but L and U back down together
- L.forEach((l,i)=>{const sp=Lt[i];if(l.c===' '){sp.style.opacity=0;return}
-  const up=out(P(t,3.8,.7)),dn=(i===0||i===UI)?0:inn(P(t,5.45,.5));
-  sp.style.opacity=dn>=1?0:1;sp.style.color='#111';sp.style.transform=`translate(${l.x}px,${TY+TH*1.15*(1-up)+TH*1.15*dn}px)`});
+ // 4. the words rise together through the line; 5. a tiny pulse sends all but L and U back down together.
+ // Before 3.8 s (and once sunk) the words are switched off entirely, so nothing can show while the cube folds.
+ const up=out(P(t,3.8,.7)),dn=inn(P(t,5.45,.5)),on=t>=3.8;
+ L.forEach((l,i)=>{const s=SL[i];if(!s)return;const keep=i===0||i===UI,d=keep?0:dn;
+  s.slot.style.visibility=on&&d<1?'visible':'hidden';s.slot.style.overflow='hidden';s.sp.style.color='#111';
+  s.slot.style.transform=`translate(${l.x}px,${TY-PAD}px)`;s.sp.style.transform=`translateY(${TH*1.2*(1-up)+TH*1.2*d}px)`});
  if(t>=5.3&&t<5.6)cs*=1+.12*Math.sin(Math.PI*P(t,5.3,.3));
- // 6. from 6.3 the L, U and cube come together straight into the centre, growing into the logo
+ // 6. from 6.3 the L, U and cube come together straight into the centre, growing into the logo (and then hold still)
  const fs=Math.min(PW*.34,140),k=fs/FS,gr=io(P(t,6.3,1.3)),K=lerp(1,k,gr),Lc=L[0],Uc=L[UI];
- const fcw=fs*.55,Wl=(Lc.w+Uc.w)*k+fcw*1.17,LxT=(PW-Wl)/2,LyT=PH*.42-TH*k/2,fcx=LxT+(Lc.w+Uc.w)*k+fcw*.62,fcy=LyT+fcw*.42;
- if(t>=6.3){Lt[0].style.transform=`translate(${lerp(Lc.x,LxT,gr)}px,${lerp(TY,LyT,gr)}px) scale(${K})`;
-  Lt[UI].style.transform=`translate(${lerp(Uc.x,LxT+Lc.w*k,gr)}px,${lerp(TY,LyT,gr)}px) scale(${K})`;
+ const fcw=fs*.46,Wl=(Lc.w+Uc.w)*k+fcw*1.17,LxT=(PW-Wl)/2,LyT=PH*.42-TH*k/2,fcx=LxT+(Lc.w+Uc.w)*k+fcw*.62,fcy=LyT+fcw*.42;
+ const place=(i,x,y,sc,col)=>{const s=SL[i];s.slot.style.overflow='visible';s.slot.style.visibility='visible';s.sp.style.transform='none';
+  s.slot.style.transform=`translate(${x}px,${y-PAD*sc}px) scale(${sc})`;if(col)s.sp.style.color=col};
+ if(t>=6.3){place(0,lerp(Lc.x,LxT,gr),lerp(TY,LyT,gr),K);place(UI,lerp(Uc.x,LxT+Lc.w*k,gr),lerp(TY,LyT,gr),K);
   cx=lerp(ex0,fcx,gr);cy=lerp(ey0,fcy,gr);cs=lerp(cw,fcw,gr)/(S*1.42)}
- if(t>=7.7&&t<EXIT)cs*=1+.03*Math.sin(Math.PI*P(t,7.7,.7));
  // 7. into the app: the yellow fades and the logo flies to the header, turning white
  const xe=io(P(t,EXIT,.55));
- if(t>=EXIT){FIN=FIN||header()||{lu:{x:16,y:20,w:24,h:22},cube:{x:51,y:26,w:17}};txt.style.clipPath='none';
-  const hk=FIN.lu.h/TH;
-  [[0,LxT,FIN.lu.x],[UI,LxT+Lc.w*k,FIN.lu.x+FIN.lu.w*.5]].forEach(([i,x0,hx])=>{const sp=Lt[i];sp.style.transform=`translate(${lerp(x0,hx,xe)}px,${lerp(LyT,FIN.lu.y,xe)}px) scale(${lerp(k,hk,xe)})`;sp.style.color=xe>.5?'#f2f4f7':'#111'});
+ if(t>=EXIT){FIN=FIN||header()||{lu:{x:16,y:20,w:24,h:22},cube:{x:51,y:26,w:17}};const hk=FIN.lu.h/TH,col=xe>.5?'#f2f4f7':'#111';
+  place(0,lerp(LxT,FIN.lu.x,xe),lerp(LyT,FIN.lu.y,xe),lerp(k,hk,xe),col);place(UI,lerp(LxT+Lc.w*k,FIN.lu.x+FIN.lu.w*.5,xe),lerp(LyT,FIN.lu.y,xe),lerp(k,hk,xe),col);
   cx=lerp(fcx,FIN.cube.x,xe);cy=lerp(fcy,FIN.cube.y,xe);cs=lerp(fcw/(S*1.42),FIN.cube.w/(S*1.42),xe)}
  $('liFlood').style.opacity=1-xe;ov.style.background=t>=EXIT?'transparent':'';q('.li-skip').style.opacity=t>=EXIT?0:1;
  mover.style.transform=`translate(${cx}px,${cy}px) scale(${cs})`}
-// the clock; a tap jumps straight to the finish (the logo forms and flies into the header)
+window.luIntroRender=t=>render(t);
+// wait for the real Anton font before measuring anything (up to 3 s, behind the dark start), then run the clock
+const fontReady=()=>Promise.race([document.fonts.load('400 30px Anton').then(()=>document.fonts.ready),new Promise(r=>setTimeout(r,3000))]).catch(()=>{});
+if(window.LU_INTRO_MANUAL){fontReady().then(()=>{build();render(window.LU_INTRO_T||0)});return}   // the design mock drives the clock itself
 let t0=0,skip=0,gone=false;
 function frame(n){if(gone)return;if(!t0)t0=n;let t=(n-t0)/1000+skip;
  if(t>=T){gone=true;render(T);ov.animate([{opacity:1},{opacity:0}],{duration:160,fill:'forwards'}).onfinish=()=>{ov.remove();document.body.classList.remove('lintro-on')};return}
  render(t);requestAnimationFrame(frame)}
 ov.addEventListener('pointerdown',()=>{if(!t0)return;const t=(performance.now()-t0)/1000+skip;if(t<EXIT)skip+=EXIT-t});
 window.luIntroSkip=()=>{skip=99};
-Promise.race([document.fonts.load('400 30px Anton'),new Promise(r=>setTimeout(r,500))]).catch(()=>{}).then(()=>{build();requestAnimationFrame(frame)});
+fontReady().then(()=>{build();requestAnimationFrame(frame)});
 })();
