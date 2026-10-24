@@ -7,7 +7,10 @@
 <meta name="description" content="Lu Cube: a music wheel on the edge of your screen that turns into a 3D cube. Your own music, live radio from around the world, and a passport that stamps every country you tune into.">
 <meta property="og:title" content="Lu Cube">
 <meta property="og:description" content="A music wheel that turns into a 3D cube. Your own music, live world radio, and a passport for every country you tune into.">
-<meta property="og:image" content="img/cube-spin.jpg">
+<meta property="og:image" content="https://buildbeyond1889.github.io/LuCube/img/og.png">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="img/favicon-64.png">
+<link rel="apple-touch-icon" href="img/apple-touch.png">
 <style>
 @font-face{font-family:Anton;src:url(fonts/anton-latin-400-normal.woff2) format('woff2');font-display:swap}
 @font-face{font-family:'Space Mono';font-weight:400;src:url(fonts/space-mono-latin-400-normal.woff2) format('woff2');font-display:swap}
@@ -25,7 +28,7 @@ img{max-width:100%;display:block}
 /* nav */
 nav{position:sticky;top:0;z-index:20;background:rgba(8,9,12,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 nav .wrap{display:flex;align-items:center;gap:24px;height:60px}
-nav .logo{font:400 22px Anton,sans-serif;letter-spacing:.04em;color:#fff;text-decoration:none}nav .logo em{font-style:normal;color:var(--y)}
+nav .logo{display:inline-flex;align-items:flex-start;gap:3px;font:400 26px/0.86 Anton,sans-serif;letter-spacing:.02em;color:#fff;text-decoration:none}.logo svg{margin-top:-3px}nav .logo em{font-style:normal;color:var(--y)}
 nav .links{margin-left:auto;display:flex;gap:22px}nav .links a{color:var(--dim);text-decoration:none;font:700 10px "Space Mono",monospace;letter-spacing:.18em}nav .links a:hover{color:#fff}
 @media (max-width:760px){nav .links{display:none}}
 /* hero */
@@ -75,7 +78,7 @@ footer b{color:#fff}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><a class="logo" href="#">LU <em>CUBE</em></a><div class="links"><a href="#faces">THE CUBE</a><a href="#radio">RADIO</a><a href="#passport">PASSPORT</a><a href="#phone">PHONE</a><a href="#get">GET IT</a></div></div></nav>
+<nav><div class="wrap"><a class="logo" href="#" aria-label="Lu Cube, home"><span>LU</span><svg width="15" height="15" viewBox="0 0 100 100" aria-hidden="true" style="display:block;flex:none"><polygon points="50,6 90,29 50,52 10,29" fill="#fff" stroke="#111" stroke-width="7" stroke-linejoin="round"/><polygon points="10,29 50,52 50,96 10,73" fill="#2f6be8" stroke="#111" stroke-width="7" stroke-linejoin="round"/><polygon points="50,52 90,29 90,73 50,96" fill="#e0281a" stroke="#111" stroke-width="7" stroke-linejoin="round"/></svg></a><div class="links"><a href="#faces">THE CUBE</a><a href="#radio">RADIO</a><a href="#passport">PASSPORT</a><a href="#phone">PHONE</a><a href="#get">GET IT</a></div></div></nav>
 
 <header class="hero"><div class="wrap">
  <div>

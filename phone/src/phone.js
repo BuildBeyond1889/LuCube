@@ -92,7 +92,7 @@ const _act=act;act=function(a){const p=a.split(':');
  return _act(a)};
 
 // ---------- phone chrome ----------
-const ui=document.createElement('div');ui.innerHTML=`<div id="ptop"><h2 id="ptitle">LU<sup>3</sup></h2><div class="pr"><b id="pfind" title="search stations">🔎</b><div class="seg" id="pseg"><b data-m="lu">♫</b><b data-m="radio">📻</b><b data-m="remote">◎</b></div><b id="pgear" title="settings">⚙</b></div></div>
+const ui=document.createElement('div');ui.innerHTML=`<div id="ptop"><h2 id="ptitle">LU</h2><div class="pr"><b id="pfind" title="search stations">🔎</b><div class="seg" id="pseg"><b data-m="lu">♫</b><b data-m="radio">📻</b><b data-m="remote">◎</b></div><b id="pgear" title="settings">⚙</b></div></div>
  <div id="pdots"></div><div id="pface"></div><div id="pbot"><canvas id="pglobe"></canvas><div id="pwheel"></div><div id="plab"><small id="plk"></small><b id="pln"></b><i id="plt">TAP TO PLAY</i></div></div><div id="pwipe"></div>
  <div id="psheet"><div class="in" id="pin"></div></div>`;
 document.body.append(ui);
@@ -103,7 +103,8 @@ document.querySelectorAll('#pseg b').forEach(b=>b.onclick=()=>setMode(b.dataset.
 $('pgear').onclick=()=>sheet(true);$('psheet').onclick=e=>{if(e.target.id==='psheet')sheet(false)};
 $('pfind').onclick=()=>{const f=document.querySelector('.find');const on=!document.body.classList.contains('pfindon');document.body.classList.toggle('pfindon',on);if(on&&f){const i=f.querySelector('input');setTimeout(()=>i&&i.focus(),50)}};
 document.addEventListener('pointerdown',e=>{if(!document.body.classList.contains('pfindon'))return;const f=document.querySelector('.find');if((f&&f.contains(e.target))||e.target.closest('#pfind'))return;document.body.classList.remove('pfindon');const i=f&&f.querySelector('input');if(i)i.blur()},true);
-function topUI(){const m=PM();$('ptitle').innerHTML=(m==='lu'?'LU':m==='radio'?'RADIO':'REMOTE')+'<sup>3</sup>';$('ptitle').title=(m==='lu'?'Lu':m==='radio'?'Radio':'Remote')+' Cube';document.querySelectorAll('#pseg b').forEach(b=>b.classList.toggle('on',b.dataset.m===m));document.body.classList.remove('pfindon')}
+const PCUBE='<svg width="17" height="17" viewBox="0 0 100 100" aria-hidden="true" style="display:block;flex:none"><polygon points="50,6 90,29 50,52 10,29" fill="#fff" stroke="#111" stroke-width="7" stroke-linejoin="round"/><polygon points="10,29 50,52 50,96 10,73" fill="#2f6be8" stroke="#111" stroke-width="7" stroke-linejoin="round"/><polygon points="50,52 90,29 90,73 50,96" fill="#e0281a" stroke="#111" stroke-width="7" stroke-linejoin="round"/></svg>';
+function topUI(){const m=PM();$('ptitle').innerHTML='<span>'+(m==='lu'?'LU':m==='radio'?'RADIO':'REMOTE')+'</span>'+PCUBE;$('ptitle').title=(m==='lu'?'Lu':m==='radio'?'Radio':'Remote')+' Cube';document.querySelectorAll('#pseg b').forEach(b=>b.classList.toggle('on',b.dataset.m===m));document.body.classList.remove('pfindon')}
 
 // ---------- bottom: thumb wheel (Lu, Remote) or the globe (Radio) ----------
 let ptok=[];const PW2=$('pwheel'),GC=$('pglobe'),gx=GC.getContext('2d');

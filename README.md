@@ -1,5 +1,7 @@
 # Lu Cube
 
+<p align="center"><img src="docs/img/logo-lockup.png" width="560" alt="LU with a small cube raised like an exponent: Lu cubed. Music · Radio · Remote"></p>
+
 **A music wheel that turns into a 3D cube.** (Pronounced "Lou Cube".)
 
 ### On a PC
