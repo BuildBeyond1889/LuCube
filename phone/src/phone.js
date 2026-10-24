@@ -119,20 +119,43 @@ function plabel(){const m=PM(),L=BL(),p=L[pick],k=$('plk'),n=$('pln'),t=$('plt')
  n.textContent=p.n;t.textContent=on?(P.playing?'NOW PLAYING · TAP TO PAUSE':'PAUSED · TAP TO PLAY'):(m==='radio'?(p.fav?'TAP TO SEE THEM':'TAP TO TUNE IN'):'TAP TO PLAY')}
 function tapPick(){const m=PM();if(m==='remote'){const p=RS[pick];if(!p){if(!RGRANT)N('remoteSettings');return}if(rcur()&&rcur().pkg===p.pkg)act('rem:play');else{RSEL=p.pkg;renderFaces();goFace('NOW PLAYING')}plabel();return}
  if(!PLS.length)return;if(P.has&&P.pl===pick)act('play');else{act('pl:'+pick);goFace(m==='radio'&&PLS[pick].fav?'PLAYLIST':'NOW PLAYING')}plabel()}
-// swipe sideways to scroll (a buzz on each click), tap to play / tune in
-const pb=$('pbot');let sw=null;
-pb.addEventListener('pointerdown',e=>{sw={x:e.clientX,p:pick,moved:false};pb.setPointerCapture(e.pointerId)});
-pb.addEventListener('pointermove',e=>{if(!sw)return;const dx=e.clientX-sw.x,st=PM()==='radio'?46:62;if(Math.abs(dx)>6)sw.moved=true;const L=BL().length;if(!L)return;prot=Math.max(-.4,Math.min(L-.6,sw.p-dx/st));const n=Math.max(0,Math.min(L-1,Math.round(sw.p-dx/st)));if(n!==pick){pick=n;plabel();vib(7)}});
-pb.addEventListener('pointerup',()=>{if(!sw)return;const m=sw.moved;sw=null;if(!m)tapPick()});
-pb.addEventListener('pointercancel',()=>{sw=null});
+// swipe sideways to scroll (a buzz on each click), tap to play / tune in.
+// Radio: the globe is a real globe under your finger. Spin it any way; the country nearest the middle is the pick.
+const pb=$('pbot');let sw=null,GD=null,GV=[0,0],GSNAP=true,GR=100,PINS=[];
+const radio=()=>PM()==='radio';
+pb.addEventListener('pointerdown',e=>{if(e.target.id==='pfav')return;pb.setPointerCapture(e.pointerId);
+ if(radio()){GD={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,lon:gLon2,lat:gLat2,moved:false};GV=[0,0];GSNAP=false;return}
+ sw={x:e.clientX,p:pick,moved:false}});
+pb.addEventListener('pointermove',e=>{
+ if(GD){const dx=e.clientX-GD.x,dy=e.clientY-GD.y;if(Math.hypot(dx,dy)>6)GD.moved=true;if(!GD.moved)return;const k=180/(Math.PI*GR);
+  gLon2=GD.lon-dx*k;gLat2=Math.max(-65,Math.min(75,GD.lat+dy*k));GV=[GV[0]*.5-(e.clientX-GD.lx)*k*.5,GV[1]*.5+(e.clientY-GD.ly)*k*.5];GD.lx=e.clientX;GD.ly=e.clientY;return}
+ if(!sw)return;const dx=e.clientX-sw.x,st=62;if(Math.abs(dx)>6)sw.moved=true;const L=BL().length;if(!L)return;prot=Math.max(-.4,Math.min(L-.6,sw.p-dx/st));const n=Math.max(0,Math.min(L-1,Math.round(sw.p-dx/st)));if(n!==pick){pick=n;plabel();vib(7)}});
+pb.addEventListener('pointerup',e=>{
+ if(GD){const m=GD.moved;GD=null;if(!m){GSNAP=true;tapGlobe(e.clientX,e.clientY)}return}
+ if(!sw)return;const m=sw.moved;sw=null;if(!m)tapPick()});
+pb.addEventListener('pointercancel',()=>{sw=null;GD=null});
+// tap a pin to tune straight to it; tap anywhere else to tune the country in the middle
+function tapGlobe(x,y){const r=GC.getBoundingClientRect(),cx=(x-r.left)*2,cy=(y-r.top)*2;let best=-1,bd=56*56;
+ const mid=PINS.find(q=>q[0]===pick);if(mid&&(mid[1]-cx)**2+(mid[2]-cy)**2<70*70){tapPick();return}bd=40*40;PINS.forEach(([i,px,py])=>{const d=(px-cx)**2+(py-cy)**2;if(d<bd){bd=d;best=i}});if(best>=0&&best!==pick){pick=best;vib(7)}tapPick()}
+// ★ favourites have no place on the map, so they get their own button
+const pfav=document.createElement('b');pfav.id='pfav';pfav.textContent='★ FAVOURITES';pb.append(pfav);
+pfav.addEventListener('click',e=>{e.stopPropagation();if(PLS[0]&&PLS[0].fav){act('pl:0');goFace('PLAYLIST')}});
+setInterval(()=>{pfav.style.display=radio()&&PLS[0]&&PLS[0].fav?'block':'none'},500);
 let gLon2=0,gLat2=20;
-function drawPGlobe(t){const W=GC.width=GC.clientWidth*2,H=GC.height=GC.clientHeight*2,cx=W/2,R=Math.min(W*.32,H*.31),cy=H*.39;gx.clearRect(0,0,W,H);const p=PLS[pick],c=p&&p.city;
- if(c&&c.lon!=null){gLon2+=((((c.lon-gLon2)%360)+540)%360-180)*.09;gLat2+=(c.lat*.85-gLat2)*.09}else gLon2+=.08;
+function drawPGlobe(t){const W=GC.width=GC.clientWidth*2,H=GC.height=GC.clientHeight*2,cx=W/2,R=Math.min(W*.32,H*.31),cy=H*.39;GR=R/2;gx.clearRect(0,0,W,H);
+ if(!GD&&!GSNAP){gLon2+=GV[0];gLat2=Math.max(-65,Math.min(75,gLat2+GV[1]));GV=[GV[0]*.93,GV[1]*.93];if(Math.hypot(GV[0],GV[1])<.04)GSNAP=true} // a flick keeps it turning, then it settles
+ const p=PLS[pick],c=p&&p.city;
+ if(GSNAP&&!GD){if(c&&c.lon!=null){gLon2+=((((c.lon-gLon2)%360)+540)%360-180)*.09;gLat2+=(c.lat*.85-gLat2)*.09}else gLon2+=.08}
  const sg=gx.createRadialGradient(cx-R*.3,cy-R*.35,R*.1,cx,cy,R);sg.addColorStop(0,'#22306a');sg.addColorStop(1,'#060918');gx.fillStyle=sg;gx.beginPath();gx.arc(cx,cy,R,0,7);gx.fill();
  const at=gx.createRadialGradient(cx,cy,R*.92,cx,cy,R*1.15);at.addColorStop(0,'rgba(90,140,255,0)');at.addColorStop(.45,'rgba(90,140,255,.32)');at.addColorStop(1,'rgba(90,140,255,0)');gx.fillStyle=at;gx.beginPath();gx.arc(cx,cy,R*1.15,0,7);gx.fill();
  const a=-gLon2*D2R,b=gLat2*D2R,ca=Math.cos(a),sa=Math.sin(a),cb=Math.cos(b),sb=Math.sin(b),P3=d=>{const X=d[0]*ca+d[2]*sa,z0=-d[0]*sa+d[2]*ca;return[X,d[1]*cb-z0*sb,d[1]*sb+z0*cb]},dz=Math.max(2,R/60);
  gx.fillStyle='#a8c8ff';for(const d of LANDV){const v=P3(d);if(v[2]<0)continue;gx.globalAlpha=.22+.78*v[2];gx.fillRect(cx+v[0]*R-dz/2,cy-v[1]*R-dz/2,dz,dz)}gx.globalAlpha=1;
- PLS.forEach((q,i)=>{if(!q.city||!q.city.v)return;const v=P3(q.city.v);if(v[2]<.05)return;const on=i===pick,px=cx+v[0]*R,py=cy-v[1]*R,rr=on?R*.05:R*.026;gx.fillStyle=on?'#ffc21a':(P.has&&P.pl===i)?'#ffffff':'#e8382f';gx.beginPath();gx.arc(px,py,rr,0,7);gx.fill();
+ // while you spin it, whichever country is nearest the middle is the pick (a little buzz as each one comes round)
+ if(GD||!GSNAP){let bi=-1,bz=-2;PLS.forEach((q,i)=>{if(!q.city||!q.city.v)return;const v=P3(q.city.v),z=v[2]-Math.abs(v[1])*.15;if(z>bz){bz=z;bi=i}});if(bi>=0&&bi!==pick){pick=bi;plabel();vib(6)}}
+ PINS=[];
+ // the middle of the globe, so you can see what you're aiming at
+ gx.strokeStyle='rgba(255,194,26,.35)';gx.lineWidth=2;gx.beginPath();gx.arc(cx,cy,R*.09,0,7);gx.stroke();
+ PLS.forEach((q,i)=>{if(!q.city||!q.city.v)return;const v=P3(q.city.v);if(v[2]<.05)return;const on=i===pick,px=cx+v[0]*R,py=cy-v[1]*R,rr=on?R*.05:R*.026;PINS.push([i,px,py]);gx.fillStyle=on?'#ffc21a':(P.has&&P.pl===i)?'#ffffff':'#e8382f';gx.beginPath();gx.arc(px,py,rr,0,7);gx.fill();
   if(on){const u=(t/1100)%1;gx.strokeStyle=`rgba(255,194,26,${1-u})`;gx.lineWidth=3;gx.beginPath();gx.arc(px,py,rr+u*R*.22,0,7);gx.stroke()}})}
 function frameP(t){const m=PM();if(m==='radio'&&!document.hidden)drawPGlobe(t);else{if(!sw)prot+=(pick-prot)*.2;ptok.forEach((d,i)=>{const da=(i-prot)*.48,vis=Math.max(0,1-Math.abs(da)/1.45),on=i===pick,R=PW*.62,x=PW/2+Math.sin(da)*R,y=R*(1-Math.cos(da))*1.05+30,s=(on?1.12:.78)*(.55+.45*vis);
   d.style.transform=`translate(${x-34}px,${y}px) scale(${s})`;d.style.opacity=vis;d.classList.toggle('on',on);d.classList.toggle('pl',m==='remote'?!!(rcur()&&BL()[i]&&rcur().pkg===BL()[i].pkg):P.has&&P.pl===i)})}
