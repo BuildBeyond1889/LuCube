@@ -65,3 +65,5 @@ body.skin-4 .f>.skt:after{content:'';position:absolute;inset:-6px;background:lin
 .f .scr{gap:8px;top:28px;right:5px}
 .f .scr b{position:relative;width:26px;height:40px;font-size:13px}
 .f .scr b:before{content:'';position:absolute;inset:-8px -5px}
+
+#pupbar{display:none;position:fixed;left:16px;right:16px;top:calc(56px + env(safe-area-inset-top,26px));z-index:70;padding:10px 12px;border-radius:12px;background:var(--y);color:#111;font:700 9px "Space Mono",monospace;letter-spacing:.1em;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5);cursor:pointer}

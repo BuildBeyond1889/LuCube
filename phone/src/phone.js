@@ -163,11 +163,23 @@ function drawSheet(){const sv=LS.get('lu_saver','mobile'),ev=!!LS.get('lu_even',
  document.querySelectorAll('#pin .sg b').forEach(b=>b.onclick=()=>{const k=b.parentNode.dataset.k,v=b.dataset.v;if(k==='saver')LS.set('lu_saver',v);if(k==='even'){LS.set('lu_even',v==='1');N('evenVolume',{on:v==='1'})}drawSheet()});
  document.querySelectorAll('#pin [data-skin]').forEach(b=>b.onclick=()=>{const i=+b.dataset.skin;if(i>unl){vib(40);return}LS.set('lu_skin',i);applySkin();drawSheet()});
  $('prw').onclick=()=>{window.luRebuildWorld();WORLD=null;radioFetch.busy=0;if(MODE==='radio')radioFetch();$('prw').textContent='DOWNLOADING…'};
- $('prem').onclick=()=>N('remoteSettings');$('palm').onclick=()=>N('alarmSettings');$('pupd').onclick=()=>N('openExternal',{url:'https://github.com/BuildBeyond1889/LuCube/releases/latest'});
+ $('prem').onclick=()=>N('remoteSettings');$('palm').onclick=()=>N('alarmSettings');$('pupd').onclick=()=>{if(UPD.n>MYB)doUpdate();else checkUpdate(true)};$('pupd').textContent=UPD.n>MYB?'⬇ UPDATE TO BUILD '+UPD.n:'CHECK FOR AN UPDATE';
  $('pset').onclick=async()=>{const q=$('ptown').value.trim();if(!q)return;$('pset').textContent='…';try{const j=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(q))).json(),r=(j.results||[])[0];
   if(!r){$('pset').textContent='NOT FOUND';return}ST.place={name:r.name,lat:r.latitude,lon:r.longitude};const st=LS.get('lu_state',{})||{};st.place=ST.place;LS.set('lu_state',st);fetchWX();$('pset').textContent='✓ '+r.name.toUpperCase()}catch(e){$('pset').textContent='NO INTERNET'}};
  $('psync').onclick=()=>{LS.set('lu_pc',{addr:$('paddr').value.trim(),code:$('pcode').value.trim()});pcSync()}}
-N('info').then(r=>{VERS=r.version||''});
+let MYB=0;const UPD={n:0,url:'',busy:false};
+N('info').then(r=>{VERS=(r.version||'')+(r.build?' (build '+r.build+')':'');MYB=r.build|0;setTimeout(()=>checkUpdate(false),5000)});
+// updates: the app asks GitHub for the newest build and installs it itself (no browser download needed)
+async function checkUpdate(loud){if(!HAS||!MYB)return;const say=t=>{const b=$('pupd');if(b)b.textContent=t};if(loud)say('CHECKING…');
+ try{const j=await (await fetch('https://api.github.com/repos/BuildBeyond1889/LuCube/releases/tags/phone-latest')).json(),m=/build (\d+)/i.exec(j.name||''),a=(j.assets||[]).find(x=>/\.apk$/i.test(x.name));
+  if(m&&a){UPD.n=+m[1];UPD.url=a.browser_download_url}
+  if(UPD.n>MYB){bar('NEW VERSION READY · BUILD '+UPD.n+' · TAP TO UPDATE');say('⬇ UPDATE TO BUILD '+UPD.n)}else if(loud)say('✓ UP TO DATE · BUILD '+MYB)}catch(e){if(loud)say('NO INTERNET · TRY AGAIN')}}
+function bar(t){let b=$('pupbar');if(!b){b=document.createElement('div');b.id='pupbar';b.onclick=()=>doUpdate();document.body.append(b)}b.textContent=t;b.style.display='block'}
+async function doUpdate(){if(UPD.busy||!UPD.url)return;UPD.busy=true;bar('DOWNLOADING THE UPDATE…');
+ try{const r=await window.LUNATIVE.installUpdate({url:UPD.url});
+  if(r.needsPermission)bar('ALLOW LU CUBE TO INSTALL UPDATES, THEN COME BACK AND TAP HERE');else bar('TAP UPDATE ON THE NEXT SCREEN · BUILD '+UPD.n)}
+ catch(e){bar('UPDATE DIDN\'T DOWNLOAD · TAP TO TRY AGAIN')}finally{UPD.busy=false}}
+if(HAS)window.LUNATIVE.addListener('update',e=>{if(e.pct>=0)bar('DOWNLOADING THE UPDATE · '+e.pct+'%')});
 
 // ---------- cube skins, unlocked by passport banners ----------
 function applySkin(){const sk=Math.min(LS.get('lu_skin',0)|0,typeof bnSeen==='number'?bnSeen:0);document.body.className=document.body.className.replace(/\bskin-\d\b/g,'').trim()+(sk?' skin-'+sk:'')}

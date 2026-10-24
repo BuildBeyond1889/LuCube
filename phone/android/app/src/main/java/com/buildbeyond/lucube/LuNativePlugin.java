@@ -454,7 +454,61 @@ public class LuNativePlugin extends Plugin {
     public void info(PluginCall call) {
         JSObject o = new JSObject();
         try { o.put("version", getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).versionName); } catch (Exception e) { o.put("version", "?"); }
+        try { o.put("build", (long) androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0))); } catch (Exception e) { o.put("build", 0); }
         o.put("sdk", Build.VERSION.SDK_INT);
         call.resolve(o);
+    }
+
+    // ---------- updates: download the new APK and hand it straight to Android's installer ----------
+    @PluginMethod
+    public void installUpdate(PluginCall call) {
+        String url = call.getString("url", "");
+        new Thread(() -> {
+            HttpURLConnection con = null;
+            try {
+                File out = new File(getContext().getCacheDir(), "LuCube-update.apk"), tmp = new File(out.getPath() + ".part");
+                String u = url;
+                for (int hop = 0; hop < 6; hop++) { // GitHub sends release files through a redirect
+                    con = (HttpURLConnection) new URL(u).openConnection();
+                    con.setInstanceFollowRedirects(false);
+                    con.setConnectTimeout(15000);
+                    con.setReadTimeout(60000);
+                    int code = con.getResponseCode();
+                    if (code >= 300 && code < 400 && con.getHeaderField("Location") != null) { u = new URL(new URL(u), con.getHeaderField("Location")).toString(); con.disconnect(); continue; }
+                    if (code != 200) throw new Exception("GitHub answered " + code);
+                    break;
+                }
+                long total = con.getContentLengthLong(), n = 0, lastPct = -1;
+                try (InputStream in = con.getInputStream(); OutputStream os = new FileOutputStream(tmp)) {
+                    byte[] buf = new byte[65536];
+                    int r;
+                    while ((r = in.read(buf)) > 0) {
+                        os.write(buf, 0, r); n += r;
+                        long pct = total > 0 ? n * 100 / total : -1;
+                        if (pct != lastPct) { lastPct = pct; JSObject e = new JSObject(); e.put("pct", pct); notifyListeners("update", e); }
+                    }
+                }
+                if (out.exists()) out.delete();
+                if (!tmp.renameTo(out)) throw new Exception("Couldn't save the update");
+                main.post(() -> {
+                    JSObject r = new JSObject();
+                    try {
+                        if (Build.VERSION.SDK_INT >= 26 && !getContext().getPackageManager().canRequestPackageInstalls()) {
+                            getActivity().startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName())));
+                            r.put("needsPermission", true);
+                            call.resolve(r);
+                            return;
+                        }
+                        Uri apk = androidx.core.content.FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", out);
+                        Intent i = new Intent(Intent.ACTION_VIEW).setDataAndType(apk, "application/vnd.android.package-archive")
+                                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        getActivity().startActivity(i);
+                        r.put("ok", true);
+                        call.resolve(r);
+                    } catch (Exception e) { call.reject(String.valueOf(e.getMessage())); }
+                });
+            } catch (Exception e) { call.reject(String.valueOf(e.getMessage())); }
+            finally { if (con != null) con.disconnect(); }
+        }).start();
     }
 }
