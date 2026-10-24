@@ -32,9 +32,9 @@ html = swap(html, "const src='/api/radio/play?u='+encodeURIComponent(x.u)+'&i='+
 # the wake-up alarm is the phone's own alarm (it rings with the app closed)
 html = swap(html, "setInterval(()=>{if(!AL.on||!AL.src||!WORLD)return;", "setInterval(()=>{if(window.LUNATIVE||!AL.on||!AL.src||!WORLD)return;")
 html = re.sub(r'<meta name="viewport"[^>]*>', '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">', html, count=1)
-html = swap(html, "</head>", "<style>\n" + read(SRC, "phone.css") + "\n</style>\n<script>\n" + read(SRC, "native.js") + "\n</script>\n</head>")
+html = swap(html, "</head>", "<style>\n" + read(SRC, "phone.css") + "\n" + read(SRC, "intro.css") + "\n</style>\n<script>\n" + read(SRC, "native.js") + "\n</script>\n</head>")
 i = html.rindex("</body>")
-html = html[:i] + "<script>\n" + read(SRC, "phone.js") + "\n</script>\n" + html[i:]
+html = html[:i] + "<script>\n" + read(SRC, "phone.js") + "\n</script>\n<script>\n" + read(SRC, "intro.js") + "\n</script>\n" + html[i:]
 
 if os.path.isdir(WWW):
     shutil.rmtree(WWW)
