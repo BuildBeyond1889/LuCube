@@ -14,13 +14,13 @@ body.lintro-hide>*:not(#lintro){visibility:hidden}
 .li-scene{position:absolute;left:-42px;top:-42px;width:84px;height:84px;perspective:900px}
 .li-cube{position:absolute;left:42px;top:42px;width:0;height:0;transform-style:preserve-3d;transform-origin:0 0 42px}
 /* crisp black outlines: each face's colour stops inside its border; symbols are painted as part of their face */
-.lf{position:absolute;left:-42px;top:-42px;width:84px;height:84px;box-sizing:border-box;border:5px solid #111;background-clip:padding-box !important;outline:1px solid transparent;transform-style:flat}
-.lf-front{transform-style:preserve-3d}
-.lf>i{position:absolute;inset:16%;display:block;backface-visibility:hidden}.lf>i svg{width:100%;height:100%;display:block}
-.lf-front>i{transform:translateZ(.6px)}.lf-front>i.bk{transform:translateZ(-.6px) rotateY(180deg)}
-.lf-left{transform-origin:100% 50%;transform:translateX(-84px)}
-.lf-right{transform-origin:0 50%;transform:translateX(84px)}
-.lf-top{transform-origin:50% 100%;transform:translateY(-84px)}
-.lf-front{transform-origin:50% 0;transform:translateY(84px)}
-.lf-lid{left:-5px;top:-5px;transform-origin:50% 0;transform:translateY(84px)}
+#lintro .lf{position:absolute;left:-42px;top:-42px;width:84px;height:84px;box-sizing:border-box;border:5px solid #111;background-clip:padding-box !important;outline:1px solid transparent;transform-style:flat}
+#lintro .lf-front{transform-style:preserve-3d}
+#lintro .lf>i{position:absolute;inset:16%;display:block;backface-visibility:hidden}#lintro .lf>i svg{width:100%;height:100%;display:block}
+#lintro .lf-front>i{transform:translateZ(.6px)}#lintro .lf-front>i.bk{transform:translateZ(-.6px) rotateY(180deg)}
+#lintro .lf-left{transform-origin:100% 50%;transform:translateX(-84px)}
+#lintro .lf-right{transform-origin:0 50%;transform:translateX(84px)}
+#lintro .lf-top{transform-origin:50% 100%;transform:translateY(-84px)}
+#lintro .lf-front{transform-origin:50% 0;transform:translateY(84px)}
+#lintro .lf-lid{left:-5px;top:-5px;transform-origin:50% 0;transform:translateY(84px)}
 .li-skip{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom,0px));text-align:center;font:700 9px "Space Mono",monospace;letter-spacing:.24em;color:rgba(140,148,160,.6);z-index:6}

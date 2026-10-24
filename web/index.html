@@ -76,6 +76,8 @@
 .hasbn .big{line-height:.9!important}.hasbn .ctrl b{height:34px!important}.hasbn .vol{margin-top:0!important}.hasbn .rk{margin-top:3px!important}
 .hasbn .vol b{height:22px!important}.hasbn .ctrl{margin:2px 0 2px!important}.hasbn .mq{margin-top:3px!important}
 
+.pcatch{padding-right:40px!important}
+
 </style>
 <style>
 :root{--y:#ffc21a;--o:#ff7a1a;--r:#e0281a;--b:#2f6be8;--g:#cfd6df;--g2:#b9c1cc;--k:#111}
@@ -592,20 +594,20 @@ const _ln=lookNow;lookNow=function(){if(MODE!=='radio'||!P.has)return _ln();cons
  if(k===lookKey)return;lookKey=k;document.body.className=document.body.className.replace(/\b(ph|wx)-\S+/g,'').trim()+' ph-'+ph+' wx-'+w};
 addEventListener('keydown',e=>{if((e.key==='r'||e.key==='R')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/INPUT|TEXTAREA/.test((e.target||{}).tagName||''))switchMode()});
 // ---------- song catcher: ♡ under shuffle catches the song the station is playing; the Passport face keeps the list ----------
-var CAUGHTL=[],CAUGHTV=false;
+var CAUGHTL=[],CAUGHTV=false,CAUGHTOFF=0;
 const CST=()=>window.catchStore||{get:()=>CAUGHTL,set:L=>{CAUGHTL=L;saveState()}};
 function catchToggle(){const s=song();if(!P.has||!s.nowT)return;const L=CST().get().slice(),i=L.findIndex(x=>x.t===s.nowT);
  if(i>=0)L.splice(i,1);else{const c=cityOf(s);L.push({t:s.nowT,st:s.t,n:c?c.n:'',at:Date.now()})}CST().set(L.slice(-200));try{navigator.vibrate&&navigator.vibrate(i>=0?15:30)}catch(e){}renderFaces()}
-function caughtHTML(n){const all=CST().get(),L=all.map((x,i)=>[x,i]).reverse().slice(0,n);
+function caughtHTML(n){const all=CST().get(),R=all.map((x,i)=>[x,i]).reverse();CAUGHTOFF=Math.max(0,Math.min(CAUGHTOFF,Math.max(0,R.length-n)));const L=R.slice(CAUGHTOFF,CAUGHTOFF+n);
  if(!L.length)return `<div style="padding:16px 14px;font:700 9px/1.7 'Space Mono'">Nothing caught yet. When a station shows what's playing, tap the <b>♡</b> under shuffle on the On Air face.</div>`;
- return `<div class="pl pcatch">${L.map(([x,i])=>`<div><span><b>♥</b>${esc(short(x.t,30))}<small>${esc(short([x.st,x.n].filter(Boolean).join(' · '),34))}</small></span><span><em data-act="cs:sp:${i}">SPOTIFY</em><em data-act="cs:yt:${i}">YT</em></span></div>`).join('')}</div>`}
+ return SCR('ccs',CAUGHTOFF>0,CAUGHTOFF+n<R.length)+`<div class="pl pcatch">${L.map(([x,i])=>`<div><span><b>♥</b>${esc(short(x.t,30))}<small>${esc(short([x.st,x.n].filter(Boolean).join(' · '),34))}</small></span><span><em data-act="cs:sp:${i}">SPOTIFY</em><em data-act="cs:yt:${i}">YT</em></span></div>`).join('')}</div>`}
 function openCaught(kind,i){const x=CST().get()[i];if(!x)return;const q=x.t.replace(/\s*[-–|]\s*/g,' ').trim();if(window.openOut)return openOut(kind,q);
  window.open(kind==='sp'?'https://open.spotify.com/search/'+encodeURIComponent(q):'https://music.youtube.com/search?q='+encodeURIComponent(q),'_blank')}
 const _rrfC=radRenderFaces;radRenderFaces=function(){_rrfC();const s=song(),has=P.has&&!!s.nowT,got=has&&CST().get().some(x=>x.t===s.nowT),n=CST().get().length;
  F_NOW.insertAdjacentHTML('beforeend',`<b class="star heart${got?' on':''}${has?'':' off'}" data-act="catch" title="${has?'catch this song':'this station doesn\'t say what\'s playing'}">${got?'♥':'♡'}</b>`);
- if(CAUGHTV){F_VIZ.style.background='var(--g)';F_VIZ.innerHTML=TB('♥ SONG CATCHER · '+n,'var(--b)')+caughtHTML(6)+`<b class="pcv" data-act="caught">‹ PASSPORT</b>`}
+ if(CAUGHTV){F_VIZ.style.background='var(--g)';F_VIZ.innerHTML=TB('♥ SONG CATCHER · '+n,'var(--b)')+caughtHTML(4)+`<b class="pcv" data-act="caught">‹ PASSPORT</b>`}
  else F_VIZ.insertAdjacentHTML('beforeend',`<b class="pcv" data-act="caught">♥ CAUGHT ${n}</b>`)};
-const _actC=act;act=function(a){const p=a.split(':');if(p[0]==='catch'){catchToggle();return}if(p[0]==='caught'){CAUGHTV=!CAUGHTV;renderFaces();return}if(p[0]==='cs'){openCaught(p[1],+p[2]);return}return _actC(a)};
+const _actC=act;act=function(a){const p=a.split(':');if(p[0]==='catch'){catchToggle();return}if(p[0]==='caught'){CAUGHTV=!CAUGHTV;CAUGHTOFF=0;renderFaces();return}if(p[0]==='ccs'){CAUGHTOFF=Math.max(0,CAUGHTOFF+4*(+p[1]));renderFaces();return}if(p[0]==='cs'){openCaught(p[1],+p[2]);return}return _actC(a)};
 function radioBoot(){const r=ST.radio||{};CAUGHTL=Array.isArray(r.caught)?r.caught.filter(x=>x&&x.t):[];if(r.finfo&&typeof r.finfo==='object')RFINFO=r.finfo;if(r.pass&&typeof r.pass==='object')PASS=r.pass;if(r.al)Object.assign(AL,r.al);bnSeen=r.tier||0;RFAVS=(r.favs||[]).filter(x=>typeof x==='string');RLASTSRC=(r.last||{}).src||'';RGI=Math.min(GENRES.length-1,Math.max(0,r.gi|0));RBOOT=true;
  document.getElementById('swp').onclick=()=>switchMode();if(ST.mode==='radio')switchMode(true);else if(r.last||Object.keys(PASS).length)setTimeout(radioFetch,4000)}
 
