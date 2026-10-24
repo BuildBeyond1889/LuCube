@@ -53,14 +53,15 @@ function catchNow(){const s=song();if(!s.nowT)return;const L=CAUGHT();if(L.some(
 function openSearch(kind,i){const x=CAUGHT()[i];if(!x)return;const q=x.t.replace(/\s*[-–|]\s*/g,' ').trim();
  if(kind==='sp')N('openExternal',{url:'spotify:search:'+q}).then(r=>{if(!r.ok)N('openExternal',{url:'https://open.spotify.com/search/'+encodeURIComponent(q)})});
  else N('openExternal',{url:'https://music.youtube.com/search?q='+encodeURIComponent(q)})}
-let CAUGHTV=false;
+// the cube's Song Catcher keeps its list on the phone, and opens finds in the Spotify / YouTube Music apps
+window.catchStore={get:CAUGHT,set:L=>LS.set('lu_caught',L)};
+window.openOut=(kind,q)=>{if(kind==='sp')N('openExternal',{url:'spotify:search:'+q}).then(r=>{if(!r.ok)N('openExternal',{url:'https://open.spotify.com/search/'+encodeURIComponent(q)})});else N('openExternal',{url:'https://music.youtube.com/search?q='+encodeURIComponent(q)})};
 
 // ---------- the radio's faces get a few phone extras ----------
 const _rrf=radRenderFaces;radRenderFaces=function(){_rrf();if(REMOTE)return;
- const s=song(),has=P.has&&!!s.nowT,got=has&&CAUGHT().some(x=>x.t===s.nowT),b=document.createElement('b');b.className='star heart'+(got?' on':'')+(has?'':' off');b.dataset.act='catch';b.title=has?'catch this song':'this station doesn\'t say what\'s playing';b.textContent=got?'♥':'♡';F_NOW.append(b);
+
  const sun=!!LS.get('lu_sun',false),w=document.createElement('b');w.className='psun'+(sun?' on':'');w.dataset.act='al:sun';w.textContent=sun?'☀ SUNRISE ON':'☀ SUNRISE';F_LYR.append(w);
- if(CAUGHTV){F_VIZ.style.background='var(--g)';F_VIZ.innerHTML=TB('♥ SONG CATCHER · '+CAUGHT().length,'var(--b)')+caughtList(6)+`<b class="pcv" data-act="caught">‹ PASSPORT</b>`}
- else{const c=document.createElement('b');c.className='pcv';c.dataset.act='caught';c.textContent='♥ CAUGHT '+CAUGHT().length;F_VIZ.append(c)}};
+};
 
 // ---------- one switch, three modes, same light sweep; each mode keeps its place ----------
 function wipe(change){const faces=[...document.querySelectorAll('.f')].filter(f=>/^F_/.test(f.id)),snap=faces.map(f=>({html:f.innerHTML,bg:f.style.background}));change();
@@ -85,8 +86,6 @@ const _act=act;act=function(a){const p=a.split(':');
  if(p[0]==='lib'){relib();return}
  if(p[0]==='rem'){const s=rcur();if(p[1]==='allow'){N('remoteSettings');return}if(p[1]==='pick'){const x=RS[+p[2]];if(x){RSEL=x.pkg;renderFaces();goFace('NOW PLAYING')}return}
   if(s){const c=p[1]==='play'?(s.playing?'pause':'play'):p[1];N('remoteCmd',{pkg:s.pkg,cmd:c});s.playing=c==='play'?true:c==='pause'?false:s.playing;renderFaces();setTimeout(rpoll,350);setTimeout(rpoll,1200)}return}
- if(p[0]==='catch'){catchNow();return}
- if(p[0]==='caught'){CAUGHTV=!CAUGHTV;renderFaces();return}
  if(p[0]==='cs'){openSearch(p[1],+p[2]);return}
  if(a==='al:sun'){LS.set('lu_sun',!LS.get('lu_sun',false));if(LS.get('lu_sun'))AL.on=true;saveState();renderFaces();syncAlarm(true);return}
  if(REMOTE&&p[0]!=='go'){const s=rcur();if(!s)return;if(p[0]==='play'||p[0]==='next'||p[0]==='prev')return act('rem:'+p[0]);if(p[0]==='pl'){const x=RS[+p[1]];if(x){RSEL=x.pkg;renderFaces();goFace('NOW PLAYING')}}return}
@@ -103,6 +102,7 @@ const dots=$('pdots');ORDER.forEach(n=>{const d=document.createElement('i');d.da
 document.querySelectorAll('#pseg b').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
 $('pgear').onclick=()=>sheet(true);$('psheet').onclick=e=>{if(e.target.id==='psheet')sheet(false)};
 $('pfind').onclick=()=>{const f=document.querySelector('.find');const on=!document.body.classList.contains('pfindon');document.body.classList.toggle('pfindon',on);if(on&&f){const i=f.querySelector('input');setTimeout(()=>i&&i.focus(),50)}};
+document.addEventListener('pointerdown',e=>{if(!document.body.classList.contains('pfindon'))return;const f=document.querySelector('.find');if((f&&f.contains(e.target))||e.target.closest('#pfind'))return;document.body.classList.remove('pfindon');const i=f&&f.querySelector('input');if(i)i.blur()},true);
 function topUI(){const m=PM();$('ptitle').innerHTML=(m==='lu'?'LU':m==='radio'?'RADIO':'REMOTE')+'<sup>3</sup>';$('ptitle').title=(m==='lu'?'Lu':m==='radio'?'Radio':'Remote')+' Cube';document.querySelectorAll('#pseg b').forEach(b=>b.classList.toggle('on',b.dataset.m===m));document.body.classList.remove('pfindon')}
 
 // ---------- bottom: thumb wheel (Lu, Remote) or the globe (Radio) ----------

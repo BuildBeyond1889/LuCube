@@ -51,6 +51,7 @@ function open(url) {
   win.setBounds(L.bounds);
   win.setIgnoreMouseEvents(true, { forward: true }); // see-through to clicks until the pointer is over the wheel or cube
   win.loadURL(url + "?desk=1#" + encodeURIComponent(JSON.stringify(L.list)));
+  win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; }); // Song Catcher links open in your browser
   win.on("closed", () => { stop(); app.quit(); });
   globalShortcut.register("CommandOrControl+Alt+M", front);
   // media keys (and Fn+F5/F6/F7-style laptop keys that send them), plus backups if your laptop's keys don't:

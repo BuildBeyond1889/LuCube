@@ -678,17 +678,18 @@ def sync_merge(mine):
             favs.append(relay(u))
             have.add(u)
     r["favs"] = favs
-    caught = st.get("caught") if isinstance(st.get("caught"), list) else []
+    caught = r.get("caught") if isinstance(r.get("caught"), list) else []
+    caught += [c for c in st.pop("caught", []) or [] if isinstance(c, dict)]  # older syncs kept them at the top
     seen = {(c.get("t"), c.get("at")) for c in caught if isinstance(c, dict)}
     for c in mine.get("caught") or []:
         if isinstance(c, dict) and (c.get("t"), c.get("at")) not in seen:
             caught.append(c)
             seen.add((c.get("t"), c.get("at")))
-    st["caught"] = sorted(caught, key=lambda c: c.get("at") or 0)[-200:]
+    r["caught"] = sorted(caught, key=lambda c: c.get("at") or 0)[-200:]
     with open(STATE + ".tmp", "w", encoding="utf-8") as w:
         json.dump(st, w)
     os.replace(STATE + ".tmp", STATE)
-    return {"pass": pas, "rfavs": [raw(x) for x in favs], "caught": st["caught"]}
+    return {"pass": pas, "rfavs": [raw(x) for x in favs], "caught": r["caught"]}
 
 
 class SyncH(BaseHTTPRequestHandler):
