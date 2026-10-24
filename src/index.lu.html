@@ -1,0 +1,338 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lu Cube</title>
+<style>@font-face{font-family:Anton;src:url(fonts/anton-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"Space Mono";font-weight:400;src:url(fonts/space-mono-latin-400-normal.woff2) format("woff2")}@font-face{font-family:"Space Mono";font-weight:700;src:url(fonts/space-mono-latin-700-normal.woff2) format("woff2")}@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2) format("woff2")}@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2) format("woff2")}.qbtn{width:24px;height:24px;padding:0!important;border-radius:50%!important;border:1px solid rgba(255,194,26,.65)!important;background:#0b0d14!important;color:#ffc21a!important;font:700 11px/22px 'Space Mono',monospace!important;text-align:center;box-shadow:0 0 12px rgba(255,194,26,.25)}
+.qbtn:hover{background:#e0281a!important;color:#fff!important;border-color:#e0281a!important;box-shadow:0 0 14px rgba(224,40,26,.55)}
+</style>
+<style>
+:root{--y:#ffc21a;--o:#ff7a1a;--r:#e0281a;--b:#2f6be8;--g:#cfd6df;--g2:#b9c1cc;--k:#111}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:#0b0c0e;color:#ddd;font:13px Inter,sans-serif;overflow:hidden;user-select:none}
+.desk{position:fixed;inset:0;background:radial-gradient(ellipse at 30% 30%,#1b1f26,#0b0c0e 70%)}
+.win{position:absolute;left:6%;top:14%;width:44%;height:56%;background:#15181d;border:1px solid #2a2f37;border-radius:10px;box-shadow:0 30px 60px rgba(0,0,0,.5)}
+.win:before{content:"";display:block;height:30px;border-bottom:1px solid #2a2f37}.win i{display:block;height:10px;margin:16px 22px 0;background:#232831;border-radius:4px}.win i:nth-child(2){width:60%}.win i:nth-child(3){width:75%}
+.intro{position:fixed;left:24px;top:18px;z-index:3;max-width:520px}.intro h1{margin:0;font:400 30px Anton,sans-serif;text-transform:uppercase;color:#fff}.intro h1 em{font-style:normal;color:var(--y)}.intro p{margin:6px 0 0;color:#8a919c}
+.keys{position:fixed;left:24px;bottom:16px;color:#6b727d;font:11px "Space Mono",monospace;z-index:3}
+.wheelUI{transition:opacity .45s ease,transform .45s ease}.ring.wheelUI,.back.wheelUI,.qbtn.wheelUI{transition:opacity .45s ease}body.cubemode .wheelUI{opacity:0!important;pointer-events:none!important;transform:translateX(40px)}
+canvas#wheel{position:fixed;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
+#toks .tok{touch-action:none;position:fixed;left:0;top:0;width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50%;z-index:6;cursor:pointer;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.5);will-change:transform;transition:opacity .3s}
+.tok .art{position:absolute;inset:0;border-radius:50%}.tok.play:after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 4px #ffc21a}
+.now{position:fixed;left:0;top:0;z-index:7;pointer-events:none;font:400 38px/1 Anton,sans-serif;text-transform:uppercase;color:#fff;transform-origin:100% 50%;text-align:right;width:420px}
+.now{text-shadow:0 1px 2px #000,0 0 14px rgba(0,0,0,.85),0 0 4px rgba(0,0,0,.9)}.now small{display:block;font:700 10px "Space Mono",monospace;color:#9aa1ab;letter-spacing:.12em;margin-bottom:4px}.now svg{display:block;margin:2px 0 0 auto}.now em{display:block;font:400 13px Inter;color:#9aa1ab;text-transform:none;font-style:normal;margin-top:4px}
+html.dk,html.dk body{background:transparent!important}html.dk .desk,html.dk .intro,html.dk .keys{display:none}
+.qbtn{position:fixed;left:0;top:0;z-index:8;font:700 11px "Space Mono",monospace;background:#111;color:#ddd;border:1px solid #444;border-radius:99px;padding:6px 10px;cursor:pointer;display:none}html.dk .qbtn{display:block}
+.back{position:fixed;z-index:8;font:700 11px "Space Mono",monospace;background:#111;color:#ddd;border:1px solid #444;border-radius:99px;padding:6px 12px;cursor:pointer;left:0;top:0}
+.ring{position:fixed;left:0;top:0;z-index:5;pointer-events:none;width:132px;height:132px;margin:0}
+.stage{position:fixed;inset:0;perspective:1600px;z-index:8;pointer-events:none}.cubeHold{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d;pointer-events:none}.pad{position:fixed;left:0;top:0;z-index:10;width:330px;height:330px;margin:-165px 0 0 -165px;cursor:grab;touch-action:none;display:none}.pad.hand{cursor:pointer}
+.cube{position:absolute;transform-style:preserve-3d}
+.cname{position:fixed;z-index:9;transition:opacity .35s;font:400 18px Anton,sans-serif;color:var(--y);letter-spacing:.05em;pointer-events:none;transform:translateX(-50%);white-space:nowrap}
+.dock{position:fixed;z-index:9;transition:opacity .35s;font:700 10px "Space Mono",monospace;background:#111;color:#ddd;border:1px solid #444;border-radius:99px;padding:5px 10px;cursor:pointer;transform:translateX(-50%)}
+.f{position:absolute;left:-150px;top:-150px;width:300px;height:300px;overflow:hidden;background:var(--g);color:var(--k);border:2px solid var(--k);backface-visibility:hidden;font:10px "Space Mono",monospace}
+.f.fr{transform:translateZ(150px)}.f.bk{transform:rotateY(180deg) translateZ(150px)}.f.rt{transform:rotateY(90deg) translateZ(150px)}.f.lf{transform:rotateY(-90deg) translateZ(150px)}.f.tp{transform:rotateX(90deg) translateZ(150px)}.f.bt{transform:rotateX(-90deg) translateZ(150px)}
+/* retro window chrome */
+.tb{display:flex;align-items:center;gap:4px;height:20px;padding:0 6px;background:var(--b);color:#fff;border-bottom:2px solid var(--k);font:700 9px "Space Mono",monospace;letter-spacing:.06em}
+.tb i{width:8px;height:8px;border:1.5px solid var(--k);display:inline-block}.tb i:nth-child(1){background:var(--r)}.tb i:nth-child(2){background:var(--y)}.tb i:nth-child(3){background:var(--o)}.tb b{margin-left:6px;flex:1}.tb s{text-decoration:none;font-size:13px;padding:0 3px;cursor:pointer}.vol{display:flex;align-items:center;gap:8px;margin:2px 10px 0}.vol b{width:34px;height:26px;border:2px solid var(--k);display:grid;place-items:center;background:#fff;font-size:13px}.vol .vb{flex:1;height:12px;border:2px solid var(--k);background:#fff}.vol .vb i{display:block;height:100%;background:var(--b)}.star{position:absolute;right:10px;top:30px;width:34px;height:34px;border:2px solid var(--k);background:#fff;display:grid;place-items:center;font-size:20px;line-height:1}.star.on{background:var(--k);color:var(--y)}.star.shuf{top:70px;font-size:18px}
+.bars{display:flex;height:9px}.bars span{flex:1;border-right:1.5px solid var(--k)}.bars span:last-child{border:0}
+.big{font:400 46px/0.88 Anton,sans-serif;text-transform:uppercase;letter-spacing:-.01em}.mid{font:400 22px/1 Anton,sans-serif;text-transform:uppercase}
+.mini{position:fixed;left:0;top:0;z-index:11;pointer-events:none;display:grid;place-items:center;background:var(--y);color:var(--k);border:3px solid var(--k);font:400 40px/1 Anton,sans-serif;opacity:0;transition:opacity .25s}.mini.on{opacity:1}
+.opts{display:flex;gap:6px;margin:8px 10px 0}.opts .pill{cursor:pointer}.pill{display:inline-block;background:var(--k);color:#fff;border-radius:99px;padding:3px 10px;font:700 8px "Space Mono",monospace;letter-spacing:.08em}
+.code{display:flex;gap:1.5px;height:16px;align-items:stretch}.code i{background:var(--k);display:block}
+.hex{width:62px;height:62px;position:relative}.hex:before{content:"";position:absolute;inset:0;background:var(--k);clip-path:polygon(25% 4%,75% 4%,100% 50%,75% 96%,25% 96%,0 50%)}.hex:after{content:"";position:absolute;inset:20px;border-radius:50%;background:var(--g);box-shadow:0 0 0 6px var(--k) inset}
+.lyr{padding:14px 14px 0;transition:transform .4s}.lyr div{font:400 19px/1.18 Anton,sans-serif;text-transform:uppercase;color:#7d8794;transition:color .4s,transform .4s}.lyr div.on{color:var(--k);transform:translateX(6px)}.lyr div.on:before{content:"▶ ";color:var(--r);font-size:13px}
+.lib{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px}.lib div{aspect-ratio:1;min-width:0;overflow:hidden;border:2px solid var(--k);display:flex;align-items:flex-end;padding:4px;font:400 11px/1 Anton,sans-serif;text-transform:uppercase}
+.pl{padding:6px 8px}.pl div{display:flex;justify-content:space-between;align-items:center;padding:5px 6px;border-bottom:1.5px solid var(--g2);font:700 10px "Space Mono",monospace}.pl div.on{background:var(--y);border:2px solid var(--k)}.pl span:first-child b{font:400 14px Anton,sans-serif;text-transform:uppercase;margin-right:6px}
+.viz{display:flex;align-items:flex-end;gap:5px;height:150px;padding:0 10px}.viz i{flex:1;background:var(--k);display:block;transition:height .08s}.viz i:nth-child(4n+1){background:var(--r)}.viz i:nth-child(4n+2){background:var(--o)}.viz i:nth-child(4n+3){background:var(--y)}
+.prog{height:16px;cursor:pointer;border:2px solid var(--k);background:#fff;margin:0 10px}.prog i{display:block;height:100%;background:var(--r)}
+.ctrl{display:flex;justify-content:center;gap:10px;margin:10px 0}.ctrl b{width:44px;height:34px;border:2px solid var(--k);display:grid;place-items:center;font-size:14px;background:#fff}.ctrl b.p{background:var(--y);width:60px}
+
+[data-act]{cursor:pointer}[data-act].hov{outline:2px solid var(--k);outline-offset:-2px;filter:brightness(1.06)}
+.pl div[data-act].hov{background:#fff}.lib div[data-act]{position:relative}.lib div span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere;max-width:100%}.lib div.on{box-shadow:inset 0 0 0 4px var(--k)}
+.scr{position:absolute;right:6px;top:26px;display:flex;flex-direction:column;gap:4px;z-index:2}.scr b{width:22px;height:20px;border:2px solid var(--k);background:#fff;display:grid;place-items:center;font-size:9px}.scr b.off{opacity:.3}.f .pl{padding-right:34px}.f .lib{margin-right:30px}
+.hnd{position:fixed;left:0;top:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--y);border:2px solid #111;box-shadow:0 0 0 2px rgba(255,194,26,.25);z-index:12;cursor:nwse-resize;opacity:0;transition:opacity .35s,transform 0s;touch-action:none;pointer-events:none}.hnd.on{opacity:1;pointer-events:auto}.hnd:hover{background:#fff}
+.vizc{position:absolute;left:50%;top:58%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%}
+/* weather + time of day, laid over the cube's faces */
+.f:before,.f:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:20;transition:opacity 1.5s,background 1.5s}
+body.ph-night .f:before{background:linear-gradient(160deg,rgba(20,30,90,.42),rgba(5,8,30,.35));mix-blend-mode:multiply}
+body.ph-dusk .f:before{background:linear-gradient(160deg,rgba(255,110,60,.22),rgba(110,40,140,.25));mix-blend-mode:multiply}
+body.ph-dawn .f:before{background:linear-gradient(200deg,rgba(255,170,120,.2),rgba(120,160,255,.15));mix-blend-mode:multiply}
+body.ph-day.wx-clear .f:after{background:radial-gradient(circle at 92% 6%,rgba(255,250,210,.55),transparent 38%)}
+body.wx-cloud .f:after{background:linear-gradient(180deg,rgba(200,205,215,.28),rgba(120,125,135,.12))}
+body.wx-fog .f:after{background:linear-gradient(180deg,rgba(225,228,235,.35),rgba(225,228,235,.18))}
+body.wx-rain .f:after,body.wx-storm .f:after{background:repeating-linear-gradient(103deg,transparent 0 13px,rgba(190,215,255,.32) 13px 14px,transparent 14px 31px);background-size:62px 62px;animation:rain .55s linear infinite}
+body.wx-storm .f:before{animation:flash 7s infinite}
+body.wx-snow .f:after{background-image:radial-gradient(circle,rgba(255,255,255,.95) 0 1.6px,transparent 2.2px),radial-gradient(circle,rgba(255,255,255,.7) 0 1.1px,transparent 1.6px);background-size:46px 46px,29px 29px;animation:snow 4s linear infinite}
+@keyframes rain{to{background-position:-14px 62px}}@keyframes snow{to{background-position:12px 46px,-8px 58px}}@keyframes flash{0%,92%,96%,100%{background:transparent}93%,95%{background:rgba(255,255,255,.55)}}
+</style></head><body>
+<div class="desk"></div>
+<div class="intro"><h1>Lu <em>Cube</em></h1><p id="libinfo">Reading your Music folder…</p></div>
+<canvas id="wheel" class="wheelUI"></canvas><div id="toks" class="wheelUI"></div>
+<svg class="ring wheelUI" id="ring" viewBox="0 0 132 132"><circle cx="66" cy="66" r="61" fill="none" stroke="#333" stroke-width="3"/><circle id="ringp" cx="66" cy="66" r="61" fill="none" stroke="#ffc21a" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 66 66)"/></svg>
+<div class="now wheelUI" id="now"><small id="nowk">PLAYLIST</small><span id="nowt"></span><svg width="260" height="14" viewBox="0 0 260 14"><path id="squig" fill="none" stroke="#e0281a" stroke-width="3" stroke-linecap="round"/></svg><em id="nowsub"></em></div>
+<button class="back wheelUI" id="back" style="display:none">‹ PLAYLISTS</button><button class="qbtn wheelUI" id="qbtn" title="close Lu Cube">✕</button>
+<div class="stage" id="stage"><div class="cubeHold" id="hold"><div class="cube" id="cube">
+ <div class="f fr" data-n="COVER" id="F_COVER"></div><div class="f bk" data-n="NOW PLAYING" id="F_NOW"></div><div class="f tp" data-n="LYRICS" id="F_LYR"></div>
+ <div class="f bt" data-n="VISUALISER" id="F_VIZ"></div><div class="f rt" data-n="LIBRARY" id="F_LIB"></div><div class="f lf" data-n="PLAYLIST" id="F_PL"></div></div></div></div>
+<div class="pad" id="pad"></div><div class="mini" id="mini">▶</div><div class="cname" id="cname" style="display:none"></div><button class="dock" id="dock" style="display:none">⇢ BACK TO THE WHEEL</button>
+<div class="keys">SCROLL to move · CLICK to open / play · ESC goes back · CTRL+DRAG moves the wheel or the cube · drag a cube CORNER to resize · DRAG the wheel out → cube · drag the cube to spin, click its buttons, scroll over it to turn a face</div>
+<script>
+// ===================== music (all made up for the concept) =====================
+const PAL=['#ffc21a','#ff7a1a','#e0281a','#2f6be8','#cfd6df','#111'];
+const ART=(i,k)=>{const a=PAL[i%6],b=PAL[(i+2)%6],c=PAL[(i+3)%6],s=[`linear-gradient(${a} 0 38%,${b} 38% 55%,${c} 55%)`,`repeating-linear-gradient(135deg,${a} 0 12px,${b} 12px 18px)`,`radial-gradient(circle,#111 0 18%,${a} 18% 46%,${b} 46% 60%,#111 60%)`,`conic-gradient(${a} 0 25%,${b} 25% 50%,${a} 50% 75%,${b} 75%)`,`linear-gradient(90deg,${a} 0 50%,${b} 50%)`,`repeating-radial-gradient(circle,${a} 0 6px,${c} 6px 9px)`,`linear-gradient(45deg,${a} 0 33%,#fff 33% 66%,${b} 66%)`];return s[(i+k)%s.length]};
+let PLS=[];
+const P={pl:0,idx:0,playing:false,el:0,has:false};let AU=new Audio(),AU2=new Audio();AU.preload=AU2.preload='auto';
+let UVOL=1,sleepF=1,XF=0,xf=null,SLEEP=null,MINI=false;
+// listen to whichever player is the current one (the other may still be fading out the last song)
+const ON=(ev,fn)=>[AU,AU2].forEach(el=>el.addEventListener(ev,e=>{if(e.target===AU)fn(e)}));
+function mix(){const b=UVOL*sleepF;if(xf){const u=Math.min(1,(performance.now()-xf.t0)/xf.dur);AU.volume=b*u;xf.old.volume=b*(1-u)}else AU.volume=b}
+const song=()=>(PLS[P.pl]||{songs:[{t:'',a:'',d:0}]}).songs[P.idx]||{t:'',a:'',d:0};
+const short=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s;
+// lyrics: a song.lrc next to the song gives synced lines; classical pieces show the piece's details instead
+async function loadLrc(s){if(s.lines!==undefined)return;s.lines=null;if(!s.lrc)return;try{const t=await (await fetch(s.lrc)).text(),L=[];t.split(/\r?\n/).forEach(l=>{const m=[...l.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g)],txt=l.replace(/\[[^\]]*\]/g,'').trim();m.forEach(x=>L.push({t:+x[1]*60+ +x[2],x:txt}))});L.sort((a,b)=>a.t-b.t);s.lines=L.length?L:null;renderFaces()}catch(e){}}
+const LYR=s=>s.lines?s.lines.map(l=>l.x||'♪'):[short(s.t,22),s.a||'',PLS[P.pl]?short(PLS[P.pl].n,22):'','','INSTRUMENTAL','NO LYRICS FOR','THIS PIECE'];
+let AC=null,AN=null,FQ=null;function audioGraph(){if(AC)return;try{AC=new AudioContext();AN=AC.createAnalyser();AN.fftSize=256;FQ=new Uint8Array(AN.frequencyBinCount);[AU,AU2].forEach(el=>AC.createMediaElementSource(el).connect(AN));AN.connect(AC.destination)}catch(e){AC=1}}
+function stopXf(){if(xf){xf.old.pause();xf=null;mix()}}
+function play(pl,idx,at,paused){stopXf();P.pl=pl;P.idx=idx;P.el=at||0;P.has=true;const s=song();if(!paused){audioGraph();if(AC&&AC.resume)AC.resume()}AU.src=s.src;
+ if(at)AU.addEventListener('loadedmetadata',()=>{AU.currentTime=at},{once:true});
+ mix();if(!paused){AU.play().catch(()=>{});P.playing=true}else P.playing=false;songChanged()}
+let msOK=false;function mediaInfo(){const s=song(),pl=PLS[P.pl]||{n:''};
+ if('mediaSession' in navigator){const ms=navigator.mediaSession;try{ms.metadata=new MediaMetadata({title:s.t||'',artist:s.a||'',album:pl.n||'',artwork:s.cov?[{src:new URL(s.cov,location.href).href}]:[]});ms.playbackState=P.has?(P.playing?'playing':'paused'):'none';
+  if(!msOK){msOK=true;ms.setActionHandler('play',()=>{if(AU.paused)act('play')});ms.setActionHandler('pause',()=>{if(!AU.paused)act('play')});ms.setActionHandler('nexttrack',()=>act('next'));ms.setActionHandler('previoustrack',()=>act('prev'));
+   try{ms.setActionHandler('seekto',d=>{AU.currentTime=d.seekTime})}catch(e){}}}catch(e){}}
+ deskNP()}
+function deskNP(){if(!window.cubeDesk||!cubeDesk.np)return;const s=song();let r;if(cubeOn&&!shatter){const h=190*csz;r=[cpos[0]-h,cpos[1]-h,2*h,2*h+60*csz]}else{const R0=SUNR(1)*1.3;r=[side>0?CX-R0:CX,vtop<0?CY:CY-R0,R0,R0]}
+ const o={title:P.has?s.t:'Lu Cube',artist:P.has?s.a:'',playing:!!(P.has&&P.playing),rect:r.map(Math.round)},k=JSON.stringify(o);if(k!==deskNP.k){deskNP.k=k;cubeDesk.np(o)}}
+ON('play',()=>mediaInfo());ON('pause',()=>mediaInfo());setInterval(deskNP,1000);
+if(window.cubeDesk&&cubeDesk.onMedia)cubeDesk.onMedia(k=>act(k));
+function songChanged(){const s=song();if(typeof keepInView==='function')keepInView();loadLrc(s);renderFaces();wheelNow();mediaInfo();saveState()}
+// crossfade / gapless: the next song starts on the other player while this one fades out.
+// Movements of the same piece run straight into each other; other songs use the FADE setting (off, 2 s or 5 s).
+function nextIsMovement(){const pl=PLS[P.pl];if(SHUF||!pl||pl.fav||P.idx+1>=pl.songs.length)return false;const a=pl.songs[P.idx],b=pl.songs[P.idx+1];return !!a.a&&a.a===b.a}
+setInterval(()=>{const now=performance.now();
+ if(SLEEP){const rem=SLEEP.end-Date.now();sleepF=rem<8000?Math.max(0,rem/8000):1;if(rem<=0){SLEEP=null;sleepF=1;stopXf();AU.pause();renderFaces()}}
+ if(xf&&now-xf.t0>=xf.dur){xf.old.pause();xf.old.removeAttribute('src');xf.old.load();xf=null}
+ mix();
+ if(!xf&&P.has&&P.playing&&!AU.paused&&isFinite(AU.duration)&&AU.duration>8){const gap=nextIsMovement(),lead=gap?.25:XF;if(lead>0&&AU.duration-AU.currentTime<=lead){
+  const n=nextIdx(),old=AU;AU=AU2;AU2=old;P.idx=n;P.el=0;AU.src=song().src;AU.volume=0;xf={old,t0:now,dur:gap?250:XF*1000};AU.play().catch(()=>{});songChanged()}}},50);
+ON('timeupdate',()=>{P.el=AU.currentTime;tickFaces()});
+ON('loadedmetadata',()=>{const s=song();if(isFinite(AU.duration))s.d=AU.duration;renderFaces();wheelNow()});
+// shuffle: plays every song in the playlist once in a random order before repeating; ⏮ goes back through what it played
+let SHUF=false,BAG=[],HIST=[];
+function nextIdx(back){const L=PLS[P.pl].songs.length;if(!SHUF||L<2)return(P.idx+(back?L-1:1))%L;
+ if(back){const h=HIST.pop();return h&&h.pl===P.pl?h.idx:(P.idx+L-1)%L}
+ BAG=BAG.filter(i=>i<L&&i!==P.idx);if(!BAG.length)BAG=[...Array(L).keys()].filter(i=>i!==P.idx);HIST.push({pl:P.pl,idx:P.idx});if(HIST.length>200)HIST.shift();return BAG.splice(Math.floor(Math.random()*BAG.length),1)[0]}
+ON('ended',()=>play(P.pl,nextIdx()));
+ON('pause',()=>{if(!AU.ended){P.playing=false;renderFaces()}});ON('play',()=>{P.playing=true;renderFaces()});
+// ===================== the wheel =====================
+const cv=document.getElementById('wheel'),g=cv.getContext('2d'),T=document.getElementById('toks'),ring=document.getElementById('ring'),now=document.getElementById('now'),backB=document.getElementById('back');
+let W,Hh,CX,CY,RAD;function size(){const d=Math.min(2,devicePixelRatio||1);W=innerWidth;Hh=innerHeight;cv.width=W*d;cv.height=Hh*d;g.setTransform(d,0,0,d,0,0);CY=Hh*.5}addEventListener('resize',size);size();
+// collapsed: a thin sliver on the edge (~55 px showing, about a third of the screen tall). Hover or scroll it and it opens enough to read.
+// Ctrl + drag moves the wheel: anywhere up or down the edge, or over to the left edge.
+let EX=0,exT=0,lastUse=-1e9,hoverW=false,side=1,vtop=-1,moving=null,dockD=0,DISPLAYS=null;
+const DSP=()=>{if(!DISPLAYS||!DISPLAYS.length)return{x:0,y:0,w:W,h:Hh};return DISPLAYS[Math.min(dockD,DISPLAYS.length-1)]};
+const dispAt=(x,y)=>{const L=DISPLAYS&&DISPLAYS.length?DISPLAYS:[{x:0,y:0,w:W,h:Hh}];let i=L.findIndex(d=>x>=d.x&&x<d.x+d.w&&y>=d.y&&y<d.y+d.h);return i<0?0:i};const lerp=(a,b,u)=>a+(b-a)*u;
+const A0=()=>Math.atan2(-vtop,-side);
+// the wheel is a sun drawn in the corner: a quarter disc with rays, small when idle, opening up when you hover or scroll it
+const SUNR=e=>{const d=DSP();return lerp(Math.min(78,d.h*.09),Math.min(250,d.h*.28,d.w*.2),e)};
+function geo(){const e=EX*EX*(3-2*EX),d=DSP();RAD=SUNR(e);CX=side>0?d.x+d.w:d.x;CY=vtop<0?d.y:d.y+d.h;return e}
+const nearWheel=(x,y)=>{if(cubeOn)return false;const d=DSP();return x>=d.x&&x<d.x+d.w&&y>=d.y&&y<d.y+d.h&&Math.hypot(x-CX,y-CY)<RAD*1.02+12};
+addEventListener('pointermove',ev=>{if(moving){dockD=dispAt(ev.clientX,ev.clientY);const d=DSP();vtop=ev.clientY<d.y+d.h/2?-1:1;const ns=ev.clientX<d.x+d.w/2?-1:1;if(ns!==side){side=ns;now.style.textAlign=side>0?'right':'left'}lastUse=performance.now();return}
+ hoverW=nearWheel(ev.clientX,ev.clientY);if(hoverW)lastUse=performance.now()});
+addEventListener('pointerdown',ev=>{if((ev.ctrlKey||ev.metaKey)&&nearWheel(ev.clientX,ev.clientY)){ev.preventDefault();moving={};document.body.style.cursor='move'}},true);
+addEventListener('pointerup',()=>{if(moving){moving=null;document.body.style.cursor=''}});
+const STEP=Math.PI/6.5;let mode='pl',rot=0,tgt=0,sel=0,cubeOn=false,fadeT=0,wacc=0;
+const items=()=>mode==='pl'?PLS.map(p=>({label:short(p.n,30),art:p.art})):(PLS[openPl]?PLS[openPl].songs:[]).map(s=>({label:(isFav(s)?'★ ':'')+short(s.t.toUpperCase(),30),art:s.art}));
+let openPl=0,toks=[];
+function buildToks(){T.innerHTML='';toks=items().map((it,i)=>{const d=document.createElement('div');d.className='tok';d.innerHTML=`<div class="art" style="background:${it.art}"></div>`;T.append(d);d.addEventListener('pointerdown',e=>{if(e.ctrlKey||e.metaKey)return;downWheel(e,i)});return d});fadeT=performance.now()}
+const N=()=>toks.length;
+function goTo(i){tgt=Math.max(0,Math.min(N()-1,i));if(tgt!==sel){sel=tgt;wheelNow()}}
+// one scroll click = exactly one item (a trackpad's small steps add up to one)
+addEventListener('wheel',e=>{if(cubeOn||!nearWheel(e.clientX,e.clientY))return;e.preventDefault();lastUse=performance.now();wacc+=e.deltaY;if(Math.abs(wacc)>=40){goTo(tgt+Math.sign(wacc));wacc=0}clearTimeout(wheel.t);wheel.t=setTimeout(()=>wacc=0,180)},{passive:false});function wheel(){}
+const angle=i=>A0()+side*(i*STEP-rot),dAng=a=>Math.atan2(Math.sin(a-A0()),Math.cos(a-A0()));
+function drawWheel(t){g.clearRect(0,0,W,Hh);g.save();g.globalAlpha=lerp(.3,1,EX);{const d=DSP();g.beginPath();g.rect(d.x,d.y,d.w,d.h);g.clip()}drawWheel2(t);g.restore()}
+function drawWheel2(t){const its=items(),ap=Math.min(1,(performance.now()-fadeT)/450);
+ {const pr=RAD*(1.18+.5*EX),gr=g.createRadialGradient(CX,CY,RAD*.5,CX,CY,pr);gr.addColorStop(0,`rgba(8,9,11,${.5+.25*EX})`);gr.addColorStop(.7,`rgba(8,9,11,${.35+.25*EX})`);gr.addColorStop(1,'rgba(8,9,11,0)');g.fillStyle=gr;g.beginPath();g.arc(CX,CY,pr,0,6.283);g.fill();g.strokeStyle='rgba(255,194,26,.55)';g.lineWidth=2;g.beginPath();g.arc(CX,CY,RAD*.93,0,6.283);g.stroke()}
+ for(let k=-24;k<(N()+4)*6;k++){const a=A0()+side*(k*STEP/6-rot),da=k*STEP/6-rot,vis=Math.max(0,1-Math.abs(da)/1.3);if(vis<=0)continue;
+  const inside=k>=0&&k<=(N()-1)*6,major=k%6==0&&inside,r0=RAD*(major?.97:1),r1=RAD*(major?1.09:1.04),x0=CX+Math.cos(a)*r0,y0=CY+Math.sin(a)*r0,x1=CX+Math.cos(a)*r1,y1=CY+Math.sin(a)*r1;
+  g.lineCap='round';g.strokeStyle=`rgba(0,0,0,${.7*vis})`;g.lineWidth=(major?2:1.3)+2.5;g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();g.strokeStyle=`rgba(255,255,255,${(major?.95:inside?.6:.25)*vis})`;g.lineWidth=major?2:1.3;g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();
+  if(major&&k/6!==sel){const i=k/6,lx=CX+Math.cos(a)*RAD*1.14,ly=CY+Math.sin(a)*RAD*1.14;g.save();g.translate(lx,ly);g.rotate(side>0?a+Math.PI:a);g.globalAlpha=vis*ap*.9*Math.max(0,EX*1.4-.4);g.fillStyle='#fff';g.font='400 '+Math.round(lerp(11,14,EX))+'px Inter';g.textAlign=side>0?'right':'left';g.textBaseline='middle';
+   {const tx=(mode==='songs'&&P.has&&P.pl===openPl&&P.idx===i?'▶ ':'')+its[i].label,tx0=side*(1-ap)*-30;g.lineJoin='round';g.lineWidth=3.5;g.strokeStyle='rgba(0,0,0,.8)';g.strokeText(tx,tx0,0);g.fillText(tx,tx0,0)}g.restore()}}}
+function placeToks(t){const ap=Math.min(1,(performance.now()-fadeT)/450);toks.forEach((d,i)=>{if(d._drag)return;const a=angle(i),da=i*STEP-rot,vis=Math.max(0,1-Math.abs(da)/1.25),on=i===sel,r=RAD*(.8+(1-ap)*.15),x=CX+Math.cos(a)*r,y=CY+Math.sin(a)*r,s=(on?lerp(.8,1.32,EX):.8)*lerp(1,.6+.4*vis,EX)*(.6+.4*ap)*lerp(.28,.72,EX);
+  const dd=DSP(),inside=x>dd.x-10&&x<dd.x+dd.w+10&&y>dd.y&&y<dd.y+dd.h;d.style.transform=`translate(${x}px,${y}px) scale(${s}) rotate(${(a-A0())*57}deg)`;d.style.opacity=inside?vis*ap*lerp(.3,1,EX):0;d.style.pointerEvents=vis>.2?'auto':'none';d.classList.toggle('play',mode==='songs'&&P.has&&P.pl===openPl&&P.idx===i)})}
+function wheelNow(){const its=items();if(!its[sel])return;const k=document.getElementById('nowk'),tt=document.getElementById('nowt'),sb=document.getElementById('nowsub');
+ if(mode==='pl'){k.textContent='PLAYLIST · CLICK TO OPEN';tt.textContent=its[sel].label;sb.textContent=PLS[sel].songs.length+' songs'+(P.has?' · now playing: '+song().t:'')}
+ else{const s=PLS[openPl].songs[sel],isP=P.has&&P.pl===openPl&&P.idx===sel;k.textContent=PLS[openPl].n+(isP?' · NOW PLAYING':' · CLICK TO PLAY');tt.textContent=s.t;sb.textContent=s.a+' · '+fmt(s.d)}}
+const fmt=s=>{s=Math.floor(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+function openList(i){openPl=i;mode='songs';sel=tgt=P.has&&P.pl===i?P.idx:0;rot=sel*STEP;buildToks();backB.style.display='';wheelNow()}
+function closeList(){mode='pl';sel=tgt=openPl;rot=sel*STEP;buildToks();backB.style.display='none';wheelNow()}
+backB.onclick=closeList;addEventListener('keydown',e=>{if(e.key==='Escape'&&!cubeOn&&mode==='songs')closeList()});
+function frame(n){const t=n/1000;exT=(hoverW||moving||performance.now()-lastUse<340||toks.some(d=>d._drag))?1:0;EX+=(exT-EX)*(exT?.16:.14);const ex=geo();
+ document.querySelectorAll('.now,.back,.qbtn').forEach(el=>{el.style.opacity=cubeOn?'':ex;el.style.pointerEvents=!cubeOn&&ex<.3?'none':''});
+ if(!cubeOn)rot+=(tgt*STEP-rot)*.2;
+ drawWheel(t);placeToks(t);
+ const ca=Math.cos(A0()),sa=Math.sin(A0()),x=CX+ca*RAD*.8,y=CY+sa*RAD*.8;ring.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%) scale(${lerp(.3,.75,EX)})`;const isP=P.has&&(mode==='songs'?P.pl===openPl&&P.idx===sel:P.pl===sel);ring.style.opacity=isP?EX:0;document.getElementById('ringp').setAttribute('stroke-dashoffset',isP&&song().d?1-P.el/song().d:1);
+ {const px=CX+ca*RAD*1.08,py=CY+sa*RAD*1.08+(vtop<0?14:-14),sc=lerp(.7,.85,EX),hh=125*sc;now.style.transformOrigin=(side>0?'100% ':'0 ')+(vtop<0?'0':'100%');now.style.transform=`translate(${side>0?px-420:px}px,${vtop<0?py:py-125}px) scale(${sc})`;now.querySelector('svg').style.margin=side>0?'2px 0 0 auto':'2px auto 0 0';
+  const bx=CX-side*14,b1=CY-vtop*14,tx=side>0?'-100%':'0',ty=vtop<0?'0':'-100%';qbtnEl.style.transform=`translate(${CX-side*RAD*.5}px,${CY-vtop*RAD*.13}px) translate(-50%,-50%) scale(${lerp(.8,1,EX)})`;backB.style.transform=`translate(${bx}px,${b1-vtop*36}px) translate(${tx},${ty})`}
+ let d='';for(let i=0;i<=52;i++){const u=i/52*260;d+=(i?'L':'M')+u+','+(7+Math.sin(u*.18-t*(P.playing?7:2))*4)}document.getElementById('squig').setAttribute('d',d);
+ cubeFrame(t);requestAnimationFrame(frame)}
+// press on the wheel: a click opens / plays; dragging it out onto the screen turns it into the cube
+function downWheel(e,i){e.preventDefault();const d=toks[i],x0=e.clientX,y0=e.clientY;let moved=false,out=false;d._drag=true;d.setPointerCapture(e.pointerId);
+ const mv=ev=>{const dx=ev.clientX-x0,dy=ev.clientY-y0;if(Math.hypot(dx,dy)>6)moved=true;const pj=dx*Math.cos(A0())+dy*Math.sin(A0()),pull=Math.min(1,Math.max(0,pj)/220);out=pj>150;
+  d.style.transform=`translate(${ev.clientX}px,${ev.clientY}px) scale(${1.3+pull*.8}) rotate(${dx*.08}deg)`;d.style.borderRadius=(50-pull*40)+'%';d.style.boxShadow=`0 ${10+pull*30}px ${24+pull*40}px rgba(0,0,0,.6)`;
+  document.querySelectorAll('.wheelUI').forEach(w=>{if(w!==T)w.style.opacity=1-pull*.85});toks.forEach(o=>{if(o!==d)o.style.opacity=(1-pull)*.9})};
+ const upf=ev=>{d.removeEventListener('pointermove',mv);d.removeEventListener('pointerup',upf);d._drag=false;d.style.borderRadius='50%';d.style.boxShadow='';document.querySelectorAll('.wheelUI').forEach(w=>w.style.opacity='');
+  if(moved&&out){if(!P.has)play(mode==='pl'?i:openPl,mode==='pl'?0:i);toCube(ev.clientX,ev.clientY,d);return}
+  if(!moved){if(i!==sel)goTo(i);else if(mode==='pl')openList(i);else play(openPl,i)}};
+ d.addEventListener('pointermove',mv);d.addEventListener('pointerup',upf)}
+// ===================== the cube =====================
+const stage=document.getElementById('stage'),hold=document.getElementById('hold'),cubeEl=document.getElementById('cube'),cname=document.getElementById('cname'),dockB=document.getElementById('dock');
+let miniOn=false,s_rest=false,CR=[[1,0,0],[0,1,0],[0,0,1]],om=[0,0],cpos=[0,0],cbirth=0,cdrag=null,snapT=null,shatter=0,frag=[];
+const mul=(A,B)=>A.map((r,i)=>[0,1,2].map(j=>r[0]*B[0][j]+r[1]*B[1][j]+r[2]*B[2][j])),Ry=a=>{const c=Math.cos(a),s=Math.sin(a);return[[c,0,s],[0,1,0],[-s,0,c]]},Rx=a=>{const c=Math.cos(a),s=Math.sin(a);return[[1,0,0],[0,c,-s],[0,s,c]]};
+const tr=M=>[0,1,2].map(i=>[0,1,2].map(j=>M[j][i])),app=(M,v)=>[0,1,2].map(i=>M[i][0]*v[0]+M[i][1]*v[1]+M[i][2]*v[2]),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const orth=M=>{const n=v=>{const l=Math.hypot(...v);return v.map(x=>x/l)};let a=n(M[0]),b=M[1];const d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];b=n(b.map((x,i)=>x-d*a[i]));return[a,b,cross(a,b)]};
+// each face: its outward normal and which way is "up" on it, in the cube's own space
+const FACE={COVER:{n:[0,0,1],u:[0,-1,0],el:'F_COVER'},'NOW PLAYING':{n:[0,0,-1],u:[0,-1,0],el:'F_NOW'},LYRICS:{n:[0,-1,0],u:[0,0,-1],el:'F_LYR'},VISUALISER:{n:[0,1,0],u:[0,0,1],el:'F_VIZ'},LIBRARY:{n:[1,0,0],u:[0,-1,0],el:'F_LIB'},PLAYLIST:{n:[-1,0,0],u:[0,-1,0],el:'F_PL'}};
+// the turn that puts a face toward you, the right way up
+function upright(name){const f=FACE[name],L=[f.n,f.u,cross(f.n,f.u)],Wd=[[0,0,1],[0,-1,0],cross([0,0,1],[0,-1,0])];const A=tr(L),B=tr(Wd);return mul(B,tr(A))}
+const front=()=>{let b='',bd=-2;for(const k in FACE){const z=app(CR,FACE[k].n)[2];if(z>bd){bd=z;b=k}}return b};
+function goFace(name){snapT=upright(name);om=[0,0];s_rest=true}
+// rotations as quaternions, so turning toward upright always takes the short way and never degenerates (even a half-turn)
+function m2q(m){const t=m[0][0]+m[1][1]+m[2][2];let w,x,y,z;if(t>0){const s=Math.sqrt(t+1)*2;w=.25*s;x=(m[2][1]-m[1][2])/s;y=(m[0][2]-m[2][0])/s;z=(m[1][0]-m[0][1])/s}
+ else if(m[0][0]>m[1][1]&&m[0][0]>m[2][2]){const s=Math.sqrt(1+m[0][0]-m[1][1]-m[2][2])*2;w=(m[2][1]-m[1][2])/s;x=.25*s;y=(m[0][1]+m[1][0])/s;z=(m[0][2]+m[2][0])/s}
+ else if(m[1][1]>m[2][2]){const s=Math.sqrt(1+m[1][1]-m[0][0]-m[2][2])*2;w=(m[0][2]-m[2][0])/s;x=(m[0][1]+m[1][0])/s;y=.25*s;z=(m[1][2]+m[2][1])/s}
+ else{const s=Math.sqrt(1+m[2][2]-m[0][0]-m[1][1])*2;w=(m[1][0]-m[0][1])/s;x=(m[0][2]+m[2][0])/s;y=(m[1][2]+m[2][1])/s;z=.25*s}return[w,x,y,z]}
+function q2m([w,x,y,z]){return[[1-2*(y*y+z*z),2*(x*y-z*w),2*(x*z+y*w)],[2*(x*y+z*w),1-2*(x*x+z*z),2*(y*z-x*w)],[2*(x*z-y*w),2*(y*z+x*w),1-2*(x*x+y*y)]]}
+function slerp(a,b,t){let d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];if(d<0){b=b.map(v=>-v);d=-d}if(d>.9995){const r=a.map((v,i)=>v+(b[i]-v)*t),l=Math.hypot(...r);return r.map(v=>v/l)}
+ const th=Math.acos(d),s=Math.sin(th),k1=Math.sin((1-t)*th)/s,k2=Math.sin(t*th)/s;return a.map((v,i)=>v*k1+b[i]*k2)}
+const sane=M=>M.every(r=>r.every(Number.isFinite));
+function toCube(x,y){cubeOn=true;document.body.classList.add('cubemode');{const dd=(DISPLAYS&&DISPLAYS.length?DISPLAYS:[{x:0,y:0,w:W,h:Hh}])[dispAt(x,y)];cpos=[Math.max(dd.x+200,Math.min(dd.x+dd.w-200,x)),Math.max(dd.y+200,Math.min(dd.y+dd.h-240,y))]};CR=mul(Rx(-.6),Ry(.9));om=[.07,-.05];snapT=null;cbirth=performance.now();shatter=0;
+ Object.values(FACE).forEach(f=>{const e=document.getElementById(f.el);e.style.opacity='';e.style.transform=''});renderFaces();hold.style.display='';cname.style.display='';dockB.style.display=''}
+function overCube(e){return cubeOn&&!shatter&&Math.hypot(e.clientX-cpos[0],e.clientY-cpos[1])<230*csz}
+let csz=1,rs=null,nearC=false;const HND=[...Array(8)].map((_,i)=>{const d=document.createElement('div');d.className='hnd';d.title='drag to resize';document.body.append(d);
+ d.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();d.setPointerCapture(e.pointerId);rs={d0:Math.max(30,Math.hypot(e.clientX-cpos[0],e.clientY-cpos[1])),s0:csz}});
+ d.addEventListener('pointermove',e=>{if(!rs)return;csz=Math.max(.2,Math.min(1.6,rs.s0*Math.hypot(e.clientX-cpos[0],e.clientY-cpos[1])/rs.d0))});
+ d.addEventListener('pointerup',()=>{rs=null});return d});
+let MX=-1e4,MY=-1e4,hndI=-1;addEventListener('pointermove',e=>{MX=e.clientX;MY=e.clientY;nearC=cubeOn&&!shatter&&Math.hypot(e.clientX-cpos[0],e.clientY-cpos[1])<Math.max(150,300*csz)});
+// drag spins it; a press that doesn't move is a click on whatever button is under it
+const pad=document.getElementById('pad');
+// which button is under the pointer: look on the face toward you (the browser can't hit-test turned 3D panels reliably)
+function actAt(x,y){const f=document.getElementById(FACE[front()].el);let best=null,ba=1e12;f.querySelectorAll('[data-act]').forEach(e=>{const r=e.getBoundingClientRect(),a=r.width*r.height;if(a>4&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&a<ba){ba=a;best=e}});return best}
+let hovEl=null;const setHov=e=>{if(hovEl===e)return;hovEl&&hovEl.classList.remove('hov');hovEl=e;e&&e.classList.add('hov');pad.classList.toggle('hand',!!e)};
+pad.addEventListener('pointerdown',e=>{if(shatter)return;{const sa=!miniOn&&!e.shiftKey&&!e.ctrlKey&&!snapT&&actAt(e.clientX,e.clientY);if(sa&&(sa.dataset.act==='seek'||sa.dataset.act==='vol')){cdrag={seek:sa};pad.setPointerCapture(e.pointerId);seekTo(sa,e.clientX);return}}s_rest=false;setHov(null);cdrag={x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now(),moveCube:e.shiftKey||e.ctrlKey||e.metaKey,moved:false,mini:miniOn&&!e.shiftKey&&!e.ctrlKey};pad.setPointerCapture(e.pointerId);om=[0,0];snapT=null});
+pad.addEventListener('pointerleave',()=>{if(!cdrag)setHov(null)});
+pad.addEventListener('pointermove',e=>{if(cdrag&&cdrag.seek){seekTo(cdrag.seek,e.clientX);return}if(!cdrag){if(!snapT&&!om[0]&&!om[1])setHov(actAt(e.clientX,e.clientY));return}const dx=e.clientX-cdrag.x,dy=e.clientY-cdrag.y,dt=Math.max(.008,(performance.now()-cdrag.t)/1000);cdrag.x=e.clientX;cdrag.y=e.clientY;cdrag.t=performance.now();if(Math.hypot(e.clientX-cdrag.x0,e.clientY-cdrag.y0)>(cdrag.mini?10:5))cdrag.moved=true;if(cdrag.mini&&!cdrag.moved)return;
+ if(cdrag.moveCube){cpos=[cpos[0]+dx,cpos[1]+dy];return}const k=.0105;CR=orth(mul(mul(Ry(dx*k),Rx(-dy*k)),CR));om=[dx*k/dt/60,-dy*k/dt/60];s_rest=false});
+pad.addEventListener('pointerup',e=>{if(!cdrag)return;if(cdrag.seek){cdrag=null;return}const c=cdrag;cdrag=null;if(!c.moved&&c.mini){act('play');return}if(!c.moved){if(snapT){CR=snapT;snapT=null}const a=actAt(e.clientX,e.clientY);if(a)act(a.dataset.act)}});
+let lacc=0;addEventListener('wheel',e=>{if(!overCube(e))return;e.preventDefault();
+ {const f=front(),box=f==='PLAYLIST'?document.querySelector('#F_PL .pl'):f==='LIBRARY'?document.querySelector('#F_LIB .lib'):null;if(box&&!snapT){const r=box.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right+40&&e.clientY>=r.top&&e.clientY<=r.bottom){lacc+=e.deltaY;if(Math.abs(lacc)>=40){act((f==='PLAYLIST'?'pls:':'libs:')+Math.sign(lacc));lacc=0}return}}}
+ if(snapT)return;const order=['COVER','LIBRARY','NOW PLAYING','PLAYLIST'],f=front(),i=order.indexOf(f);goFace(order[((i<0?0:i)+(e.deltaY>0?1:3))%4])},{passive:false});
+dockB.onclick=breakApart;
+function cubeFrame(t){if(!cubeOn){HND.forEach(h=>h.classList.remove('on'));hold.style.display='none';pad.style.display=cname.style.display=dockB.style.display='none';return}pad.style.display=shatter?'none':'block';
+ const nw=performance.now(),born=Math.min(1,(nw-cbirth)/650),bo=1+2.7*Math.pow(born-1,3)+1.7*Math.pow(born-1,2),sc=(.22+.78*bo)*csz;
+ if(shatter){const u=(nw-shatter)/1000;frag.forEach(f=>{const e=document.getElementById(f.el),g_=[f.v[0]*u,f.v[1]*u+1400*u*u,f.v[2]*u],L=app(tr(CR),g_).map(x=>x/sc);
+   e.style.transform=`translate3d(${L[0]+f.n[0]*f.p*u}px,${L[1]+f.n[1]*f.p*u}px,${L[2]+f.n[2]*f.p*u}px) ${f.base} rotate3d(${f.ax.join(',')},${f.s*u}deg)`;e.style.opacity=Math.max(0,1-Math.max(0,u-.55)/.5)});
+  if(u>1.1){cubeOn=false;shatter=0;document.body.classList.remove('cubemode');fadeT=performance.now()}}
+ else if(!cdrag){if(snapT){CR=q2m(slerp(m2q(CR),m2q(snapT),.15));let e=0;CR.forEach((r,i)=>r.forEach((x,j)=>e+=Math.abs(x-snapT[i][j])));if(e<.004){CR=snapT;snapT=null}}
+  else{const sp=Math.hypot(...om);if(sp>.004){CR=orth(mul(mul(Ry(om[0]),Rx(om[1])),CR));om=om.map(x=>x*.955)}else if(om[0]||om[1]||!s_rest){om=[0,0];s_rest=true;goFace(front())}}}
+ if(!sane(CR)){CR=upright('NOW PLAYING');snapT=null;om=[0,0]}
+ const M=CR.map(r=>r.map(x=>x*sc)),bob=cdrag||shatter?0:Math.sin(t*1.6)*3,m=[M[0][0],M[1][0],M[2][0],0,M[0][1],M[1][1],M[2][1],0,M[0][2],M[1][2],M[2][2],0,0,0,0,1];
+ hold.style.transform=`translate3d(${cpos[0]}px,${cpos[1]+bob}px,0)`;stage.style.perspectiveOrigin=`${cpos[0]}px ${cpos[1]+bob}px`;pad.style.transform=`translate(${cpos[0]}px,${cpos[1]+bob}px) scale(${csz})`;
+ {const show=(nearC||rs)&&!shatter&&!cdrag&&born>=1,ox=cpos[0],oy=cpos[1]+bob;let k=0,best=-1,bd=1e9;const hp=[];for(const a of[-1,1])for(const b2 of[-1,1])for(const c of[-1,1]){const v=app(CR,[a*150,b2*150,c*150]).map(x=>x*sc),f=1600/(1600-v[2]),x=ox+(cpos[0]+v[0]-ox)*f,y=oy+(cpos[1]+bob+v[1]-oy)*f;
+  const h=HND[k];h.style.transform=`translate(${x}px,${y}px) scale(${v[2]>0?1:.75})`;h.style.zIndex=v[2]>0?12:7;const dd=Math.hypot(x-MX,y-MY)+(v[2]>0?0:40);if(dd<bd){bd=dd;best=k}k++}
+  if(!rs)hndI=best;HND.forEach((h,i)=>h.classList.toggle('on',!!show&&i===hndI))}cubeEl.style.transform=`matrix3d(${m.join(',')})`;
+ {MINI=csz<.5;const el=document.getElementById('mini'),sz=300*sc*.98,on=MINI&&!shatter&&!(cdrag&&(cdrag.moved||cdrag.seek))&&!rs&&born>=1&&!snapT&&Math.hypot(MX-cpos[0],MY-cpos[1]-bob)<170*csz;
+  el.classList.toggle('on',on);el.style.width=el.style.height=sz+'px';el.style.transform=`translate(${cpos[0]-sz/2}px,${cpos[1]+bob-sz/2}px)`;el.style.fontSize=Math.max(14,sz*.42)+'px';el.textContent=P.playing?'❚❚':'▶';miniOn=on}
+ cname.textContent=shatter?'':short(front()+' · '+song().t.toUpperCase(),60);{const fs=Math.round(lerp(11,18,Math.max(0,Math.min(1,(csz-.2)/.8)))),y0=cpos[1]+bob+172*csz+8;cname.style.fontSize=fs+'px';cname.style.left=cpos[0]+'px';cname.style.top=y0+'px';dockB.style.left=cpos[0]+'px';dockB.style.top=(y0+fs+10)+'px';dockB.style.transform=`translateX(-50%) scale(${csz<.6?.85:1})`;dockB.style.transformOrigin='50% 0'}{const on=(nearC||rs||cdrag)&&!shatter;cname.style.opacity=dockB.style.opacity=on?1:0;dockB.style.pointerEvents=on?'auto':'none'}}
+// back to the wheel: the cube breaks into its six panels, they fall, and the wheel fades back in
+const BASE={F_COVER:'translateZ(150px)',F_NOW:'rotateY(180deg) translateZ(150px)',F_LYR:'rotateX(90deg) translateZ(150px)',F_VIZ:'rotateX(-90deg) translateZ(150px)',F_LIB:'rotateY(90deg) translateZ(150px)',F_PL:'rotateY(-90deg) translateZ(150px)'};
+function breakApart(){if(shatter)return;dockD=dispAt(cpos[0],cpos[1]);shatter=performance.now();snapT=null;om=[0,0];frag=Object.values(FACE).map(f=>({el:f.el,n:f.n,base:BASE[f.el],p:180+Math.random()*160,v:[(Math.random()-.5)*500,-250-Math.random()*300,(Math.random()-.5)*300],ax:[Math.random()-.5,Math.random()-.5,Math.random()-.5],s:(Math.random()<.5?-1:1)*(200+Math.random()*400)}))}
+// ===================== the faces: every button does something =====================
+function act(a){const [k,v]=a.split(':');
+ if(k==='close'){breakApart();return}
+ if(k==='fav'){toggleFav();return}
+ if(k==='shuf'){SHUF=!SHUF;BAG=[];renderFaces();saveState();return}
+ if(k==='mute'){if(UVOL>0){VOL.last=UVOL;setVol(0)}else setVol(VOL.last||.8);return}
+ if(k==='vol')return;
+ if(k==='xf'){XF=XF===0?2:XF===2?5:0;renderFaces();saveState();return}
+ if(k==='sleep'){const o=[0,15,30,60],c=SLEEP?o.indexOf(SLEEP.m):0,m=o[(c+1)%4];SLEEP=m?{m,end:Date.now()+m*60000}:null;sleepF=1;renderFaces();return}
+ if(k==='pls'){plOff=Math.max(0,Math.min(Math.max(0,PLS[P.pl].songs.length-6),plOff+ +v));renderFaces();return}
+ if(k==='libs'){libOff=Math.max(0,Math.min(Math.max(0,Math.ceil((PLS.length-9)/3)*3),libOff+3*v));renderFaces();return}
+ if(k==='play'){if(!P.has)play(Math.max(0,PLS.findIndex(p=>p.songs.length)),0);else if(AU.paused){audioGraph();P.playing=true;if(AC&&AC.resume)AC.resume();AU.play()}else{stopXf();AU.pause()}}else if(k==='next'||k==='prev'){const L=PLS[P.pl].songs.length;if(k==='prev'&&AU.currentTime>4){AU.currentTime=0;return}play(P.pl,nextIdx(k==='prev'))}
+ else if(k==='song'){play(P.pl,+v)}else if(k==='pl'){if(!PLS[+v].songs.length)return;plOff=0;play(+v,0);goFace('PLAYLIST')}
+ else if(k==='go')goFace(v);else if(k==='lyr'){const s=song();if(s.lines&&s.lines[+v])AU.currentTime=s.lines[+v].t}else if(k==='viz'){vizMode=(vizMode+1)%3;renderFaces()}wheelNow()}
+// the progress bar: click anywhere on it to jump there, or drag along it to scrub
+function seekTo(el,x){const r=el.getBoundingClientRect(),f=Math.max(0,Math.min(1,(x-r.left)/r.width));if(el.dataset.act==='vol'){setVol(f);return}if(isFinite(AU.duration)){AU.currentTime=f*AU.duration;P.el=AU.currentTime;tickFaces()}}
+let vizMode=0,plOff=0,libOff=0;
+const SCR=(k,up,dn)=>`<div class="scr"><b data-act="${k}:-1" class="${up?'':'off'}">▲</b><b data-act="${k}:1" class="${dn?'':'off'}">▼</b></div>`;
+function keepInView(){const L=PLS[P.pl].songs.length;if(P.idx<plOff)plOff=P.idx;if(P.idx>=plOff+6)plOff=P.idx-5;plOff=Math.max(0,Math.min(Math.max(0,L-6),plOff))}
+const TB=(t,bg='var(--b)',col='#fff')=>`<div class="tb" style="background:${bg};color:${col}"><i></i><i></i><i></i><b>${t}</b><s data-act="close">×</s></div>`;
+function renderFaces(){keepInView.skip||0;const s=song(),pl=PLS[P.pl],up=s.t.toUpperCase();
+ if(s.cov){F_COVER.style.background='#111';F_COVER.innerHTML=TB('COVER.JPG'+(WXL?' · '+WXL:''))+`<div data-act="go:NOW PLAYING" style="position:absolute;left:0;right:0;top:20px;bottom:0;background:url('${s.cov}') center/cover no-repeat,#111"></div><div style="position:absolute;left:0;right:0;bottom:0;padding:8px 10px;background:linear-gradient(transparent,rgba(0,0,0,.85));color:#fff"><div class="mid" style="font-size:16px">${short(up,34)}</div><div style="font:700 8px 'Space Mono';color:#ffc21a">${short(pl.n,44)}</div></div>`}
+ else{F_COVER.style.background='var(--b)';F_COVER.innerHTML=TB('NOWPLAYING.ART'+(WXL?' · '+WXL:''))+`<div style="position:absolute;left:0;right:0;top:20px;height:88px;background:${s.art}"></div><div data-act="go:NOW PLAYING" style="position:absolute;left:24px;right:24px;top:56px;bottom:22px;background:var(--g);border:2px solid var(--k)">${TB(s.a.toUpperCase(),'var(--b)')}
+  <div style="display:flex;gap:10px;padding:10px;align-items:center"><div style="width:64px;height:64px;border:2px solid var(--k);border-radius:50%;background:${s.art}"></div><div style="flex:1;font:700 9px 'Space Mono'">${pl.n}<br>TRACK ${String(P.idx+1).padStart(2,'0')}</div></div>
+  <div style="padding:0 10px"><span class="pill">${P.playing?'▶ PLAYING':'❚❚ PAUSED'}</span></div><div class="mid" style="padding:8px 10px 0;font-size:24px;border-top:2px solid var(--k);margin-top:10px">→ ${up}</div></div>`;
+}
+ F_NOW.style.background='var(--y)';F_NOW.innerHTML=TB('TRANSPORT')+`<b class="star ${isFav(s)?'on':''}" data-act="fav" title="favourite">${isFav(s)?'★':'☆'}</b><b class="star shuf ${SHUF?'on':''}" data-act="shuf" title="shuffle">⤮</b><div style="padding:14px 12px 6px"><div style="font:700 9px 'Space Mono'">TRACK TITLE:</div><div class="big" style="font-size:${up.length>40?22:up.length>24?28:up.length>9?38:46}px;margin-right:40px;overflow-wrap:anywhere">${up.length>9&&up.length<=24?up.replace(' ','<br>'):up}</div><div class="mid" style="font-size:15px;margin-top:4px">${s.a||pl.n}</div></div>
+  <div class="prog" data-act="seek"><i id="pg"></i></div><div style="display:flex;justify-content:space-between;margin:3px 10px;font:700 9px 'Space Mono'"><span id="tm"></span><span>${fmt(s.d)}</span></div><div class="ctrl"><b data-act="prev">⏮</b><b class="p" data-act="play">${P.playing?'❚❚':'▶'}</b><b data-act="next">⏭</b></div><div class="vol"><b data-act="mute">${UVOL===0?'🔇':UVOL<.5?'🔉':'🔊'}</b><div class="vb" data-act="vol"><i id="vb" style="width:${UVOL*100}%"></i></div><span style="font:700 9px 'Space Mono';width:30px;text-align:right" id="vt">${Math.round(UVOL*100)}</span></div><div class="opts"><span class="pill" data-act="xf">FADE ${XF?XF+' S':'OFF'}</span><span class="pill" data-act="sleep" id="slp">${sleepTxt()}</span></div>`;
+ F_PL.style.background='var(--g)';F_PL.innerHTML=TB('PLAYLIST: '+pl.n,'var(--r)')+SCR('pls',plOff>0,plOff+6<pl.songs.length)+`<div class="pl">${pl.songs.map((x,i)=>[x,i]).slice(plOff,plOff+6).map(([x,i])=>`<div data-act="song:${i}" class="${i===P.idx?'on':''}"><span><b>${String(i+1).padStart(2,'0')}</b>${x.t}</span><span>${fmt(x.d)}</span></div>`).join('')}</div>
+  <div style="position:absolute;left:10px;bottom:10px;right:10px;display:flex;justify-content:space-between;align-items:center"><span class="pill" style="background:var(--b)" data-act="go:LIBRARY">ALL PLAYLISTS →</span><span style="font:700 9px 'Space Mono'">${pl.songs.length} TRACKS</span></div>`;
+ F_LIB.style.background='var(--g)';F_LIB.innerHTML=TB('LIBRARY // '+PLS.length+' PLAYLISTS')+SCR('libs',libOff>0,libOff+9<PLS.length)+`<div class="lib">${PLS.map((p,i)=>[p,i]).slice(libOff,libOff+9).map(([p,i])=>`<div data-act="pl:${i}" class="${i===P.pl?'on':''}" style="background:${p.art};color:#111"><span style="background:var(--g);padding:1px 3px">${p.n}</span></div>`).join('')}</div>`;
+ F_LYR.style.background='var(--g)';F_LYR.innerHTML=TB('LYRICS.TXT')+`<div class="lyr" id="lyr">${LYR(s).map((l,i)=>`<div ${s.lines?`data-act="lyr:${i}"`:''}>${l}</div>`).join('')}</div><div style="position:absolute;left:10px;bottom:10px"><span class="pill" data-act="go:NOW PLAYING">${s.lines?'SYNCED':'NO .LRC'} · BACK TO PLAYER</span></div>`;
+ F_VIZ.style.background='#fff';F_VIZ.innerHTML=TB('VISUALISER · CLICK TO CHANGE','#111','var(--y)')+`<div data-act="viz" style="position:absolute;inset:20px 0 0 0"><div style="padding:10px;font:700 9px 'Space Mono'">${['BARS','RINGS','WAVE'][vizMode]} · ${up}</div><div class="viz" id="viz" style="${vizMode?'display:none':''}">${'<i></i>'.repeat(16)}</div><div class="vizc" id="vizc" style="${vizMode?'':'display:none'}"></div></div>`;
+ tickFaces()}
+const sleepTxt=()=>SLEEP?'SLEEP '+Math.max(1,Math.ceil((SLEEP.end-Date.now())/60000))+' MIN':'SLEEP OFF';
+function tickFaces(){{const e=document.getElementById('slp');if(e)e.textContent=sleepTxt()}const s=song(),pg=document.getElementById('pg'),tm=document.getElementById('tm');if(pg)pg.style.width=(s.d?P.el/s.d*100:0)+'%';if(tm)tm.textContent=fmt(P.el);let li=-1;if(s.lines){s.lines.forEach((l,i)=>{if(l.t<=P.el+.15)li=i})}else li=4;const ds=document.querySelectorAll('#lyr div');ds.forEach((d,i)=>d.classList.toggle('on',i===li));if(s.lines&&ds[li]){const box=document.getElementById('lyr');box.style.transform=`translateY(${-Math.max(0,li-3)*23}px)`}}
+setInterval(()=>{if(!cubeOn)return;const t=performance.now()/1000;let a=P.playing?1:.15,bands=null;if(AN&&FQ){AN.getByteFrequencyData(FQ);bands=[...Array(16)].map((_,i)=>{const lo=Math.floor(Math.pow(i/16,1.6)*100),hi=Math.max(lo+1,Math.floor(Math.pow((i+1)/16,1.6)*100));let m=0;for(let k=lo;k<hi;k++)m=Math.max(m,FQ[k]);return m/255});a=bands.reduce((x,y)=>x+y,0)/16*2.2}
+ document.querySelectorAll('#viz i').forEach((b,i)=>b.style.height=(8+(bands?bands[i]*140:a*Math.abs(Math.sin(t*3+i*.7)*Math.cos(t*1.7+i*.31))*120))+'px');
+ const vc=document.getElementById('vizc');if(vc&&vizMode)vc.style.background=vizMode===1?`repeating-radial-gradient(circle,#111 0 ${4+3*a*Math.abs(Math.sin(t*4))}px,var(--y) 0 ${10+4*a*Math.abs(Math.sin(t*3))}px,var(--r) 0 14px)`:`conic-gradient(from ${t*90*a}deg,var(--b),var(--y),var(--r),var(--o),var(--b))`},90);
+
+// ===== desktop mode (opened by the desktop app): no window, no background, just the wheel on the screen edge and the cube =====
+const DESK=new URLSearchParams(location.search).has('desk'),qbtnEl=document.getElementById('qbtn');
+if(DESK)document.documentElement.classList.add('dk');
+try{const h=decodeURIComponent(location.hash.slice(1));if(DESK&&h){DISPLAYS=JSON.parse(h);dockD=Math.max(0,DISPLAYS.findIndex(d=>d.primary))}}catch(e){}
+if(window.cubeDesk&&cubeDesk.onDisplays)cubeDesk.onDisplays(L=>{const keep=DISPLAYS&&DISPLAYS[dockD];DISPLAYS=L;dockD=Math.min(dockD,L.length-1);if(!keep)dockD=Math.max(0,L.findIndex(d=>d.primary))});
+if(window.cubeDesk&&cubeDesk.onFront)cubeDesk.onFront(()=>{lastUse=performance.now()+1600});
+qbtnEl.onclick=()=>{if(window.cubeDesk)cubeDesk.quit();else window.close()};
+// clicks pass through to your desktop everywhere except on the wheel, the cube and their buttons
+let deskHit=null;addEventListener('mousemove',e=>{if(!DESK||!window.cubeDesk)return;const el=document.elementFromPoint(e.clientX,e.clientY);
+ const on=!!(cdrag||rs||moving||toks.some(d=>d._drag)||(el&&el.closest('.pad,.tok,.back,.dock,.hnd,.qbtn'))||nearWheel(e.clientX,e.clientY)||overCube(e));if(on!==deskHit){deskHit=on;cubeDesk.hit(on)}});
+hold.style.display='none';
+// favourites: a ★ playlist at the top of the wheel and library; volume is remembered too (saved in state.json)
+let FAVS=[];const VOL={last:.8};
+const isFav=s=>!!s&&!!s.src&&FAVS.includes(s.src);
+const saveState=()=>{clearTimeout(saveState.t);saveState.t=setTimeout(()=>fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:stateJSON()}).catch(()=>{}),400)};
+function stateJSON(){const s=song();return JSON.stringify({favs:FAVS,vol:UVOL,shuf:SHUF,xf:XF,
+ last:P.has&&s.src?{src:s.src,pl:(PLS[P.pl]||{}).n||'',t:Math.round(P.el)}:null,
+ ui:{csz:+csz.toFixed(3),cube:!!(cubeOn&&!shatter),x:Math.round(cpos[0]),y:Math.round(cpos[1]),dock:dockD,side,vtop}})}
+// saves every few seconds when anything worth remembering has changed (song position counts in 5-second steps)
+setInterval(()=>{if(!PLS.length)return;const k=stateJSON().replace(/"t":(\d+)/,(m,t)=>'"t":'+Math.floor(t/5));if(k!==saveState.k){saveState.k=k;saveState()}},2500);
+function setVol(f){UVOL=Math.max(0,Math.min(1,f));mix();const b=document.getElementById('vb'),t=document.getElementById('vt');if(b)b.style.width=UVOL*100+'%';if(t)t.textContent=Math.round(UVOL*100);const m=document.querySelector('[data-act="mute"]');if(m)m.textContent=UVOL===0?'🔇':UVOL<.5?'🔉':'🔊';saveState()}
+function buildFav(){const all=PLS.filter(p=>!p.fav),bySrc={};all.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));
+ const cur=song(),wasFav=PLS[0]&&PLS[0].fav,curPl=PLS[P.pl],openObj=PLS[openPl];FAVS=FAVS.filter(x=>bySrc[x]);
+ const fs=FAVS.map(x=>bySrc[x]),fo=wasFav?PLS[0]:{n:'★ FAVOURITES',fav:true,art:'radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,#111 61%)'};fo.songs=fs;if(fs.length)all.unshift(fo);
+ PLS.length=0;all.forEach((p,i)=>{p.i=i;PLS.push(p)});
+ const find=o=>PLS.indexOf(o);
+ if(P.has){let i=find(curPl);if(i<0||!PLS[i].songs.includes(cur)){i=PLS.findIndex(p=>!p.fav&&p.songs.includes(cur))}P.pl=Math.max(0,i);P.idx=Math.max(0,PLS[P.pl].songs.indexOf(cur))}else P.pl=fs.length?1:0;
+ let oi=find(openObj);if(oi<0||!PLS[oi].songs.length)oi=Math.max(0,find(curPl));
+ if(mode==='songs'&&openObj&&openObj.fav&&!fs.length){openPl=P.pl;closeList()}else{const shift=(fs.length?1:0)-(wasFav?1:0);if(mode==='pl'){sel=tgt=Math.max(0,Math.min(PLS.length-1,sel+shift));rot=sel*STEP}else{openPl=oi;sel=tgt=Math.min(sel,PLS[openPl].songs.length-1);rot=sel*STEP}buildToks();wheelNow()}}
+function toggleFav(){const s=song();if(!s.src)return;FAVS=isFav(s)?FAVS.filter(x=>x!==s.src):[...FAVS,s.src];buildFav();renderFaces();saveState()}
+const FAVART='radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,#111 61%)';
+const mkPls=L=>L.playlists.map((p,i)=>({n:p.name.toUpperCase(),i,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i,0)}`:ART(i,0),songs:p.tracks.map((t,k)=>({t:t.t,a:t.a,d:t.d,src:t.src,lrc:t.lrc,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i+k+1,k)}`:ART(i+k+1,k)}))}));
+function applyLib(L,first){const fresh=mkPls(L);if(!fresh.length)return false;
+ const cur=P.has?song().src:null,curPl=P.has&&PLS[P.pl]?PLS[P.pl].n:null,selKey=mode==='pl'&&PLS[sel]?PLS[sel].n:null,openKey=mode==='songs'&&PLS[openPl]?PLS[openPl].n:null,selSrc=openKey?(PLS[openPl].songs[sel]||{}).src:null;
+ const bySrc={};fresh.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));FAVS=FAVS.filter(x=>bySrc[x]);const fs=FAVS.map(x=>bySrc[x]);if(fs.length)fresh.unshift({n:'★ FAVOURITES',fav:true,art:FAVART,songs:fs});
+ PLS.length=0;fresh.forEach((p,i)=>{p.i=i;PLS.push(p)});
+ if(cur){let i=PLS.findIndex(p=>p.n===curPl&&p.songs.some(x=>x.src===cur));if(i<0)i=PLS.findIndex(p=>!p.fav&&p.songs.some(x=>x.src===cur));if(i>=0){P.pl=i;P.idx=PLS[i].songs.findIndex(x=>x.src===cur)}else{P.pl=Math.min(P.pl,PLS.length-1);P.idx=0}}
+ if(openKey){const o=PLS.findIndex(p=>p.n===openKey);if(o>=0){openPl=o;sel=tgt=Math.max(0,PLS[o].songs.findIndex(x=>x.src===selSrc))}else{mode='pl';backB.style.display='none';sel=tgt=0}}
+ else{const j=selKey?PLS.findIndex(p=>p.n===selKey):-1;sel=tgt=first?(fs.length&&PLS.length>1?1:0):j>=0?j:Math.min(sel,PLS.length-1)}
+ rot=sel*STEP;buildToks();wheelNow();renderFaces();return true}
+let libSig='';setInterval(()=>{fetch('/api/libsig').then(r=>r.text()).then(g=>{if(!libSig){libSig=g;return}if(g!==libSig){libSig=g;fetch('/api/library').then(r=>r.json()).then(L=>applyLib(L))}}).catch(()=>{})},8000);
+// weather + time: the faces take on the time of day here, and your town's weather (set with "Set Weather Town.bat")
+let WXL='',wxKindNow='clear';const wxKind=code=>code===0||code===1?'clear':code<=3?'cloud':code<=48?'fog':code<=67||(code>=80&&code<=82)?'rain':code<=77||code===85||code===86?'snow':'storm';
+function fetchWX(){const pl=ST&&ST.place;if(!pl)return;fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pl.lat}&longitude=${pl.lon}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`).then(r=>r.json()).then(j=>{if(!j.current)return;wxKindNow=wxKind(j.current.weather_code);WXL={clear:'☀',cloud:'☁',fog:'≋',rain:'☂',snow:'❄',storm:'⚡'}[wxKindNow]+' '+Math.round(j.current.temperature_2m)+'°F '+pl.name.toUpperCase();lookNow();renderFaces()}).catch(()=>{})}
+let lookKey='';function lookNow(){const h=new Date().getHours(),ph=h<5||h>=20?'night':h<7?'dawn':h<17?'day':'dusk',k=ph+' '+wxKindNow;if(k===lookKey)return;lookKey=k;document.body.className=document.body.className.replace(/\b(ph|wx)-\S+/g,'').trim()+' ph-'+ph+' wx-'+wxKindNow}
+setInterval(lookNow,30000);setInterval(fetchWX,15*60000);
+let ST={};fetch('/api/state').then(r=>r.json()).catch(()=>({})).then(st=>{ST=st||{};setTimeout(()=>{lookNow();fetchWX()},50);if(typeof st.xf==='number')XF=st.xf;FAVS=st.favs||[];if(typeof st.vol==='number')UVOL=st.vol;mix();SHUF=!!st.shuf}).finally(()=>fetch('/api/library').then(r=>r.json()).then(L=>{
+ const n=L.playlists.reduce((x,p)=>x+p.tracks.length,0);document.getElementById('libinfo').textContent=PLS.length?`${PLS.length} playlists · ${n} songs. Hover the right edge to open the wheel; drag it out for the cube.`:`Your Music folder is empty: ${L.music}. Run Get Classical Music.bat, or drop folders of songs in there.`;
+ if(!applyLib(L,true)){requestAnimationFrame(frame);return}
+ // pick up where you left off: same song and spot (paused), same sun corner, same cube size and place
+ const u=ST.ui||{};if(typeof u.csz==='number')csz=Math.max(.2,Math.min(1.6,u.csz));if(DISPLAYS&&u.dock<DISPLAYS.length)dockD=u.dock;if(u.side===1||u.side===-1){side=u.side;now.style.textAlign=side>0?'right':'left'}if(u.vtop===1||u.vtop===-1)vtop=u.vtop;
+ const l=ST.last;if(l&&l.src){let i=PLS.findIndex(p=>p.n===l.pl&&p.songs.some(x=>x.src===l.src));if(i<0)i=PLS.findIndex(p=>p.songs.some(x=>x.src===l.src));if(i>=0)play(i,PLS[i].songs.findIndex(x=>x.src===l.src),l.t||0,true)}
+ requestAnimationFrame(frame);if(u.cube&&typeof u.x==='number')setTimeout(()=>{if(!cubeOn)toCube(u.x,u.y)},300)}));
+</script></body></html>

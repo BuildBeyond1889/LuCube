@@ -1,0 +1,8 @@
+# your own stuff stays on your computer
+Music/
+state.json
+data/
+python/
+desktop/electron/
+__pycache__/
+*.pyc
