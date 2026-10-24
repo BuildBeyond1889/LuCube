@@ -1,0 +1,13 @@
+{
+  "name": "lu-cube-phone",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lu Cube for Android: the same cube, your music, world radio, and a remote for other apps.",
+  "scripts": { "build": "python3 build_www.py && npx cap sync android" },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/network": "^8.0.0"
+  },
+  "devDependencies": { "@capacitor/cli": "8.5.3" }
+}

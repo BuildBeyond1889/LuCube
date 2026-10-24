@@ -1,0 +1,8 @@
+{
+  "appId": "com.buildbeyond.lucube",
+  "appName": "Lu Cube",
+  "webDir": "www",
+  "android": { "allowMixedContent": true },
+  "server": { "androidScheme": "https", "cleartext": true },
+  "plugins": { "CapacitorHttp": { "enabled": true } }
+}

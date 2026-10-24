@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lu Cube</string>
+    <string name="title_activity_main">Lu Cube</string>
+    <string name="package_name">com.buildbeyond.lucube</string>
+    <string name="custom_url_scheme">com.buildbeyond.lucube</string>
+    <string name="widget_desc">What\'s playing, with play and skip</string>
+</resources>

@@ -1,0 +1,35 @@
+name: Android app
+on:
+  push:
+    branches: [main]
+    paths: ['phone/**', 'web/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Build the phone page
+        working-directory: phone
+        run: npm ci && python3 build_www.py && npx cap sync android
+      - name: Build the APK
+        working-directory: phone/android
+        env: { LU_BUILD: '${{ github.run_number }}' }
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace > build.log 2>&1 || {
+            grep -E "error:|e: |FAILURE|What went wrong|Could not|\.java:[0-9]+|AAPT|Execution failed" build.log | head -40 | while IFS= read -r l; do echo "::error::$l"; done
+            tail -60 build.log
+            exit 1; }
+          cp app/build/outputs/apk/release/app-release.apk ../../LuCube.apk
+      - name: Publish
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          gh release delete phone-latest --yes --cleanup-tag || true
+          gh release create phone-latest LuCube.apk --title "Lu Cube for Android (build ${{ github.run_number }})" --notes "Install LuCube.apk on your Android phone (allow installing from your browser when it asks). Each new build installs over the last one and keeps your settings." --latest
