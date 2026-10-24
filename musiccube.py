@@ -612,7 +612,177 @@ def set_town(text):
     print(f"Weather set to {h['name']}, {h.get('admin1', '')} ({h.get('country', '')}). Restart Lu Cube to see it.")
 
 
+# ---------- Phone Sync: the Lu Cube phone app copies your songs and swaps passport stamps over Wi-Fi ----------
+SYNC_PORT = 8766
+
+
+def sync_code():
+    f = os.path.join(ROOT, "data", "phone_code.txt")
+    try:
+        c = open(f, encoding="utf-8").read().strip()
+        if re.fullmatch(r"\d{4}", c):
+            return c
+    except OSError:
+        pass
+    c = f"{random.randint(0, 9999):04d}"
+    os.makedirs(os.path.dirname(f), exist_ok=True)
+    with open(f, "w", encoding="utf-8") as w:
+        w.write(c)
+    return c
+
+
+def sync_files():
+    out = []
+    for dp, dn, fn in os.walk(MUSIC):
+        dn.sort(key=str.lower)
+        for f in sorted(fn, key=str.lower):
+            if f.lower().endswith(AUDIO):
+                full = os.path.join(dp, f)
+                out.append({"p": os.path.relpath(full, MUSIC).replace(os.sep, "/"), "s": os.path.getsize(full)})
+    return out
+
+
+def sync_merge(mine):
+    """Everything from both sides: every stamp, every favourite, every caught song."""
+    try:
+        st = json.load(open(STATE, encoding="utf-8"))
+    except (OSError, ValueError):
+        st = {}
+    r = st.setdefault("radio", {})
+    pas = r.get("pass") if isinstance(r.get("pass"), dict) else {}
+    for k, v in (mine.get("pass") or {}).items():
+        if not isinstance(v, dict):
+            continue
+        if k not in pas:
+            pas[k] = v
+        else:
+            cs = pas[k].setdefault("cities", [])
+            for c in v.get("cities") or []:
+                if c not in cs and len(cs) < 40:
+                    cs.append(c)
+    r["pass"] = pas
+    # the PC plays stations through its relay (/api/radio/play?u=…&i=…); the phone plays the stream address itself
+    ids = {}
+    try:
+        for c in json.load(open(WORLD, encoding="utf-8")).get("countries", []):
+            for t in c.get("st", []):
+                ids[t["u"]] = t.get("id", "")
+    except (OSError, ValueError, KeyError):
+        pass
+    raw = lambda x: urllib.parse.parse_qs(urllib.parse.urlparse(x).query).get("u", [x])[0] if x.startswith("/api/radio/play") else x
+    relay = lambda u: "/api/radio/play?u=" + urllib.parse.quote(u, safe="!*'()") + "&i=" + urllib.parse.quote(ids.get(u, ""), safe="!*'()")
+    favs = [x for x in r.get("favs") or [] if isinstance(x, str)]
+    have = {raw(x) for x in favs}
+    for u in mine.get("rfavs") or []:
+        if isinstance(u, str) and u.startswith("http") and u not in have:
+            favs.append(relay(u))
+            have.add(u)
+    r["favs"] = favs
+    caught = st.get("caught") if isinstance(st.get("caught"), list) else []
+    seen = {(c.get("t"), c.get("at")) for c in caught if isinstance(c, dict)}
+    for c in mine.get("caught") or []:
+        if isinstance(c, dict) and (c.get("t"), c.get("at")) not in seen:
+            caught.append(c)
+            seen.add((c.get("t"), c.get("at")))
+    st["caught"] = sorted(caught, key=lambda c: c.get("at") or 0)[-200:]
+    with open(STATE + ".tmp", "w", encoding="utf-8") as w:
+        json.dump(st, w)
+    os.replace(STATE + ".tmp", STATE)
+    return {"pass": pas, "rfavs": [raw(x) for x in favs], "caught": st["caught"]}
+
+
+class SyncH(BaseHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+    def reply(self, obj, code=200):
+        b = json.dumps(obj).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(b)))
+        self.end_headers()
+        self.wfile.write(b)
+
+    def ok(self):
+        u = urllib.parse.urlparse(self.path)
+        q = urllib.parse.parse_qs(u.query)
+        if (q.get("c") or [""])[0] != CODE:
+            self.reply({"ok": False, "error": "That code doesn't match the one on your PC."}, 403)
+            return None, None
+        return u.path, q
+
+    def do_GET(self):
+        path, q = self.ok()
+        if path is None:
+            return
+        if path == "/sync/hello":
+            files = sync_files()
+            print(f"  phone connected from {self.client_address[0]}", flush=True)
+            return self.reply({"ok": True, "name": socket.gethostname(), "songs": len(files)})
+        if path == "/sync/library":
+            return self.reply({"files": sync_files()})
+        if path == "/sync/file":
+            f = os.path.realpath(os.path.join(MUSIC, (q.get("p") or [""])[0]))
+            if not f.startswith(os.path.realpath(MUSIC) + os.sep) or not os.path.isfile(f):
+                return self.reply({"error": "no such song"}, 404)
+            print("  sending", os.path.relpath(f, MUSIC), flush=True)
+            self.send_response(200)
+            self.send_header("Content-Type", mimetypes.guess_type(f)[0] or "application/octet-stream")
+            self.send_header("Content-Length", str(os.path.getsize(f)))
+            self.end_headers()
+            with open(f, "rb") as r:
+                while True:
+                    b = r.read(1 << 16)
+                    if not b:
+                        break
+                    self.wfile.write(b)
+            return
+        self.reply({"error": "unknown"}, 404)
+
+    def do_POST(self):
+        path, q = self.ok()
+        if path is None:
+            return
+        n = int(self.headers.get("Content-Length") or 0)
+        try:
+            mine = json.loads(self.rfile.read(n) or b"{}")
+        except ValueError:
+            mine = {}
+        if path == "/sync/state":
+            print("  passport, favourites and caught songs merged", flush=True)
+            return self.reply(sync_merge(mine))
+        self.reply({"error": "unknown"}, 404)
+
+
+def lan_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("192.168.0.1", 80))
+        return s.getsockname()[0]
+    except OSError:
+        return socket.gethostbyname(socket.gethostname())
+    finally:
+        s.close()
+
+
+def phone_sync():
+    global CODE
+    CODE = sync_code()
+    srv = ThreadingHTTPServer(("0.0.0.0", SYNC_PORT), SyncH)
+    print("\n  LU CUBE  PHONE SYNC\n")
+    print(f"  On your phone: Lu Cube > settings (gear) > Sync with your PC")
+    print(f"     address:  {lan_ip()}:{SYNC_PORT}")
+    print(f"     code:     {CODE}\n")
+    print(f"  {len(sync_files())} songs ready. Same Wi-Fi as the phone. Close this window when you're done.\n", flush=True)
+    srv.serve_forever()
+
+
+CODE = ""
+
+
 def main():
+    if "--phone-sync" in sys.argv:
+        return phone_sync()
     if "--set-town" in sys.argv:
         return set_town(" ".join(sys.argv[sys.argv.index("--set-town") + 1:]))
     srv = ThreadingHTTPServer(("127.0.0.1", 0), H)

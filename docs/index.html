@@ -71,6 +71,7 @@ h2{margin:10px 0 0;font:400 clamp(40px,6vw,64px)/.95 Anton,sans-serif;text-trans
 footer{padding:50px 0 70px;border-top:1px solid var(--line);color:var(--dim);font-size:14px}
 footer .wrap{display:flex;flex-wrap:wrap;gap:30px;justify-content:space-between}
 footer b{color:#fff}
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:36px}.dl .card{background:#0f1116;border:1px solid var(--line);border-radius:16px;padding:26px}.dl h3{margin:6px 0 10px;font:400 30px Anton,sans-serif;letter-spacing:.03em}.dl ol{margin:0 0 22px;padding-left:20px;line-height:1.6;color:#c4cad4}.dl ol li{margin-bottom:6px}.dl a:not(.btn){color:var(--y)}.dl .small{margin:18px 0 0;font-size:13px;line-height:1.55;color:#8b93a1}@media(max-width:760px){.dl{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -81,7 +82,7 @@ footer b{color:#fff}
   <div class="mono kick">Music player · Windows</div>
   <h1>Lu <em>Cube</em></h1>
   <p class="say">A music wheel that sits on the edge of your screen. Drag a record off it and it becomes a 3D cube you can spin, with a different face on every side.</p>
-  <div class="btns"><a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/archive/refs/heads/main.zip">⬇ Download for Windows</a><a class="btn ghost" href="https://github.com/BuildBeyond1889/LuCube">View on GitHub</a></div>
+  <div class="btns"><a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/archive/refs/heads/main.zip">⬇ Windows PC</a><a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/releases/download/phone-latest/LuCube.apk">⬇ Android phone</a><a class="btn ghost" href="https://github.com/BuildBeyond1889/LuCube">View on GitHub</a></div>
   <div class="note">Free and open source. Your own music works with no internet and no account.</div>
  </div>
  <div class="heroimg"><img class="cube" src="img/cube-spin.jpg" alt="The Lu Cube, a 3D cube with a different player face on each side, floating mid-spin"><img class="sun" src="img/wheel.jpg" alt="The music wheel in the corner of the screen, with a globe inside it"></div>
@@ -140,18 +141,18 @@ footer b{color:#fff}
 </div></section>
 
 <section id="phone"><div class="wrap">
- <div class="mono kick">Phone <span class="badge">IN THE WORKS</span></div>
+ <div class="mono kick">Phone <span class="badge">ANDROID · OUT NOW</span></div>
  <h2>Same cube. In your pocket.</h2>
  <div class="split">
   <div>
-   <p class="lede" style="margin-top:0">The same cube and the same faces, on Android first and iPhone later. It plays through the phone's own audio system, so the lock screen, headphones, car and Bluetooth controls all work.</p>
+   <p class="lede" style="margin-top:0">The same cube and the same faces, on Android now (iPhone later). It plays through the phone's own audio system, so the lock screen, headphones, car and Bluetooth controls all work.</p>
    <ul class="list">
     <li><b>♫ Your music</b>, stored on the phone and played offline, with a thumb wheel for playlists.</li>
     <li><b>📻 World radio</b>, with a globe at the bottom that spins to wherever you scroll.</li>
     <li><b>◎ Remote</b> for whatever another app is playing. Spotify, YouTube Music and podcasts show up on the cube, and its buttons control them.</li>
-    <li><b>Song Catcher, home-screen widget, Android Auto, sync with your PC.</b></li>
+    <li><b>Song Catcher, home-screen widget, Android Auto, sunrise alarm, even volume, data saver, sync with your PC</b>, and cube skins you unlock with passport banners.</li>
    </ul>
-   <a class="more" href="phone.html">TRY THE PHONE MOCKUP →</a>
+   <div class="btns" style="margin-top:22px"><a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/releases/download/phone-latest/LuCube.apk">⬇ Get the Android app</a><a class="btn ghost" href="phone.html">See the screens</a></div>
   </div>
   <div class="frame"><img src="img/phone.jpg" alt="Four phone screens: your music, world radio, remote mode and the lock screen controls"></div>
  </div>
@@ -159,17 +160,21 @@ footer b{color:#fff}
 
 <section id="get"><div class="wrap">
  <div class="mono kick">Get it</div>
- <h2>Three steps. No account.</h2>
- <div class="steps">
-  <div class="step"><b>Download</b><p><a href="https://github.com/BuildBeyond1889/LuCube/archive/refs/heads/main.zip">Get the zip</a> and unzip it anywhere: a drive, a folder, a USB stick.</p></div>
-  <div class="step"><b>Add music</b><p>Put folders of songs in <code>Music</code> (each folder is a playlist), or run <code>Get Classical Music.bat</code> / <code>Get Lofi Music.bat</code> for free music.</p></div>
-  <div class="step"><b>Open it</b><p>Run <code>Lu Cube Desktop.bat</code> for the floating cube, or <code>Lu Cube.bat</code> for a window. It sets up what it needs the first time.</p></div>
+ <h2>Free. No account.</h2>
+ <div class="dl">
+  <div class="card"><div class="mono kick" style="margin:0">Windows PC or laptop</div><h3>The desktop cube</h3>
+   <ol><li><a href="https://github.com/BuildBeyond1889/LuCube/archive/refs/heads/main.zip">Download the zip</a> and unzip it anywhere: a drive, a folder, a USB stick.</li>
+   <li>Put folders of songs in <code>Music</code> (each folder is a playlist), or run <code>Get Classical Music.bat</code> / <code>Get Lofi Music.bat</code> for free music.</li>
+   <li>Run <code>Lu Cube Desktop.bat</code> for the floating cube, or <code>Lu Cube.bat</code> for a window.</li></ol>
+   <a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/archive/refs/heads/main.zip">⬇ Download for Windows</a>
+   <p class="small">Windows 10 or 11. If Python isn't installed, Lu Cube downloads its own portable copy (about 11 MB); the desktop cube downloads Electron once (about 100 MB). <code>Make Lu Cube Stick.bat</code> puts it on a USB stick for a friend. <code>Set Weather Town.bat</code> sets your town.</p></div>
+  <div class="card"><div class="mono kick" style="margin:0">Android phone</div><h3>The pocket cube</h3>
+   <ol><li><a href="https://github.com/BuildBeyond1889/LuCube/releases/download/phone-latest/LuCube.apk">Download LuCube.apk</a> on the phone.</li>
+   <li>Open it. Android asks once to allow installs from your browser: allow it, then tap Install.</li>
+   <li>Open Lu Cube and allow music access. Folders of songs on the phone become playlists.</li></ol>
+   <a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/releases/download/phone-latest/LuCube.apk">⬇ Download for Android</a>
+   <p class="small">Android 7 or newer, about 6 MB. New versions install over the old one and keep your settings. To copy songs from your PC, run <code>Phone Sync.bat</code> on the PC and tap ⚙ → Sync on the phone (same Wi-Fi). iPhone: later.</p></div>
  </div>
- <ul class="list" style="max-width:820px;margin-top:30px">
-  <li><b>Windows 10 or 11.</b> If Python isn't installed, Lu Cube downloads its own portable copy (about 11 MB). The desktop cube downloads Electron once (about 100 MB).</li>
-  <li><b>Give it to a friend:</b> <code>Make Lu Cube Stick.bat</code> puts everything on a USB stick, and <code>Install Lu Cube.bat</code> installs it on their computer.</li>
-  <li><b>Weather:</b> run <code>Set Weather Town.bat</code> once to set your town.</li>
- </ul>
 </div></section>
 
 <footer><div class="wrap">

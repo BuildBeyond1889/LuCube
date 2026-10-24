@@ -32,8 +32,19 @@ Press **R** (or the 📻 bubble on the wheel) to switch. A line of light sweeps 
 ## Give it to someone
 Run **Make Lu Cube Stick.bat** with a USB stick plugged in. On the other computer, run **Install Lu Cube.bat** from the stick: it installs Lu Cube, downloads music if they want it, and makes a shortcut. Computers that already have Lu Cube update themselves when the stick is plugged in.
 
-## Phone (in the works)
-Android first, iPhone later. It's the same cube, plus a remote mode that shows and controls whatever Spotify, YouTube Music or podcasts are playing. **[Try the mockup](https://buildbeyond1889.github.io/LuCube/phone.html)**.
+## Phone (Android)
+**[Download LuCube.apk](https://github.com/BuildBeyond1889/LuCube/releases/download/phone-latest/LuCube.apk)** on the phone and open it (Android asks once to allow installs from your browser). Android 7 or newer.
+
+The same cube and faces, with a thumb wheel for your playlists and a globe for the radio. It plays through the phone's own media player, so the lock screen, headphones, Bluetooth and **Android Auto** all work. Plus:
+- **◎ Remote:** with notification access, the cube shows and controls whatever Spotify, YouTube Music or a podcast app is playing.
+- **Song Catcher:** tap ♥ CATCH when a station shows a song you like; find it later in Spotify or YouTube Music.
+- **Home-screen widget, sunrise alarm** (wake to a station where it's morning right now), **even volume, data saver.**
+- **Cube skins** unlocked by passport banners.
+- **Sync with your PC:** run `Phone Sync.bat` on the PC, then ⚙ → Sync on the phone (same Wi-Fi). Songs copy over; passport stamps, radio favourites and caught songs merge both ways.
+
+Android Auto only lists apps from the Play Store until you turn on *Unknown sources* (Android Auto settings → tap *Version* ten times → ⋮ → Developer settings).
+
+The app is built by GitHub Actions from `phone/` every time it changes.
 
 ## Files
 | | |
@@ -43,6 +54,7 @@ Android first, iPhone later. It's the same cube, plus a remote mode that shows a
 | `src/index.lu.html` | Lu Cube without the radio (the radio is built onto it) |
 | `desktop/` | the floating desktop cube (Electron) |
 | `stick/` | the installer that goes on a USB stick |
+| `phone/` | the Android app (the same page plus a phone layer, and a native player) |
 | `docs/` | the website |
 
 ## Credits
