@@ -215,8 +215,11 @@ public class LuPlayerService extends MediaLibraryService {
 
     @Override
     public void onTaskRemoved(@Nullable Intent rootIntent) {
-        // swiping the app away keeps the music going; if nothing is playing, close quietly
-        if (player == null || !player.getPlayWhenReady() || player.getMediaItemCount() == 0) stopSelf();
+        // swiping Lu Cube away from your recent apps stops the music (it remembers where you were for next time)
+        if (player != null) { player.pause(); player.stop(); }
+        LuWidget.update(this);
+        stopForeground(true);
+        stopSelf();
     }
 
     @Override
