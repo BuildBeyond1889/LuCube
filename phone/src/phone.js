@@ -207,12 +207,12 @@ let treeK='';function pushTree(force){if(!HAS)return;const lists=[],luP=MODE==='
 setInterval(()=>{if(!document.hidden)pushTree()},15000);
 
 // ---------- start: the cube front and centre ----------
-function place(){PW=innerWidth;PH=innerHeight;CY0=Math.round(PH*.37);csz=Math.min(.86,(PW-44)/300)}
+function place(){PW=innerWidth;PH=innerHeight;CY0=Math.round(PH*.37);csz=Math.min(1,(PW-40)/300)}
 addEventListener('resize',place);
 setTimeout(()=>{place();toCube(PW/2,CY0);cpos=[PW/2,CY0];goFace('NOW PLAYING');document.body.dataset.mode=MODE;
  topUI();bottomUI();renderFaces();applySkin();requestAnimationFrame(frameP);rpoll();
  // keep it centred (the desktop version lets you drag it around; here it stays put)
- setInterval(()=>{if(cubeOn&&!shatter){cpos[0]=PW/2;cpos[1]=CY0;csz=Math.min(.86,(PW-44)/300)}},100)},60);
+ setInterval(()=>{if(cubeOn&&!shatter){cpos[0]=PW/2;cpos[1]=CY0;csz=Math.min(1,(PW-40)/300)}},100)},60);
 // the radio may come up first (that's where you left it): match the switch
 setInterval(()=>{if(!REMOTE&&document.body.dataset.mode!==MODE){document.body.dataset.mode=MODE;topUI();bottomUI()}},400);
 })();

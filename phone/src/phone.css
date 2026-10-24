@@ -9,10 +9,10 @@ body:before{content:'';position:fixed;inset:0;background:radial-gradient(circle 
 #ptop h2{margin:0;font:400 22px Anton,sans-serif;letter-spacing:.04em;color:#fff}#ptop h2 em{font-style:normal;color:var(--y)}
 .seg{display:flex;gap:3px;padding:3px;border-radius:99px;background:#111;border:1px solid rgba(255,194,26,.4)}
 .seg b{width:36px;height:27px;border-radius:99px;display:grid;place-items:center;font:400 13px Inter,sans-serif;color:#8b93a1;cursor:pointer;transition:all .25s}.seg b.on{background:var(--y);color:#111}
-#pdots{position:fixed;left:0;right:0;top:calc(37vh + 150px);display:flex;justify-content:center;gap:8px;z-index:30}
+#pdots{position:fixed;left:0;right:0;top:calc(37vh + 172px);display:flex;justify-content:center;gap:8px;z-index:30}
 #pdots i{width:7px;height:7px;border-radius:4px;background:#3a3f4a;cursor:pointer;transition:all .3s}#pdots i.on{width:22px;background:var(--y)}
-#pface{position:fixed;left:0;right:0;top:calc(37vh + 166px);text-align:center;font:700 9px "Space Mono",monospace;letter-spacing:.24em;color:#8b93a1;z-index:30}
-#pbot{position:fixed;left:0;right:0;bottom:0;height:calc(63vh - 200px);z-index:20;touch-action:none;cursor:grab;overflow:hidden}
+#pface{position:fixed;left:0;right:0;top:calc(37vh + 188px);text-align:center;font:700 9px "Space Mono",monospace;letter-spacing:.24em;color:#8b93a1;z-index:30}
+#pbot{position:fixed;left:0;right:0;bottom:0;height:calc(63vh - 222px);z-index:20;touch-action:none;cursor:grab;overflow:hidden}
 #pglobe{position:absolute;left:0;right:0;top:0;width:100%;height:100%;display:none}#pbot[data-mode=radio] #pglobe{display:block}#pbot[data-mode=radio] #pwheel{display:none}
 #pwheel{position:absolute;inset:0}
 #pwheel:before{content:'';position:absolute;left:-15%;right:-15%;top:46px;height:400px;border-radius:50%;border-top:2px solid rgba(255,194,26,.45);background:radial-gradient(ellipse at 50% 0,rgba(8,9,11,.6),transparent 70%)}
@@ -60,3 +60,8 @@ body.skin-4 .f>.skt:after{content:'';position:absolute;inset:-6px;background:lin
 .pfake i{animation:pfk 1s ease-in-out infinite alternate;animation-play-state:paused}.pfake.go i{animation-play-state:running}
 .pfake i:nth-child(3n){animation-duration:.7s}.pfake i:nth-child(3n+1){animation-duration:1.3s}.pfake i:nth-child(4n){animation-delay:-.4s}
 @keyframes pfk{from{height:12%}to{height:88%}}
+
+/* bigger ▲ ▼ on lists: easy to hit with a thumb (the touch area reaches past the button too) */
+.f .scr{gap:8px;top:28px;right:5px}
+.f .scr b{position:relative;width:26px;height:40px;font-size:13px}
+.f .scr b:before{content:'';position:absolute;inset:-8px -5px}
