@@ -70,3 +70,5 @@ body.skin-4 .f>.skt:after{content:'';position:absolute;inset:-6px;background:lin
 #pfav{display:none;position:absolute;right:14px;top:6px;z-index:5;padding:7px 10px;border-radius:99px;background:#111;border:1px solid rgba(255,194,26,.5);color:var(--y);font:700 8px "Space Mono",monospace;letter-spacing:.12em;cursor:pointer}
 .star.heart{top:110px;font-size:20px;color:#e0281a}.star.heart.on{background:#e0281a;color:#fff}.star.heart.off{opacity:.3}
 #ptop h2{font-size:26px!important;line-height:1}#ptop h2{display:flex;align-items:flex-start;gap:3px;line-height:.86!important}#ptop h2 svg{margin-top:-3px}
+
+.f .scr.pscr{top:52px}
