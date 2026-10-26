@@ -26,7 +26,7 @@ echo.
 echo Copying Lu Cube to %OUT% ...
 REM Electron's files come out of its zip dated 1 Jan 1980, which USB sticks reject ("ERROR 87"). Re-date them to today first.
 powershell -NoProfile -Command "Get-ChildItem -LiteralPath '%~dp0desktop' -Recurse -File | Where-Object { $_.LastWriteTime.Year -lt 1990 -or $_.CreationTime.Year -lt 1990 } | ForEach-Object { $n=Get-Date; $_.CreationTime=$n; $_.LastWriteTime=$n; $_.LastAccessTime=$n }"
-robocopy "%~dp0." "%OUT%" musiccube.py get_classical.py README.md "Lu Cube.bat" "Lu Cube Desktop.bat" "Get Classical Music.bat" "Get Lofi Music.bat" "Set Up Desktop Cube.bat" "Make Taskbar Shortcut.bat" "Set Weather Town.bat" "Phone Sync.bat" /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP
+robocopy "%~dp0." "%OUT%" musiccube.py get_classical.py README.md "Lu Cube.bat" "Lu Cube Desktop.bat" "Get Classical Music.bat" "Get Lofi Music.bat" "Set Up Desktop Cube.bat" "Make Taskbar Shortcut.bat" "Set Weather Town.bat" "Phone Sync.bat" get_audiobooks.py "Get Audiobooks.bat" /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP
 robocopy "%~dp0web" "%OUT%\web" /E /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP
 robocopy "%~dp0desktop" "%OUT%\desktop" /E /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP
 if not exist "%OUT%\musiccube.py" (echo Copy failed. Is the stick full or read-only? & pause & exit /b)

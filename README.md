@@ -69,3 +69,6 @@ The app is built by GitHub Actions from `phone/` every time it changes.
 Stations: [radio-browser.info](https://www.radio-browser.info) · Weather: [Open-Meteo](https://open-meteo.com) · Free music: [Internet Archive](https://archive.org) and Musopen · Fonts: Anton, Space Mono and Inter under the SIL Open Font License (`web/fonts`).
 
 MIT licence, © 2026 BuildBeyond1889.
+
+## Audiobooks
+Run **Get Audiobooks.bat** to pull classic public-domain audiobooks from LibriVox (via the Internet Archive). Each book lands in `Music\<Book>\` with its chapters in order and a `cover.jpg`, and shows up in Lu Cube as its own playlist. Folders can hold as many tracks as you like.
