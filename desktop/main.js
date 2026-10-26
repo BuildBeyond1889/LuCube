@@ -36,11 +36,17 @@ function findPython() {
   return c.find((p) => p && fs.existsSync(p)) || "python";
 }
 // one see-through layer over all your screens; the page gets each screen's rectangle so the wheel can dock on any edge
+let pinD = null;
 function layout() {
   let ds = screen.getAllDisplays(); const pid = screen.getPrimaryDisplay().id;
   // Windows can't stretch one see-through window across screens with different zoom (e.g. a laptop at 150% plus a
   // monitor at 100%): it comes out shrunk and shoved over. In that case Lu Cube lives on the main screen only.
-  if (new Set(ds.map((d) => d.scaleFactor)).size > 1) ds = ds.filter((d) => d.id === pid);
+  if (new Set(ds.map((d) => d.scaleFactor)).size > 1) {
+    // pick one screen: the one you chose with Ctrl+Alt+Shift+M, otherwise the biggest external monitor, otherwise the main one
+    const ext = ds.filter((d) => !d.internal).sort((a, b) => b.size.width * b.size.height - a.size.width * a.size.height);
+    const pick = ds.find((d) => d.id === pinD) || ext[0] || ds.find((d) => d.id === pid) || ds[0];
+    pinD = pick.id; ds = [pick];
+  }
   const x0 = Math.min(...ds.map((d) => d.workArea.x)), y0 = Math.min(...ds.map((d) => d.workArea.y));
   const x1 = Math.max(...ds.map((d) => d.workArea.x + d.workArea.width)), y1 = Math.max(...ds.map((d) => d.workArea.y + d.workArea.height));
   return { bounds: { x: x0, y: y0, width: x1 - x0, height: y1 - y0 },
@@ -51,12 +57,15 @@ function open(url) {
   win = new BrowserWindow({ ...L.bounds, transparent: true, frame: false, hasShadow: false, resizable: false, movable: false,
     alwaysOnTop: false, skipTaskbar: false, title: "Lu Cube", icon: ICON, backgroundColor: "#00000000", enableLargerThanScreen: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false } });
-  win.setBounds(L.bounds); setTimeout(() => win && win.setBounds(L.bounds), 300); // set twice: Windows rescales on the first move
+  const fit = (B) => { win.setBounds(B); for (const t of [120, 400, 1200]) setTimeout(() => win && win.setBounds(B), t); };
+  fit(L.bounds); win.once("ready-to-show", () => fit(layout().bounds)); // set twice: Windows rescales on the first move
   win.setIgnoreMouseEvents(true, { forward: true }); // see-through to clicks until the pointer is over the wheel or cube
   win.loadURL(url + "?desk=1#" + encodeURIComponent(JSON.stringify(L.list)));
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; }); // Song Catcher links open in your browser
   win.on("closed", () => { stop(); app.quit(); });
   globalShortcut.register("CommandOrControl+Alt+M", front);
+  // Ctrl+Alt+Shift+M: hop Lu Cube to your next screen (when your screens use different zoom it lives on one at a time)
+  globalShortcut.register("CommandOrControl+Alt+Shift+M", () => { const ds = screen.getAllDisplays(), i = ds.findIndex((d) => d.id === pinD); pinD = ds[(i + 1) % ds.length].id; refit(); });
   // media keys (and Fn+F5/F6/F7-style laptop keys that send them), plus backups if your laptop's keys don't:
   // Ctrl+Alt+Space play/pause, Ctrl+Alt+N next, Ctrl+Alt+B back
   const media = (k) => () => win && win.webContents.send("media", k);
@@ -64,7 +73,7 @@ function open(url) {
     ["CommandOrControl+Alt+Space", "play"], ["CommandOrControl+Alt+N", "next"], ["CommandOrControl+Alt+B", "prev"]]) {
     try { globalShortcut.register(key, media(k)); } catch (err) {}
   }
-  const refit = () => { if (!win) return; const N = layout(); win.setBounds(N.bounds); setTimeout(() => win && win.setBounds(N.bounds), 300); win.webContents.send("displays", N.list); };
+  const refit = () => { if (!win) return; const N = layout(); fit(N.bounds); win.webContents.send("displays", N.list); };
   screen.on("display-added", refit); screen.on("display-removed", refit); screen.on("display-metrics-changed", refit);
 }
 // bring the cube and wheel back over your windows (Ctrl+Alt+M, or clicking it on the taskbar)
