@@ -37,7 +37,10 @@ function findPython() {
 }
 // one see-through layer over all your screens; the page gets each screen's rectangle so the wheel can dock on any edge
 function layout() {
-  const ds = screen.getAllDisplays(), pid = screen.getPrimaryDisplay().id;
+  let ds = screen.getAllDisplays(); const pid = screen.getPrimaryDisplay().id;
+  // Windows can't stretch one see-through window across screens with different zoom (e.g. a laptop at 150% plus a
+  // monitor at 100%): it comes out shrunk and shoved over. In that case Lu Cube lives on the main screen only.
+  if (new Set(ds.map((d) => d.scaleFactor)).size > 1) ds = ds.filter((d) => d.id === pid);
   const x0 = Math.min(...ds.map((d) => d.workArea.x)), y0 = Math.min(...ds.map((d) => d.workArea.y));
   const x1 = Math.max(...ds.map((d) => d.workArea.x + d.workArea.width)), y1 = Math.max(...ds.map((d) => d.workArea.y + d.workArea.height));
   return { bounds: { x: x0, y: y0, width: x1 - x0, height: y1 - y0 },
@@ -48,7 +51,7 @@ function open(url) {
   win = new BrowserWindow({ ...L.bounds, transparent: true, frame: false, hasShadow: false, resizable: false, movable: false,
     alwaysOnTop: false, skipTaskbar: false, title: "Lu Cube", icon: ICON, backgroundColor: "#00000000", enableLargerThanScreen: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false } });
-  win.setBounds(L.bounds);
+  win.setBounds(L.bounds); setTimeout(() => win && win.setBounds(L.bounds), 300); // set twice: Windows rescales on the first move
   win.setIgnoreMouseEvents(true, { forward: true }); // see-through to clicks until the pointer is over the wheel or cube
   win.loadURL(url + "?desk=1#" + encodeURIComponent(JSON.stringify(L.list)));
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; }); // Song Catcher links open in your browser
@@ -61,7 +64,7 @@ function open(url) {
     ["CommandOrControl+Alt+Space", "play"], ["CommandOrControl+Alt+N", "next"], ["CommandOrControl+Alt+B", "prev"]]) {
     try { globalShortcut.register(key, media(k)); } catch (err) {}
   }
-  const refit = () => { if (!win) return; const N = layout(); win.setBounds(N.bounds); win.webContents.send("displays", N.list); };
+  const refit = () => { if (!win) return; const N = layout(); win.setBounds(N.bounds); setTimeout(() => win && win.setBounds(N.bounds), 300); win.webContents.send("displays", N.list); };
   screen.on("display-added", refit); screen.on("display-removed", refit); screen.on("display-metrics-changed", refit);
 }
 // bring the cube and wheel back over your windows (Ctrl+Alt+M, or clicking it on the taskbar)
