@@ -131,7 +131,11 @@ def library():
         if not cov:
             cov = next((f for f in sorted(os.listdir(p)) if f.lower().endswith((".jpg", ".jpeg", ".png"))), None)
         cover = "/media/" + urllib.parse.quote(d + "/" + cov) if cov else ""
-        parts = split_collection(d, p, d + "/", tr, cover) if len(tr) > 25 else None
+        # only a big mixed-composer collection (like Musopen) gets split; any other folder stays one playlist, however long
+        named = [parse_name(os.path.splitext(urllib.parse.unquote(t["src"]).rsplit("/", 1)[-1])[0]) for t in tr]
+        comps = {n[0] for n in named if n and n[0]}
+        mixed = len(tr) > 25 and len(comps) >= 2 and sum(1 for n in named if n and n[0]) >= len(tr) * 0.6
+        parts = split_collection(d, p, d + "/", tr, cover) if mixed else None
         if parts and len(parts) > 1:
             out.extend(parts)
         else:
