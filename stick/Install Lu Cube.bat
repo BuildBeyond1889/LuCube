@@ -18,7 +18,8 @@ echo.
 echo Copying Lu Cube onto this computer ...
 robocopy "%SRC%" "%DEST%" /E /COPY:D /DCOPY:D /XO /R:2 /W:2 /NJH /NJS /NDL /NP /XD __pycache__ /XF state.json
 if not exist "%DEST%\musiccube.py" (echo Copy failed. & pause & exit /b)
-if exist "%SRC%\favs.json" powershell -NoProfile -Command "$f=Get-Content -Raw -LiteralPath '%SRC%\favs.json' | ConvertFrom-Json; if($f -eq $null){$f=@()}; $p='%DEST%\state.json'; if(Test-Path -LiteralPath $p){$s=Get-Content -Raw -LiteralPath $p | ConvertFrom-Json}else{$s=New-Object psobject}; $s | Add-Member -Force -NotePropertyName favs -NotePropertyValue @($f); [IO.File]::WriteAllText($p, ($s | ConvertTo-Json -Depth 30 -Compress))"
+if exist "%SRC%\favs.json" (if exist "%DEST%\python\python.exe" (set "PYX=%DEST%\python\python.exe") else (set "PYX=python"))
+if exist "%SRC%\favs.json" "%PYX%" -c "import json,sys,os;f=json.load(open(sys.argv[1],encoding='utf-8'));p=sys.argv[2];s=json.load(open(p,encoding='utf-8')) if os.path.exists(p) else {};s['favs']=f;json.dump(s,open(p,'w',encoding='utf-8'))" "%SRC%\favs.json" "%DEST%\state.json"
 mkdir "%DEST%\Music" 2>nul
 call :electron
 
@@ -74,7 +75,8 @@ powershell -NoProfile -Command "Get-Process electron,python,pythonw -ErrorAction
 timeout /t 1 >nul
 robocopy "%SRC%" "%DEST%" /E /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP /XD __pycache__ Music python electron /XF state.json
 copy /y "%SRC%\version.txt" "%DEST%\version.txt" >nul 2>nul
-if exist "%SRC%\favs.json" powershell -NoProfile -Command "$f=Get-Content -Raw -LiteralPath '%SRC%\favs.json' | ConvertFrom-Json; if($f -eq $null){$f=@()}; $p='%DEST%\state.json'; if(Test-Path -LiteralPath $p){$s=Get-Content -Raw -LiteralPath $p | ConvertFrom-Json}else{$s=New-Object psobject}; $s | Add-Member -Force -NotePropertyName favs -NotePropertyValue @($f); [IO.File]::WriteAllText($p, ($s | ConvertTo-Json -Depth 30 -Compress))"
+if exist "%SRC%\favs.json" (if exist "%DEST%\python\python.exe" (set "PYX=%DEST%\python\python.exe") else (set "PYX=python"))
+if exist "%SRC%\favs.json" "%PYX%" -c "import json,sys,os;f=json.load(open(sys.argv[1],encoding='utf-8'));p=sys.argv[2];s=json.load(open(p,encoding='utf-8')) if os.path.exists(p) else {};s['favs']=f;json.dump(s,open(p,'w',encoding='utf-8'))" "%SRC%\favs.json" "%DEST%\state.json"
 call :electron
 for %%f in ("Music Cube.bat" "Music Cube Desktop.bat" "Make Music Cube Stick.bat") do if exist "%DEST%\%%~f" del "%DEST%\%%~f"
 if exist "%DEST%\desktop\electron\electron.exe" call "%DEST%\Make Taskbar Shortcut.bat" <nul >nul
