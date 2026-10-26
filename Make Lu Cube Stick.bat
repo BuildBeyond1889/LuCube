@@ -30,6 +30,8 @@ robocopy "%~dp0." "%OUT%" musiccube.py get_classical.py README.md "Lu Cube.bat" 
 robocopy "%~dp0web" "%OUT%\web" /E /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP
 robocopy "%~dp0desktop" "%OUT%\desktop" /E /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP
 if not exist "%OUT%\musiccube.py" (echo Copy failed. Is the stick full or read-only? & pause & exit /b)
+REM your current Lu Cube favourites ride along on the stick (and replace the old ones wherever you install it)
+if exist "%~dp0state.json" powershell -NoProfile -Command "$s=Get-Content -Raw -LiteralPath '%~dp0state.json' | ConvertFrom-Json; $f=$s.favs; if($f -eq $null){$f=@()}; [IO.File]::WriteAllText('%OUT%\favs.json', (ConvertTo-Json -InputObject @($f) -Compress))"
 
 REM its own Python (the official "embeddable" build from python.org, about 11 MB), so the other PC needs nothing
 if exist "%OUT%\python\python.exe" goto havepy
