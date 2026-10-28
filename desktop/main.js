@@ -55,10 +55,13 @@ function layout() {
 function open(url) {
   const L = layout();
   win = new BrowserWindow({ ...L.bounds, transparent: true, frame: false, hasShadow: false, resizable: false, movable: false,
-    alwaysOnTop: false, skipTaskbar: false, title: "Lu Cube", icon: ICON, backgroundColor: "#00000000", enableLargerThanScreen: true,
+    alwaysOnTop: false, skipTaskbar: false, show: false, title: "Lu Cube", icon: ICON, backgroundColor: "#00000000", enableLargerThanScreen: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false } });
   const fit = (B) => { win.setBounds(B); for (const t of [120, 400, 1200]) setTimeout(() => win && win.setBounds(B), t); };
-  fit(L.bounds); win.once("ready-to-show", () => fit(layout().bounds)); // set twice: Windows rescales on the first move
+  fit(L.bounds); // set more than once: Windows rescales on the first move
+  // stay hidden until it sits on the right screen, so you never see it jump there
+  win.once("ready-to-show", () => { fit(layout().bounds); setTimeout(() => win && win.show(), 150); });
+  setTimeout(() => win && !win.isVisible() && win.show(), 4000); // safety: show it anyway
   win.setIgnoreMouseEvents(true, { forward: true }); // see-through to clicks until the pointer is over the wheel or cube
   win.loadURL(url + "?desk=1#" + encodeURIComponent(JSON.stringify(L.list)));
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; }); // Song Catcher links open in your browser

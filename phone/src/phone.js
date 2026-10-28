@@ -146,6 +146,11 @@ const pfav=document.createElement('b');pfav.id='pfav';pfav.textContent='★ FAVO
 pfav.addEventListener('click',e=>{e.stopPropagation();if(PLS[0]&&PLS[0].fav){act('pl:0');goFace('PLAYLIST')}});
 setInterval(()=>{pfav.style.display=radio()&&PLS[0]&&PLS[0].fav?'block':'none'},500);
 let gLon2=0,gLat2=20;
+// a country chosen anywhere (the World face, next / previous, search, the wheel): the globe turns to it first.
+// You can still grab it and spin it while it's turning, or any time after.
+let lastPl=null;
+setInterval(()=>{if(!radio()||REMOTE||!P.has)return;const q=PLS[P.pl],k=P.pl+'|'+(q?q.n:'');if(k===lastPl)return;lastPl=k;
+ if(GD||!q||!q.city||q.city.lon==null)return;if(pick!==P.pl){pick=P.pl;plabel()}GV=[0,0];GSNAP=true},100);
 function drawPGlobe(t){const W=GC.width=GC.clientWidth*2,H=GC.height=GC.clientHeight*2,cx=W/2,R=Math.min(W*.32,H*.31),cy=H*.39;GR=R/2;gx.clearRect(0,0,W,H);
  if(!GD&&!GSNAP){gLon2+=GV[0];gLat2=Math.max(-65,Math.min(75,gLat2+GV[1]));GV=[GV[0]*.93,GV[1]*.93];if(Math.hypot(GV[0],GV[1])<.04)GSNAP=true} // a flick keeps it turning, then it settles
  const p=PLS[pick],c=p&&p.city;

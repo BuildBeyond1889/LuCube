@@ -74,7 +74,7 @@ h2{margin:10px 0 0;font:400 clamp(40px,6vw,64px)/.95 Anton,sans-serif;text-trans
 footer{padding:50px 0 70px;border-top:1px solid var(--line);color:var(--dim);font-size:14px}
 footer .wrap{display:flex;flex-wrap:wrap;gap:30px;justify-content:space-between}
 footer b{color:#fff}
-.dl{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:36px}.dl .card{background:#0f1116;border:1px solid var(--line);border-radius:16px;padding:26px}.dl h3{margin:6px 0 10px;font:400 30px Anton,sans-serif;letter-spacing:.03em}.dl ol{margin:0 0 22px;padding-left:20px;line-height:1.6;color:#c4cad4}.dl ol li{margin-bottom:6px}.dl a:not(.btn){color:var(--y)}.dl .small{margin:18px 0 0;font-size:13px;line-height:1.55;color:#8b93a1}@media(max-width:760px){.dl{grid-template-columns:1fr}}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-top:36px}.dl .card{background:#0f1116;border:1px solid var(--line);border-radius:16px;padding:26px}.dl h3{margin:6px 0 10px;font:400 30px Anton,sans-serif;letter-spacing:.03em}.dl ol{margin:0 0 22px;padding-left:20px;line-height:1.6;color:#c4cad4}.dl ol li{margin-bottom:6px}.dl a:not(.btn){color:var(--y)}.dl .small{margin:18px 0 0;font-size:13px;line-height:1.55;color:#8b93a1}@media(max-width:760px){.dl{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -85,7 +85,7 @@ footer b{color:#fff}
   <div class="mono kick">Music player · Windows</div>
   <h1>Lu <em>Cube</em></h1>
   <p class="say">A music wheel that sits on the edge of your screen. Drag a record off it and it becomes a 3D cube you can spin, with a different face on every side.</p>
-  <div class="btns"><a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/archive/refs/heads/main.zip">⬇ Windows PC</a><a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/releases/download/phone-latest/LuCube.apk">⬇ Android phone</a><a class="btn ghost" href="https://github.com/BuildBeyond1889/LuCube">View on GitHub</a></div>
+  <div class="btns"><a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/archive/refs/heads/main.zip">⬇ Windows PC</a><a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/releases/download/phone-latest/LuCube.apk">⬇ Android phone</a><a class="btn main" href="app/">iPhone &amp; iPad</a><a class="btn ghost" href="https://github.com/BuildBeyond1889/LuCube">View on GitHub</a></div>
   <div class="note">Free and open source. Your own music works with no internet and no account.</div>
  </div>
  <div class="heroimg"><img class="cube" src="img/cube-spin.jpg" alt="The Lu Cube, a 3D cube with a different player face on each side, floating mid-spin"><img class="sun" src="img/wheel.jpg" alt="The music wheel in the corner of the screen, with a globe inside it"></div>
@@ -148,7 +148,7 @@ footer b{color:#fff}
  <h2>Same cube. In your pocket.</h2>
  <div class="split">
   <div>
-   <p class="lede" style="margin-top:0">The same cube and the same faces, on Android now (iPhone later). It plays through the phone's own audio system, so the lock screen, headphones, car and Bluetooth controls all work.</p>
+   <p class="lede" style="margin-top:0">The same cube and the same faces, on Android, iPhone and iPad. It plays through the phone's own audio system, so the lock screen, headphones, car and Bluetooth controls all work.</p>
    <ul class="list">
     <li><b>♫ Your music</b>, stored on the phone and played offline, with a thumb wheel for playlists.</li>
     <li><b>📻 World radio</b>, with a globe at the bottom that spins to wherever you scroll.</li>
@@ -176,7 +176,13 @@ footer b{color:#fff}
    <li>Open it. Android asks once to allow installs from your browser: allow it, then tap Install.</li>
    <li>Open Lu Cube and allow music access. Folders of songs on the phone become playlists.</li></ol>
    <a class="btn main" href="https://github.com/BuildBeyond1889/LuCube/releases/download/phone-latest/LuCube.apk">⬇ Download for Android</a>
-   <p class="small">Android 7 or newer, about 6 MB. New versions install over the old one and keep your settings. To copy songs from your PC, run <code>Phone Sync.bat</code> on the PC and tap ⚙ → Sync on the phone (same Wi-Fi). iPhone: later.</p></div>
+   <p class="small">Android 7 or newer, about 6 MB. New versions install over the old one and keep your settings. To copy songs from your PC, run <code>Phone Sync.bat</code> on the PC and tap ⚙ → Sync on the phone (same Wi-Fi). iPhone: use the web app.</p></div>
+  <div class="card"><div class="mono kick" style="margin:0">iPhone or iPad</div><h3>The web app</h3>
+   <ol><li>On the iPhone or iPad, open <a href="app/">buildbeyond1889.github.io/LuCube/app</a> in <b>Safari</b>.</li>
+   <li>Tap <b>Share</b> → <b>Add to Home Screen</b> → <b>Add</b>. Lu Cube gets its own icon and opens full screen.</li>
+   <li>Tap <b>＋ ADD SONGS</b> and pick songs from Files (iCloud Drive, On My iPhone, Downloads). Each album becomes a playlist.</li></ol>
+   <a class="btn main" href="app/">Open Lu Cube for iPhone &amp; iPad</a>
+   <p class="small">iOS / iPadOS 16.4 or newer. No App Store, no account, nothing to sideload. iPhone gets the phone layout; iPad gets the full cube with the unfold window and Pong. Songs you add stay inside the app and play offline. Web-app limits Apple sets: music may pause when the screen locks, the volume follows the side buttons, the radio can't show what song is playing, the visualiser dances on its own rather than to the sound, and there's no remote mode, Android-Auto-style car view or PC sync.</p></div>
  </div>
 </div></section>
 

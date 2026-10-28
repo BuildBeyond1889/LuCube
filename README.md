@@ -54,6 +54,12 @@ Android Auto only lists apps from the Play Store until you turn on *Unknown sour
 
 The app is built by GitHub Actions from `phone/` every time it changes.
 
+## iPhone and iPad (web app)
+
+Open **https://buildbeyond1889.github.io/LuCube/app/** in Safari, then Share → Add to Home Screen. No App Store or account needed. The iPhone gets the phone layout. The iPad gets the full cube, with the unfold window, Pong and the depth visualiser. Tap **＋ ADD SONGS** to copy songs in from Files; they stay in the app and play offline.
+
+To rebuild after changing `web/index.html`, run `python phone/build_web.py`. It writes `docs/app/`, which GitHub Pages serves. Apple puts some limits on web apps: music may pause when the screen locks, volume follows the side buttons, there are no station song titles, and the visualiser animates on its own instead of following the sound.
+
 ## Files
 | | |
 |---|---|

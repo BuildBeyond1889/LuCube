@@ -1,4 +1,4 @@
-// ===================== LU CUBE · PHONE: the opening (9 s, tap to skip) =====================
+// ===================== LU CUBE · PHONE: the opening (9 s, plays through every time) =====================
 // The unfolded cube folds up like origami (the white square swings up twice into the lid), pulses and floods the
 // screen yellow, glides to the corner of the E, LISTEN TO THE UNIVERSE rises out of an invisible line and sinks
 // back, leaving L, U and the cube to come together in the middle, and the logo flies into the app's header.
@@ -19,7 +19,7 @@ ov.innerHTML=`<div id="liFlood"><i></i></div><div id="liTxt"></div>
 <div class="lf lf-right" style="background:#cfd6df"><i><svg viewBox="0 0 24 24" fill="#111"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg></i></div>
 <div class="lf lf-front" style="background:#e0281a"><i>${LINES}</i><i class="bk">${LINES}</i>
 <div class="lf lf-lid" style="background:#fff"><i><svg viewBox="0 0 24 24" fill="#111"><rect x="4" y="15" width="3" height="5"/><rect x="9" y="11" width="3" height="9"/><rect x="14" y="7" width="3" height="13"/><rect x="19" y="3" width="3" height="17"/></svg></i></div></div>
-</div></div></div><div id="liMeas"></div><div class="li-skip">TAP TO SKIP</div>`;
+</div></div></div><div id="liMeas"></div>`;
 document.body.append(ov);document.body.classList.add('lintro-on','lintro-hide');window.LU_INTRO_ON=true;
 const q=s=>ov.querySelector(s),txt=$('liTxt'),meas=$('liMeas'),icons=[...ov.querySelectorAll('.lf>i')];
 const fL=q('.lf-left'),fR=q('.lf-right'),fT=q('.lf-top'),fF=q('.lf-front'),fLid=q('.lf-lid'),cube=$('liCube'),mover=$('liMover');
@@ -76,7 +76,7 @@ function render(t){if(!ready)return;
   cx=lerp(fcx,FIN.cube.x,xe);cy=lerp(fcy,FIN.cube.y,xe);cs=lerp(fcw/(S*1.42),FIN.cube.w/(S*1.42),xe)}
  $('liFlood').style.opacity=1-xe;
  // the app is drawn once behind the solid yellow just before the reveal, so the fade itself has nothing new to paint
- if(t>=7.9&&document.body.classList.contains('lintro-hide')){document.body.classList.remove('lintro-hide');window.dispatchEvent(new Event('luintroreveal'))}ov.style.background=t>=EXIT?'transparent':'';q('.li-skip').style.opacity=t>=EXIT?0:1;
+ if(t>=7.9&&document.body.classList.contains('lintro-hide')){document.body.classList.remove('lintro-hide');window.dispatchEvent(new Event('luintroreveal'))}ov.style.background=t>=EXIT?'transparent':'';
  mover.style.transform=`translate(${cx}px,${cy}px) scale(${cs})`}
 window.luIntroRender=t=>render(t);
 // wait for the real Anton font before measuring anything (up to 3 s, behind the dark start), then run the clock
@@ -86,7 +86,7 @@ let t0=0,skip=0,gone=false,clock=0,lastN=0;
 function frame(n){if(gone)return;if(!t0){t0=n;lastN=n}clock+=Math.min(1/30,(n-lastN)/1000);lastN=n;let t=clock+skip;
  if(t>=T){gone=true;render(T);document.body.classList.remove('lintro-hide');ov.animate([{opacity:1},{opacity:0}],{duration:160,fill:'forwards'}).onfinish=()=>{ov.remove();document.body.classList.remove('lintro-on');window.LU_INTRO_ON=false;window.dispatchEvent(new Event('luintroend'))};return}
  render(t);requestAnimationFrame(frame)}
-ov.addEventListener('pointerdown',()=>{if(!t0)return;const t=clock+skip;if(t<EXIT)skip+=EXIT-t});
+// no skipping: jumping ahead dropped you into the app while it was still starting up, and it stuttered
 window.luIntroSkip=()=>{skip=99};
 fontReady().then(()=>{build();requestAnimationFrame(frame)});
 })();

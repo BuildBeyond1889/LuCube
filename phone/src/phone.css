@@ -2,7 +2,7 @@
 /* ===== phone layout: hide the desktop bits; the cube stays, front and centre ===== */
 html,body{background:#0a0b0f!important;overflow:hidden}
 body:before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 50% 34%,rgba(47,107,232,.16),transparent 58%),radial-gradient(circle at 50% 100%,rgba(255,194,26,.07),transparent 50%);pointer-events:none}
-.intro,.keys,canvas#wheel,#toks,.ring,.now,.back,.qbtn,.gxb,.mbtn,.hnd,.dock,.cname,.mini,.swb,.f .tb s,[data-act=xf],.dock,#mini{display:none!important}
+.intro,.keys,canvas#wheel,#toks,.ring,.now,.back,.qbtn,.gxb,.mbtn,.hnd,.dock,.cname,.mini,.swb,.f .tb s,.f .tb .x,[data-act=xf],.dock,#mini{display:none!important}
 .find{display:none!important}body.pfindon.m-radio .find{display:block!important;position:fixed;left:16px;right:16px;top:84px;width:auto;z-index:40}
 .find input{font-size:13px!important;padding:12px!important}.find .r{max-height:50vh;overflow:auto}
 #ptop{position:fixed;left:16px;right:16px;top:calc(14px + env(safe-area-inset-top,26px));display:flex;align-items:center;justify-content:space-between;z-index:30}

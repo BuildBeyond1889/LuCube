@@ -242,7 +242,7 @@ def build_world():
         names, counts, by = {}, {}, {}
         for c in rb("/json/countries"):
             cc = (c.get("iso_3166_1") or c.get("iso_3166_1_alpha_2") or "").upper()
-            if len(cc) == 2:
+            if len(cc) == 2 and cnice(c.get("name")):  # a few directory entries have no name; leave them out
                 names[cc] = cnice(c.get("name"))
                 counts[cc] = counts.get(cc, 0) + int(num(c.get("stationcount")) or 0)
 
