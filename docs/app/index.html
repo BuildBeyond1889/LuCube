@@ -343,6 +343,9 @@ body.skin-4 .f>.skt:after{content:'';position:absolute;inset:-6px;background:lin
 .f .scr.gscr{gap:4px;right:6px}.f .scr.gscr b{width:30px;font-size:12px;border-width:2px}
 .f .gbox{margin-right:42px}
 
+/* sideways: no thumb wheel or globe (the faces have the playlists and the world), the cube fits under the top bar */
+body.pland #pbot,body.pland #pdots,body.pland #pface{display:none!important}
+
 /* ===== the opening: origami cube → yellow → LISTEN TO THE UNIVERSE → LU ===== */
 #lintro{position:fixed;inset:0;z-index:200;background:#0b0c10;overflow:hidden;touch-action:none}
 body.lintro-on #ptitle{visibility:hidden}
@@ -1635,12 +1638,16 @@ let treeK='';function pushTree(force){if(!HAS)return;const lists=[],luP=MODE==='
 setInterval(()=>{if(!document.hidden&&!window.LU_INTRO_ON)pushTree()},15000);
 
 // ---------- start: the cube front and centre ----------
-function place(){PW=innerWidth;PH=innerHeight;CY0=Math.round(PH*.37);csz=Math.min(1,(PW-40)/300)}
+// upright: the cube near the top, the wheel / globe below. Sideways: no wheel; the cube shrinks to fit under the top bar
+let CSZ=1;
+function place(){PW=innerWidth;PH=innerHeight;const land=PW>PH*1.15&&PH<560;document.body.classList.toggle('pland',land);
+ if(land){const tb=document.getElementById('ptop'),top=Math.round(tb?tb.getBoundingClientRect().bottom:60)+8,av=PH-top-12;CSZ=Math.max(.35,Math.min(1,av/335));CY0=Math.round(top+av/2)}
+ else{CY0=Math.round(PH*.37);CSZ=Math.min(1,(PW-40)/300)}csz=CSZ}
 addEventListener('resize',place);
 setTimeout(()=>{place();toCube(PW/2,CY0);cpos=[PW/2,CY0];goFace('NOW PLAYING');document.body.dataset.mode=MODE;
  topUI();bottomUI();renderFaces();applySkin();requestAnimationFrame(frameP);rpoll();
  // keep it centred (the desktop version lets you drag it around; here it stays put)
- setInterval(()=>{if(cubeOn&&!shatter){cpos[0]=PW/2;cpos[1]=CY0;csz=Math.min(1,(PW-40)/300)}},100)},60);
+ setInterval(()=>{if(innerWidth!==PW||innerHeight!==PH)place();if(cubeOn&&!shatter){cpos[0]=PW/2;cpos[1]=CY0;csz=CSZ}},100)},60);
 // the radio may come up first (that's where you left it): match the switch
 setInterval(()=>{if(!REMOTE&&document.body.dataset.mode!==MODE){document.body.dataset.mode=MODE;topUI();bottomUI()}},400);
 })();

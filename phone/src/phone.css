@@ -76,3 +76,6 @@ body.skin-4 .f>.skt:after{content:'';position:absolute;inset:-6px;background:lin
 /* the genre arrows: as tall as the three genre rows, easy to hit with a thumb */
 .f .scr.gscr{gap:4px;right:6px}.f .scr.gscr b{width:30px;font-size:12px;border-width:2px}
 .f .gbox{margin-right:42px}
+
+/* sideways: no thumb wheel or globe (the faces have the playlists and the world), the cube fits under the top bar */
+body.pland #pbot,body.pland #pdots,body.pland #pface{display:none!important}
