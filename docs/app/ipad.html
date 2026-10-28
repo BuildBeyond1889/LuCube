@@ -964,7 +964,8 @@ function mxBuild(){if(MXS!==1)return;
  const win=document.createElement('div');win.className='mxw';win.style.left=mxG.nl+'px';win.style.top=mxG.nt+'px';win.style.transform=`scale(${ws})`;win.style.width=MXW+'px';win.style.height=MXH+'px';
  const line=document.createElement('div');line.className='mxl';line.style.left=mxG.nl+'px';line.style.top=(mxG.nt-2)+'px';line.style.height=(900*ky+4)+'px';
  ov.append(sc,win,line);document.body.append(ov);mxEl=ov;mxRender();
- win.addEventListener('click',mxClick);win.addEventListener('mousemove',e=>{const c=e.target.closest&&e.target.closest('#mxpong');if(c&&mxPg&&mxPg.joined){const r=c.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100;mxPg.ut=Date.now()}});
+ win.addEventListener('click',mxClick);win.addEventListener('pointerdown',e=>{const c=e.target.closest&&e.target.closest('#mxpong');if(c&&mxPg&&MXS===2){mxPg.joined=true;mxPg.ut=Date.now();const r=c.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100}});
+ win.addEventListener('pointermove',e=>{const c=e.target.closest&&e.target.closest('#mxpong');if(c&&mxPg&&mxPg.joined){const r=c.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100;mxPg.ut=Date.now()}});
  // drag the blue title bar to put the window anywhere
  win.addEventListener('pointerdown',e=>{if(MXS!==2||mxG.full||!e.target.closest('.mxtb')||e.target.closest('[data-act]'))return;e.preventDefault();const r0={x:e.clientX,y:e.clientY,dx:mxG.dx,dy:mxG.dy},rg=mxEl.querySelector('.mxr');win.setPointerCapture(e.pointerId);rg.style.transition='none';window.mxDrag=true;
   const mv=ev=>{mxG.dx=r0.dx+ev.clientX-r0.x;mxG.dy=r0.dy+ev.clientY-r0.y;mxPlace()},up=()=>{win.removeEventListener('pointermove',mv);win.removeEventListener('pointerup',up);win.removeEventListener('pointercancel',up);rg.style.transition='';window.mxDrag=false};
@@ -975,7 +976,14 @@ function mxBuild(){if(MXS!==1)return;
  requestAnimationFrame(()=>requestAnimationFrame(()=>{if(MXS!==1)return;ov.classList.add('open');rig.style.transform=`translate(${dcx-cx-150*kx}px,${dcy-cy}px) scale(${kx},${ky})`;
   mxLater(()=>ov.classList.add('flaps'),1450);
   mxLater(()=>{mxRender();ov.classList.add('max');mxPong()},2500);
-  mxLater(()=>{MXS=2},3750)}))}
+  mxLater(()=>{MXS=2;mxFit()},3750)}))}
+// turning the screen while unfolded: the display re-fits the new shape
+function mxFit(){if(!mxEl||!mxG||!mxG.full||MXS!==2)return;const sat=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat'))||0,d={x:0,y:sat,w:innerWidth,h:innerHeight-sat};
+ const kx=d.w/1200,ky=d.h/900,ws=Math.min(d.w/800,d.h/600),dcx=d.w/2,dcy=d.y+d.h/2,w=mxEl.querySelector('.mxw'),l=mxEl.querySelector('.mxl');
+ if(Math.abs(mxG.kx-kx)<1e-4&&Math.abs(mxG.ky-ky)<1e-4)return;
+ MXW=d.w/ws;MXH=d.h/ws;MXR=15+Math.max(0,Math.floor((MXH-600)/31));MXT=9+3*Math.max(0,Math.floor((MXH-600)/72));Object.assign(mxG,{k:Math.min(kx,ky),kx,ky,dcx,dcy,nl:dcx-600*kx,nt:dcy-450*ky,dx:0,dy:0});
+ w.style.transform=`scale(${ws})`;w.style.width=MXW+'px';w.style.height=MXH+'px';mxEl.style.setProperty('--nw',d.w+'px');l.style.height=(d.h+4)+'px';mxPlace();mxRender()}
+addEventListener('resize',()=>{setTimeout(mxFit,80);setTimeout(mxFit,400)});
 function mxPlace(){const g=mxG,w=mxEl&&mxEl.querySelector('.mxw'),l=mxEl&&mxEl.querySelector('.mxl'),rg=mxEl&&mxEl.querySelector('.mxr');if(!w)return;w.style.left=(g.nl+g.dx)+'px';w.style.top=(g.nt+g.dy)+'px';l.style.left=(g.nl+g.dx)+'px';l.style.top=(g.nt+g.dy-2)+'px';rg.style.transform=`translate(${g.dcx-g.cx-150*g.kx+g.dx}px,${g.dcy-g.cy+g.dy}px) scale(${g.kx},${g.ky})`}
 function mxScroll(k,d){const N=PLS.length,L=(PLS[P.pl]||{songs:[]}).songs.length;
  if(k==='mxl')mxLib=Math.max(0,Math.min(Math.max(0,Math.ceil((N-MXT)/3)*3),mxLib+3*d));
@@ -1014,7 +1022,7 @@ function mxRender(){const w=mxEl&&mxEl.querySelector('.mxw');if(!w)return;const 
  const cov=s.cov?`url('${s.cov}') center/cover no-repeat,#111`:(s.art||'#111');
  w.innerHTML=`<div class="mxs0 mxtb" style="width:${MXW-4}px">${mxSq('#e0281a','<path d="M5 5l6 6M11 5l-6 6" stroke="#111" stroke-width="2.4" stroke-linecap="square"/>','mxquit','close the cube')}${mxSq('#ffc21a','<g fill="none" stroke="#111" stroke-width="1.5"><rect x="4.75" y="6.75" width="4.5" height="4.5"/><path d="M6.75 6.75V4.75h4.5v4.5h-2" stroke-linecap="square"/></g>','mxclose','back into the cube')}${mxSq('#111','<path d="M5 9.5L8 6.5l3 3" fill="none" stroke="#ff7a1a" stroke-width="1.8"/>','mxclose','back into the cube')}<span style="margin-left:8px">LU CUBE · UNFOLDED</span><span class="mxpill" data-act="mode">${radio?'♫ LU CUBE':'RADIO'}</span></div>
 <div class="mxs0" style="left:0;top:28px;width:220px;height:${MXH-32}px;background:#cfd6df"><div class="mxh1" style="background:#e0281a">${radio?'CHANNELS':'PLAYLIST'} · ${esc(short(pl.n,18))} · ${n}</div><div class="mxlist">${rows}</div></div>
-<div class="mxs0" style="left:222px;top:28px;width:${MW}px;height:${PHh}px;background:#111"><canvas id="mxpong" data-act="mxpong" width="${MW*2}" height="${PHh*2}" style="width:${MW}px;height:${PHh}px;display:block;cursor:pointer"></canvas></div>
+<div class="mxs0" style="left:222px;top:28px;width:${MW}px;height:${PHh}px;background:#111"><canvas id="mxpong" data-act="mxpong" width="${MW*2}" height="${PHh*2}" style="width:${MW}px;height:${PHh}px;display:block;cursor:pointer;touch-action:none"></canvas></div>
 <div class="mxs0" style="left:222px;top:${NT}px;width:${MW}px;height:250px;background:#ffc21a;display:flex;gap:12px;padding:14px">
 <div style="width:128px;height:128px;flex:none;border:2px solid #111;background:${cov}"></div>
 <div style="flex:1;min-width:0;height:128px;display:flex;flex-direction:column"><div class="mxk">${radio?(P.playing?'ON AIR':'PAUSED'):'NOW PLAYING · '+(P.idx+1)+' / '+n}</div><div class="mxt" style="font-size:${(P.has?s.t:'').length>38?20:(P.has?s.t:'').length>22?25:31}px">${esc(P.has?s.t:'Pick something')}</div><div class="mxa">${esc(s.a||pl.n)}</div>${radio?'':'<div class="mxprog" data-act="mxseek" id="mxpg"></div>'}</div>
@@ -1134,5 +1142,8 @@ let ST={};fetch('/api/state').then(r=>r.json()).catch(()=>({})).then(st=>{ST=st|
    const li=document.getElementById('libinfo');if(li)li.textContent='No songs yet: tap ＋ ADD SONGS to bring songs in from Files. Until then, the radio.';}
   if(MODE==='lu'&&PLS.length)bounced=false;
   if(first&&PLS.length&&!cubeOn){first=false;out()}
-  cb.style.display=!cubeOn&&!window.mxEl?'block':'none'},300)})();</script>
+  cb.style.display=!cubeOn&&!window.mxEl?'block':'none'},300)
+ // turning the iPad: the cube stays in the middle at a size that fits
+ addEventListener('resize',()=>setTimeout(()=>{if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(1.35,Math.min(innerWidth,innerHeight)/560));cpos=[innerWidth*.5,innerHeight*.52]}},120));
+})();</script>
 </body></html>

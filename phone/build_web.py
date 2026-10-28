@@ -116,7 +116,10 @@ IPAD_JS = """<script>(function(){
    const li=document.getElementById('libinfo');if(li)li.textContent='No songs yet: tap ＋ ADD SONGS to bring songs in from Files. Until then, the radio.';}
   if(MODE==='lu'&&PLS.length)bounced=false;
   if(first&&PLS.length&&!cubeOn){first=false;out()}
-  cb.style.display=!cubeOn&&!window.mxEl?'block':'none'},300)})();</script>"""
+  cb.style.display=!cubeOn&&!window.mxEl?'block':'none'},300)
+ // turning the iPad: the cube stays in the middle at a size that fits
+ addEventListener('resize',()=>setTimeout(()=>{if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(1.35,Math.min(innerWidth,innerHeight)/560));cpos=[innerWidth*.5,innerHeight*.52]}},120));
+})();</script>"""
 ipad = base(TO_PHONE).replace("__CSS__", IPAD_CSS)
 ipad = swap(ipad, "songs. Hover the right edge to open the wheel; drag it out for the cube.`", "songs. Tap the wheel in the corner for your playlists.`")
 ipad = swap(ipad, "`Your Music folder is empty: ${L.music}. Run Get Classical Music.bat, or drop folders of songs in there.`", "`No songs yet: ${L.music}.`")
