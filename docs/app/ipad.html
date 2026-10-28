@@ -364,7 +364,7 @@ class LuAudio extends EventTarget{
  get preload(){return this.a.preload}set preload(v){this.a.preload=this.c.preload=this.r.preload=v}
  get volume(){return this._v}set volume(v){this._v=Math.max(0,Math.min(1,+v||0));this.apply()}
  // ask for the volume knob on whichever player needs one
- route(){if(this.cur===this.r)return this.apply();try{if(!CTX){CTX=new (window.AudioContext||window.webkitAudioContext)();ANL=CTX.createAnalyser();ANL.fftSize=256;ANL.connect(CTX.destination)}
+ route(){if(this.cur===this.r)return this.apply();try{if(!CTX){CTX=new (window.AudioContext||window.webkitAudioContext)();ANL=CTX.createAnalyser();ANL.fftSize=256;ANL.smoothingTimeConstant=.45;ANL.connect(CTX.destination)}
   const k=this.cur===this.a?'ga':'gc';if(!this[k]){const sN=CTX.createMediaElementSource(this.cur);this[k]=CTX.createGain();sN.connect(this[k]);this[k].connect(ANL)}}catch(e){}this.apply()}
  apply(){for(const g of [this.ga,this.gc])if(g)g.gain.value=this._v;try{this.a.volume=this.c.volume=this.r.volume=this._v}catch(e){}
   // the visualiser reads the real sound whenever it goes through the knob, and keeps time on its own otherwise
@@ -505,7 +505,7 @@ const short=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s;
 // lyrics: a song.lrc next to the song gives synced lines; classical pieces show the piece's details instead
 async function loadLrc(s){if(s.lines!==undefined)return;s.lines=null;if(!s.lrc)return;try{const t=await (await fetch(s.lrc)).text(),L=[];t.split(/\r?\n/).forEach(l=>{const m=[...l.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g)],txt=l.replace(/\[[^\]]*\]/g,'').trim();m.forEach(x=>L.push({t:+x[1]*60+ +x[2],x:txt}))});L.sort((a,b)=>a.t-b.t);s.lines=L.length?L:null;renderFaces()}catch(e){}}
 const LYR=s=>s.lines?s.lines.map(l=>l.x||'♪'):[short(s.t,22),s.a||'',PLS[P.pl]?short(PLS[P.pl].n,22):'','','INSTRUMENTAL','NO LYRICS FOR','THIS PIECE'];
-let AC=null,AN=null,FQ=null;function audioGraph(){AC=1;return;try{AC=new AudioContext();AN=AC.createAnalyser();AN.fftSize=256;FQ=new Uint8Array(AN.frequencyBinCount);[AU,AU2].forEach(el=>AC.createMediaElementSource(el).connect(AN));AN.connect(AC.destination)}catch(e){AC=1}}
+let AC=null,AN=null,FQ=null;function audioGraph(){AC=1;return;try{AC=new AudioContext();AN=AC.createAnalyser();AN.fftSize=256;AN.smoothingTimeConstant=.45;FQ=new Uint8Array(AN.frequencyBinCount);[AU,AU2].forEach(el=>AC.createMediaElementSource(el).connect(AN));AN.connect(AC.destination)}catch(e){AC=1}}
 function stopXf(){if(xf){xf.old.pause();xf=null;mix()}}
 function play(pl,idx,at,paused){stopXf();P.pl=pl;P.idx=idx;P.el=at||0;P.has=true;const s=song();if(!paused){audioGraph();if(AC&&AC.resume)AC.resume()}AU.src=s.src;
  if(at)AU.addEventListener('loadedmetadata',()=>{AU.currentTime=at},{once:true});
@@ -1028,14 +1028,21 @@ function radioBoot(){const r=ST.radio||{};CAUGHTL=Array.isArray(r.caught)?r.caug
 // ===================== DEPTH: the visualiser as a landscape of the live sound, standing inside the cube =====================
 // Each moment of sound is a line across the face (bass on the left, treble on the right); newer lines step in at the front,
 // older ones walk back into the cube and fade away. A 3D room turned 30 degrees, drawn flat on a canvas so it stays light.
-const DN=24,DB=48,DH=[];for(let i=0;i<DN;i++)DH.push(new Float32Array(DB).fill(.02));
+const DN=30,DB=48,DH=[];for(let i=0;i<DN;i++)DH.push(new Float32Array(DB).fill(.02));
 let dSeed=7;const dRnd=()=>(dSeed=dSeed*16807%2147483647)/2147483647;
+// the live sound, levelled: a quiet piece (much of Beethoven) is lifted to fill the room and a loud one eased down,
+// following the music within a few seconds; a sudden attack (a chord, a timpani hit) throws the waves up for a moment
+const DAGC={p:.5,kick:0,prev:null};
+function dLevel(out){let pk=0;for(let i=0;i<DB;i++)pk=Math.max(pk,out[i]);
+ DAGC.p=pk>DAGC.p?DAGC.p*.55+pk*.45:Math.max(.16,DAGC.p*.993);const g=Math.min(3.2,.95/DAGC.p);
+ let fl=0;if(DAGC.prev)for(let i=0;i<DB;i++)fl+=Math.max(0,out[i]*g-DAGC.prev[i]);DAGC.kick=Math.max(fl/DB*7,DAGC.kick*.78);const boost=1+Math.min(.5,DAGC.kick);
+ DAGC.prev=out.map(v=>v*g);for(let i=0;i<DB;i++)out[i]=Math.min(1,Math.pow(out[i]*g,1.2)*boost)}
 function dSpectrum(){const out=new Float32Array(DB);
- if(AN&&FQ){AN.getByteFrequencyData(FQ);for(let i=0;i<DB;i++){const lo=Math.floor(Math.pow(i/DB,1.7)*110),hi=Math.max(lo+1,Math.floor(Math.pow((i+1)/DB,1.7)*110));let m=0;for(let k=lo;k<hi;k++)m=Math.max(m,FQ[k]);out[i]=Math.min(1,m/255*1.18)}}
+ if(AN&&FQ){AN.getByteFrequencyData(FQ);for(let i=0;i<DB;i++){const lo=Math.floor(Math.pow(i/DB,1.7)*110),hi=Math.max(lo+1,Math.floor(Math.pow((i+1)/DB,1.7)*110));let m=0;for(let k=lo;k<hi;k++)m=Math.max(m,FQ[k]);out[i]=m/255}dLevel(out)}
  else{const t=performance.now()/1000,g=(u,c,w)=>Math.exp(-((u-c)*(u-c))/(2*w*w)),kick=Math.exp(-(t%.5)/.07);   // no live sound to read (the phone): a stand-in that keeps time
   for(let i=0;i<DB;i++){const u=i/(DB-1);out[i]=(.9*kick*g(u,.07,.05)+.5*g(u,.18+.03*Math.sin(t*2),.05)+.55*g(u,.36+.08*Math.sin(t*1.7),.035)+.4*g(u,.55+.1*Math.sin(t*1.1+1),.03)+.06*dRnd())*(1-.35*u)}}
  const live=P.has&&P.playing;for(let i=0;i<DB;i++)out[i]=live?Math.max(.02,Math.min(1,out[i])):.02;
- for(let k=0;k<2;k++)for(let i=1;i<DB-1;i++)out[i]=(out[i-1]+2*out[i]+out[i+1])/4;return out}
+ for(let k=0;k<(AN&&FQ?1:2);k++)for(let i=1;i<DB-1;i++)out[i]=(out[i-1]+2*out[i]+out[i+1])/4;return out}
 const DPAL=['#ffc21a','#ff7a1a','#e0281a','#9b5cff','#2f6be8'];
 function dCol(f){const x=f*(DPAL.length-1),i=Math.min(DPAL.length-2,Math.floor(x)),u=x-i,a=parseInt(DPAL[i].slice(1),16),b=parseInt(DPAL[i+1].slice(1),16),c=s=>Math.round(((a>>s)&255)*(1-u)+((b>>s)&255)*u);return `rgb(${c(16)},${c(8)},${c(0)})`}
 function drawDepth(cv,meter,fit){if(!cv||!cv.width)return;const W=cv.width,H=cv.height,x=cv.getContext('2d');x.globalAlpha=1;x.fillStyle='#0c0e13';x.fillRect(0,0,W,H);
@@ -1066,7 +1073,7 @@ function depthBox(){if(depthBox.b)return depthBox.b;const yaw=.5236,pit=.3665,C=
  const P=(px,py,pz)=>{py-=.45;pz-=D/2;const x1=px*cyw+pz*syw,z1=-px*syw+pz*cyw,y2=py*cp+z1*sp,z2=-py*sp+z1*cp,d=C+z2;return[760*x1/d,-760*y2/d]};
  const pts=[];for(const px of[-1.66,-1.32])for(const py of[-.12,1.3])for(const pz of[0,.28])pts.push(P(px,py,pz));for(const px of[-.94,.94])for(const pz of[.08,D*.62])for(const py of[0,1])pts.push(P(px,py,pz));
  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);return depthBox.b={x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)}}
-setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;if(app(CR,FACE.VISUALISER.n)[2]>-.25&&!mxEl)drawDepth(document.getElementById('vizd'),true,true);if(MXS){drawDepth(document.getElementById('mxviz'),true,true);const q=document.getElementById('mxmq');if(q){const W=q.parentNode.clientWidth,w=q.offsetWidth+W;q.style.transform=`translateX(${W-((performance.now()/1000*36)%w)}px)`}}},55);
+setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;if(app(CR,FACE.VISUALISER.n)[2]>-.25&&!mxEl)drawDepth(document.getElementById('vizd'),true,true);if(MXS){drawDepth(document.getElementById('mxviz'),true,true);const q=document.getElementById('mxmq');if(q){const W=q.parentNode.clientWidth,w=q.offsetWidth+W;q.style.transform=`translateX(${W-((performance.now()/1000*36)%w)}px)`}}},40);   // 25 times a second
 
 const _rfMX=renderFaces;renderFaces=function(){_rfMX();if(MODE==='radio')F_VIZ.classList.remove('dk3');if(mxEl&&MXS!==3)mxRender()};const _tfMX=tickFaces;tickFaces=function(){_tfMX();if(mxEl)mxTick()};
 // ===================== MAXIMIZE: the orange button unfolds the cube into one big window =====================

@@ -85,7 +85,7 @@ class LuAudio extends EventTarget{
  get preload(){return this.a.preload}set preload(v){this.a.preload=this.c.preload=this.r.preload=v}
  get volume(){return this._v}set volume(v){this._v=Math.max(0,Math.min(1,+v||0));this.apply()}
  // ask for the volume knob on whichever player needs one
- route(){if(this.cur===this.r)return this.apply();try{if(!CTX){CTX=new (window.AudioContext||window.webkitAudioContext)();ANL=CTX.createAnalyser();ANL.fftSize=256;ANL.connect(CTX.destination)}
+ route(){if(this.cur===this.r)return this.apply();try{if(!CTX){CTX=new (window.AudioContext||window.webkitAudioContext)();ANL=CTX.createAnalyser();ANL.fftSize=256;ANL.smoothingTimeConstant=.45;ANL.connect(CTX.destination)}
   const k=this.cur===this.a?'ga':'gc';if(!this[k]){const sN=CTX.createMediaElementSource(this.cur);this[k]=CTX.createGain();sN.connect(this[k]);this[k].connect(ANL)}}catch(e){}this.apply()}
  apply(){for(const g of [this.ga,this.gc])if(g)g.gain.value=this._v;try{this.a.volume=this.c.volume=this.r.volume=this._v}catch(e){}
   // the visualiser reads the real sound whenever it goes through the knob, and keeps time on its own otherwise
