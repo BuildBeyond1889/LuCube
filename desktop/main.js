@@ -139,6 +139,7 @@ async function checkStick() {
 }
 setTimeout(() => { checkStick(); setInterval(checkStick, 60000); }, 5000);
 ipcMain.on("quit", () => { stop(); app.quit(); });
+ipcMain.on("minimize", () => { if (win) win.minimize(); }); // the unfolded window's yellow "−": down to the taskbar like any window
 app.on("before-quit", stop);
 
 if (!process.argv.includes("--make-shortcut")) main();

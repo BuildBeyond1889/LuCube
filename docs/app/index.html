@@ -133,7 +133,7 @@
 /* inside the window */
 .mxs0{position:absolute;box-sizing:border-box;overflow:hidden}
 .mxtb{left:0;top:0;width:796px;height:26px;background:#2f6be8;color:#fff;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:2px solid #111;font-size:10px;font-weight:700;letter-spacing:.08em}
-.mxb{display:inline-grid;place-items:center;width:16px;height:22px;cursor:pointer}.mxb:hover svg rect{fill:#111}
+.mxb{display:inline-grid;place-items:center;width:16px;height:22px;cursor:pointer}.mxb:hover svg rect{fill:#111}.mxb:hover svg path,.mxb:hover svg g{stroke:#ffc21a}
 .mxpill{margin-left:auto;background:#111;color:#ffc21a;padding:2px 9px;border-radius:9px;font-size:9px;cursor:pointer}.mxpill:hover{background:#ffc21a;color:#111}
 .mxh1{color:#fff;padding:7px 10px;border-bottom:2px solid #111;font-size:8.5px;font-weight:700;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mxh2{background:#ff7a1a;color:#fff;padding:4px 8px;border-bottom:2px solid #111;font-size:7.5px;font-weight:700;letter-spacing:.12em}
@@ -1214,7 +1214,7 @@ function mxClose(then){if(MXS!==2||!mxEl)return;MXS=3;const ov=mxEl,rig=ov.query
  mxLater(()=>{ov.classList.remove('open','rev');rig.style.transform=`translate(0px,0px) scale(${csz})`},900);
  mxLater(()=>{ov.remove();mxEl=null;MXS=0;mxPg=null;CR=upright('NOW PLAYING');snapT=null;s_rest=true;renderFaces();if(then)then()},1560)}
 function mxClick(e){if(window.mxNoClick)return;const t=e.target.closest('[data-act]');if(!t||MXS!==2)return;const a=t.dataset.act;
- if(a==='mxclose'){mxClose();return}if(a==='mxquit'){mxClose(()=>breakApart());return}
+ if(a==='mxclose'){mxClose();return}if(a==='mxmin'){cubeDesk.minimize();return}if(a==='mxquit'){mxClose(()=>breakApart());return}
  if(a==='mxpong'){if(mxPg){if(mxPg.over)Object.assign(mxPg,{over:false,drawnOver:false,s1:0,s2:0,bx:144,by:50,vx:2.8,vy:1.1});mxPg.joined=true;mxPg.ut=Date.now();const r=t.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100}return}
  if(/^mx[lgs]:/.test(a)){const [k,v]=a.split(':');mxScroll(k,+v);return}
  if(a.startsWith('gen:')){act(a);mxGSeek=false;setTimeout(mxRender,60);return}
@@ -1234,7 +1234,7 @@ function mxRender(){const w=mxEl&&mxEl.querySelector('.mxw');if(!w)return;const 
   :`<div class="mxk">ARTIST</div><div class="mxnn">${esc(s.a||'Unknown')}</div><div class="mxk" style="margin-top:3px">${esc(pl.n)}</div><div class="mxnp">${s.lines?'Synced lyrics on the cube’s lyrics face.':'No lyrics file for this one.'}</div><div class="mxk" style="margin-top:6px">TRACK ${P.idx+1} OF ${n}${s.d?' · '+fmt(s.d):''}</div><div class="mxbar"><i style="flex:${Math.max(1,P.idx)}"></i><u></u><i style="flex:${Math.max(0,n-P.idx-1)};background:#b9c1cc"></i></div>`;
  const got=radio&&!!s.nowT&&CST().get().some(x=>x.t===s.nowT),MW=MXW-448,PHh=Math.round(MW*122/352),NT=28+PHh+2,VT=NT+252,VH=MXH-4-VT;
  const cy=radio?(c&&c.art?c:pl):null,cov=s.cov?`url('${s.cov}') center/cover no-repeat,#111`:radio&&cy&&cy.art?cy.art:(s.art||'#111');
- w.innerHTML=`<div class="mxs0 mxtb" style="width:${MXW-4}px">${mxSq('#e0281a','<path d="M5 5l6 6M11 5l-6 6" stroke="#111" stroke-width="2.4" stroke-linecap="square"/>','mxquit','close the cube')}${mxSq('#ffc21a','<g fill="none" stroke="#111" stroke-width="1.5"><rect x="4.75" y="6.75" width="4.5" height="4.5"/><path d="M6.75 6.75V4.75h4.5v4.5h-2" stroke-linecap="square"/></g>','mxclose','back into the cube')}${mxSq('#111','<path d="M5 9.5L8 6.5l3 3" fill="none" stroke="#ff7a1a" stroke-width="1.8"/>','mxclose','back into the cube')}<span style="margin-left:8px">LU CUBE · UNFOLDED</span><span class="mxpill" data-act="mode">${radio?'♫ LU CUBE':'RADIO'}</span></div>
+ w.innerHTML=`<div class="mxs0 mxtb" style="width:${MXW-4}px">${mxSq('#e0281a','<path d="M5 5l6 6M11 5l-6 6" stroke="#111" stroke-width="2.4" stroke-linecap="square"/>','mxquit','close the cube')}${window.cubeDesk&&cubeDesk.minimize?mxSq('#ffc21a','<path d="M4.5 8h7" stroke="#111" stroke-width="2.2" stroke-linecap="square"/>','mxmin','minimize to the taskbar'):mxSq('#ffc21a','<g fill="none" stroke="#111" stroke-width="1.5"><rect x="4.75" y="6.75" width="4.5" height="4.5"/><path d="M6.75 6.75V4.75h4.5v4.5h-2" stroke-linecap="square"/></g>','mxclose','back into the cube')}${mxSq('#111','<path d="M5 9.5L8 6.5l3 3" fill="none" stroke="#ff7a1a" stroke-width="1.8"/>','mxclose','back into the cube')}<span style="margin-left:8px">LU CUBE · UNFOLDED</span><span class="mxpill" data-act="mode">${radio?'♫ LU CUBE':'RADIO'}</span></div>
 <div class="mxs0" style="left:0;top:28px;width:220px;height:${MXH-32}px;background:#cfd6df"><div class="mxh1" style="background:#e0281a">${radio?'CHANNELS':'PLAYLIST'} · ${esc(short(pl.n,18))} · ${n}</div><div class="mxlist">${rows}</div></div>
 <div class="mxs0" style="left:222px;top:28px;width:${MW}px;height:${PHh}px;background:#111"><canvas id="mxpong" data-act="mxpong" width="${MW*2}" height="${PHh*2}" style="width:${MW}px;height:${PHh}px;display:block;cursor:pointer;touch-action:none"></canvas></div>
 <div class="mxs0" style="left:222px;top:${NT}px;width:${MW}px;height:250px;background:#ffc21a;display:flex;gap:12px;padding:14px">
