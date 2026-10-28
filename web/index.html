@@ -161,6 +161,16 @@
 .mxnn{font:400 20px/1 Anton,sans-serif;text-transform:uppercase;margin-top:2px;overflow-wrap:anywhere}
 .mxnp{font:400 8.5px/1.45 Inter,sans-serif;margin-top:6px}
 .mxbar{display:flex;gap:2px;margin-top:3px;height:8px}.mxbar i{background:#111}.mxbar u{flex:none;width:6px;background:#e0281a}
+.mxcc{position:absolute;left:4px;bottom:4px;right:4px;background:#cfd6df;font:400 11px/1.05 Anton,sans-serif;padding:1px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mxctl b.mxfav{width:34px;color:#111;padding:0}.mxctl b.mxfav.on{background:#111;color:#ffc21a}.mxctl b.mxfav:hover{color:#ffc21a}
+.mxcatch{margin:8px 8px 0;border:2px solid #111;background:#fffdf5;display:flex;flex-direction:column;min-height:0}
+.mxcl{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+.mxcr{display:flex;align-items:center;gap:5px;padding:5px 7px;border-bottom:1.5px solid #e3e6ea;font:700 7.5px 'Space Mono',monospace}
+.mxcr>b{color:#e0281a;font-size:10px}.mxcr span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:8px}
+.mxcr small{display:block;font-size:6.5px;opacity:.6;overflow:hidden;text-overflow:ellipsis}
+.mxcr em{font-style:normal;font-size:6.5px;border:1.5px solid #111;padding:2px 4px;background:#fff;cursor:pointer;flex:none}.mxcr em:hover{background:#111;color:#ffc21a}
+.mxce{padding:9px;font:400 8.5px/1.45 Inter,sans-serif}
+.mxlist,.mxlw,.mxgw{touch-action:none}
 .mxpills{display:flex;flex-wrap:wrap;gap:5px;margin:12px 8px 0}.mxpills span{background:#111;color:#fff;border-radius:99px;padding:5px 10px;font-size:7.5px;font-weight:700;letter-spacing:.08em;cursor:pointer}.mxpills span:hover{background:#ffc21a;color:#111}
 
 /* ===== the PC opening: in the wheel's corner only; clicks pass through ===== */
@@ -395,15 +405,22 @@ let MX=-1e4,MY=-1e4,hndI=-1;addEventListener('pointermove',e=>{MX=e.clientX;MY=e
 // drag spins it; a press that doesn't move is a click on whatever button is under it
 const pad=document.getElementById('pad');
 // which button is under the pointer: look on the face toward you (the browser can't hit-test turned 3D panels reliably)
+// which list is under the pointer on the front face, and the scroll action it answers to
+function listAt(x,y){const f=document.getElementById(FACE[front()].el);if(!f)return null;const inBox=e=>{const r=e.getBoundingClientRect();return r.width>4&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom};
+ const box=[...f.querySelectorAll('.pl,.lib,.pass')].find(inBox);if(!box)return null;const b=[...f.querySelectorAll('.scr:not(.gscr) b[data-act]')].map(e=>e.dataset.act.split(':')[0]);if(!b.length)return null;
+ let k=b[0];if(k==='libp')k='libs';return{k,step:({pls:30,ccs:60,libs:62,pas:95}[k]||40)*csz}}
 function actAt(x,y){const f=document.getElementById(FACE[front()].el);let best=null,ba=1e12;f.querySelectorAll('[data-act]').forEach(e=>{const r=e.getBoundingClientRect(),a=r.width*r.height;if(a>4&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&a<ba){ba=a;best=e}});return best}
 let hovEl=null;const setHov=e=>{if(hovEl===e)return;hovEl&&hovEl.classList.remove('hov');hovEl=e;e&&e.classList.add('hov');pad.classList.toggle('hand',!!e)};
 pad.addEventListener('pointerdown',e=>{if(shatter)return;{const sa=!miniOn&&!e.shiftKey&&!e.ctrlKey&&!snapT&&actAt(e.clientX,e.clientY);if(sa&&(sa.dataset.act==='seek'||sa.dataset.act==='vol')){cdrag={seek:sa};pad.setPointerCapture(e.pointerId);seekTo(sa,e.clientX);return}
-  if(sa&&sa.closest('.gbox')){cdrag={gw:{y:e.clientY,o:GROW,moved:false,el:sa}};pad.setPointerCapture(e.pointerId);return}}s_rest=false;setHov(null);cdrag={x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now(),moveCube:e.shiftKey||e.ctrlKey||e.metaKey,moved:false,mini:miniOn&&!e.shiftKey&&!e.ctrlKey};pad.setPointerCapture(e.pointerId);om=[0,0];snapT=null});
+  if(sa&&sa.closest('.gbox')){cdrag={gw:{y:e.clientY,o:GROW,moved:false,el:sa}};pad.setPointerCapture(e.pointerId);return}}s_rest=false;setHov(null);cdrag={x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now(),moveCube:e.shiftKey||e.ctrlKey||e.metaKey,moved:false,mini:miniOn&&!e.shiftKey&&!e.ctrlKey,ls:miniOn||e.shiftKey||e.ctrlKey||e.metaKey?null:listAt(e.clientX,e.clientY)};pad.setPointerCapture(e.pointerId);om=[0,0];snapT=null});
 pad.addEventListener('pointerleave',()=>{if(!cdrag)setHov(null)});
 pad.addEventListener('pointermove',e=>{if(cdrag&&cdrag.seek){seekTo(cdrag.seek,e.clientX);return}
+ if(cdrag&&cdrag.ls){const L=cdrag.ls,dx=e.clientX-cdrag.x0,dy=e.clientY-cdrag.y0;
+  if(!L.on&&Math.hypot(dx,dy)>8){if(Math.abs(dy)>Math.abs(dx)*1.1){L.on=true;L.y=e.clientY;cdrag.moved=true}else cdrag.ls=null}
+  if(L.on){let d=e.clientY-L.y;while(d<=-L.step){act(L.k+':1');L.y-=L.step;d+=L.step;try{navigator.vibrate&&navigator.vibrate(5)}catch(_){}}while(d>=L.step){act(L.k+':-1');L.y+=L.step;d-=L.step;try{navigator.vibrate&&navigator.vibrate(5)}catch(_){}}return}}
  if(cdrag&&cdrag.gw){const g=cdrag.gw,dy=e.clientY-g.y;if(Math.abs(dy)>6)g.moved=true;if(!g.moved)return;const n=Math.max(0,Math.min(Math.max(0,GROWS-GNR),Math.round(g.o-dy/(16*csz))));if(n!==GROW){GROW=n;renderFaces();try{navigator.vibrate&&navigator.vibrate(6)}catch(_){}}return}if(!cdrag){if(!snapT&&!om[0]&&!om[1])setHov(actAt(e.clientX,e.clientY));return}const dx=e.clientX-cdrag.x,dy=e.clientY-cdrag.y,dt=Math.max(.008,(performance.now()-cdrag.t)/1000);cdrag.x=e.clientX;cdrag.y=e.clientY;cdrag.t=performance.now();if(Math.hypot(e.clientX-cdrag.x0,e.clientY-cdrag.y0)>(cdrag.mini?10:5))cdrag.moved=true;if(cdrag.mini&&!cdrag.moved)return;
  if(cdrag.moveCube){cpos=[cpos[0]+dx,cpos[1]+dy];return}const k=.0105;CR=orth(mul(mul(Ry(dx*k),Rx(-dy*k)),CR));om=[dx*k/dt/60,-dy*k/dt/60];s_rest=false});
-pad.addEventListener('pointerup',e=>{if(!cdrag)return;if(cdrag.seek){cdrag=null;return}
+pad.addEventListener('pointerup',e=>{if(!cdrag)return;if(cdrag.seek||(cdrag.ls&&cdrag.ls.on)){cdrag=null;return}
  if(cdrag.gw){const g=cdrag.gw;cdrag=null;if(!g.moved&&g.el.dataset.act&&g.el.dataset.act!=='gbox')act(g.el.dataset.act);return}const c=cdrag;cdrag=null;if(!c.moved&&c.mini){act('play');return}if(!c.moved){if(snapT){CR=snapT;snapT=null}const a=actAt(e.clientX,e.clientY);if(a)act(a.dataset.act)}});
 let lacc=0;addEventListener('wheel',e=>{if(!overCube(e))return;e.preventDefault();
  {const gb=MODE==='radio'&&front()==='LIBRARY'&&!snapT&&document.querySelector('#F_LIB .gbox');if(gb){const r=gb.getBoundingClientRect();if(e.clientX>=r.left&&e.clientX<=r.right+30&&e.clientY>=r.top-3&&e.clientY<=r.bottom+3){lacc+=e.deltaY;if(Math.abs(lacc)>=40){act('grow:'+Math.sign(lacc));lacc=0}return}}}
@@ -764,9 +781,11 @@ function dSpectrum(){const out=new Float32Array(DB);
  for(let k=0;k<2;k++)for(let i=1;i<DB-1;i++)out[i]=(out[i-1]+2*out[i]+out[i+1])/4;return out}
 const DPAL=['#ffc21a','#ff7a1a','#e0281a','#9b5cff','#2f6be8'];
 function dCol(f){const x=f*(DPAL.length-1),i=Math.min(DPAL.length-2,Math.floor(x)),u=x-i,a=parseInt(DPAL[i].slice(1),16),b=parseInt(DPAL[i+1].slice(1),16),c=s=>Math.round(((a>>s)&255)*(1-u)+((b>>s)&255)*u);return `rgb(${c(16)},${c(8)},${c(0)})`}
-function drawDepth(cv,meter){if(!cv||!cv.width)return;const W=cv.width,H=cv.height,x=cv.getContext('2d');x.globalAlpha=1;x.fillStyle='#0c0e13';x.fillRect(0,0,W,H);
- const s=Math.min(W/634,H/554),ox=(W-634*s)/2+(meter?0:-30*s),oy=(H-554*s)/2;
- const yaw=.5236,pit=.3665,C=4.3,D=2.3,F=760*s,cx=ox+372*s,cy=oy+268*s,cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit);
+function drawDepth(cv,meter,fit){if(!cv||!cv.width)return;const W=cv.width,H=cv.height,x=cv.getContext('2d');x.globalAlpha=1;x.fillStyle='#0c0e13';x.fillRect(0,0,W,H);
+ let s=Math.min(W/634,H/554),ox=(W-634*s)/2+(meter?0:-30*s),oy=(H-554*s)/2;
+ const yaw=.5236,pit=.3665,C=4.3,D=2.3;let F=760*s,cx=ox+372*s,cy=oy+268*s;
+ if(fit){const B=depthBox();s=Math.min(W*.96/B.w,H*.92/B.h);F=760*s;cx=W/2-s*(B.x0+B.x1)/2;cy=H/2-s*(B.y0+B.y1)/2}
+ const cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit);
  const P3=(px,py,pz)=>{py-=.45;pz-=D/2;const x1=px*cyw+pz*syw,z1=-px*syw+pz*cyw,y2=py*cp+z1*sp,z2=-py*sp+z1*cp,d=C+z2;return[cx+F*x1/d,cy-F*y2/d]};
  // an open floor, no walls: the grid runs on past the last line and fades out
  x.lineWidth=Math.max(1,1.3*s);const ZF=3.6,seg=(a,b,o)=>{const p=P3(a[0],a[1],a[2]),q=P3(b[0],b[1],b[2]);x.strokeStyle=`rgba(74,63,140,${o.toFixed(2)})`;x.beginPath();x.moveTo(p[0],p[1]);x.lineTo(q[0],q[1]);x.stroke()};
@@ -785,7 +804,12 @@ function drawDepth(cv,meter){if(!cv||!cv.width)return;const W=cv.width,H=cv.heig
    const side=[[mx1,y0,0],[mx1,y0,mz],[mx1,y1,mz],[mx1,y1,0]];poly(side,c);poly(side,on?'rgba(0,0,0,.4)':'rgba(0,0,0,.3)');poly([[mx0,y0,0],[mx1,y0,0],[mx1,y1,0],[mx0,y1,0]],c)}
   x.fillStyle='#cfd6df';x.font=`700 ${Math.round(13*s)}px "Space Mono",monospace`;x.textAlign='center';
   let q=P3((mx0+mx1)/2,mH+.07,0);x.fillText('MAX',q[0],q[1]);q=P3((mx0+mx1)/2,-.09,0);x.textBaseline='top';x.fillText('MIN',q[0],q[1]);x.textBaseline='alphabetic'}}
-setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;drawDepth(document.getElementById('vizd'),true);if(MXS)drawDepth(document.getElementById('mxviz'),true)},55);
+// the scene's own outline (floor, the tallest wave, the meter) at scale 1, so a box of any shape can be filled with it
+function depthBox(){if(depthBox.b)return depthBox.b;const yaw=.5236,pit=.3665,C=4.3,D=2.3,cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit);
+ const P=(px,py,pz)=>{py-=.45;pz-=D/2;const x1=px*cyw+pz*syw,z1=-px*syw+pz*cyw,y2=py*cp+z1*sp,z2=-py*sp+z1*cp,d=C+z2;return[760*x1/d,-760*y2/d]};
+ const pts=[];for(const px of[-1.34,1])for(const pz of[0,D])for(const py of[-.05,1.25])pts.push(P(px,py,pz));
+ const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);return depthBox.b={x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)}}
+setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;drawDepth(document.getElementById('vizd'),true);if(MXS)drawDepth(document.getElementById('mxviz'),true,true)},55);
 
 const _rfMX=renderFaces;renderFaces=function(){_rfMX();if(MODE==='radio')F_VIZ.classList.remove('dk3');if(mxEl&&MXS!==3)mxRender()};const _tfMX=tickFaces;tickFaces=function(){_tfMX();if(mxEl)mxTick()};
 // ===================== MAXIMIZE: the orange button unfolds the cube into one big window =====================
@@ -806,7 +830,7 @@ function mxHinge(cls,face,flaps){const h=document.createElement('div');h.classNa
 function mxBuild(){if(MXS!==1)return;
  const full=!!window.MXFULL,sat=full?parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat'))||0:0,d=full?{x:0,y:sat,w:innerWidth,h:innerHeight-sat}:mxDisp(),k=full?Math.min(d.w/1200,d.h/900):Math.min(.9*d.w/1200,.86*d.h/900),kx=full?d.w/1200:k,ky=full?d.h/900:k,ws=full?Math.min(d.w/800,d.h/600):1.5*k,dcx=d.x+d.w/2,dcy=d.y+d.h/2,bob=Math.sin(performance.now()/1000*1.6)*3,cx=cpos[0],cy=cpos[1]+bob;
  MXW=full?d.w/ws:800;MXH=full?d.h/ws:600;MXR=15+Math.max(0,Math.floor((MXH-600)/31));MXT=9+3*Math.max(0,Math.floor((MXH-600)/72));
- mxG={k,kx,ky,full,dcx,dcy,cx,cy,nl:dcx-600*kx,nt:dcy-450*ky,dx:0,dy:0};mxLib=Math.floor(Math.max(0,P.pl-3)/3)*3;mxList=null;mxGrow=0;mxGSeek=true;
+ mxG={k,kx,ky,ws,full,dcx,dcy,cx,cy,nl:dcx-600*kx,nt:dcy-450*ky,dx:0,dy:0};mxLib=Math.floor(Math.max(0,P.pl-3)/3)*3;mxList=null;mxGrow=0;mxGSeek=true;
  const ov=document.createElement('div');ov.id='mx';ov.style.setProperty('--nw',(1200*kx)+'px');
  const sc=document.createElement('div');sc.className='mxs';sc.style.left=cx+'px';sc.style.top=cy+'px';
  const rig=document.createElement('div');rig.className='mxr';rig.style.transform=`translate(0px,0px) scale(${csz})`;
@@ -826,6 +850,11 @@ function mxBuild(){if(MXS!==1)return;
  win.addEventListener('pointerdown',e=>{if(MXS!==2||mxG.full||!e.target.closest('.mxtb')||e.target.closest('[data-act]'))return;e.preventDefault();const r0={x:e.clientX,y:e.clientY,dx:mxG.dx,dy:mxG.dy},rg=mxEl.querySelector('.mxr');win.setPointerCapture(e.pointerId);rg.style.transition='none';window.mxDrag=true;
   const mv=ev=>{mxG.dx=r0.dx+ev.clientX-r0.x;mxG.dy=r0.dy+ev.clientY-r0.y;mxPlace()},up=()=>{win.removeEventListener('pointermove',mv);win.removeEventListener('pointerup',up);win.removeEventListener('pointercancel',up);rg.style.transition='';window.mxDrag=false};
   win.addEventListener('pointermove',mv);win.addEventListener('pointerup',up);win.addEventListener('pointercancel',up)});
+ // a finger (or a mouse drag) walks them as well: drag up to go down the list
+ let td=null;
+ win.addEventListener('pointerdown',e=>{const t=e.target,k=t.closest('.mxsc')?null:t.closest('.mxlw')?'mxl':t.closest('.mxgw')?'mxg':t.closest('.mxlist')?'mxs':null;if(!k||MXS!==2)return;td={k,y:e.clientY,y0:e.clientY,moved:false};try{win.setPointerCapture(e.pointerId)}catch(_){}});
+ win.addEventListener('pointermove',e=>{if(!td)return;if(Math.abs(e.clientY-td.y0)>8)td.moved=true;if(!td.moved)return;const st=({mxl:72,mxg:19,mxs:50}[td.k])*(mxG.ws||1);let d=e.clientY-td.y;while(d<=-st){mxScroll(td.k,1);td.y-=st;d+=st}while(d>=st){mxScroll(td.k,-1);td.y+=st;d-=st}});
+ const tdEnd=()=>{if(td&&td.moved){window.mxNoClick=true;setTimeout(()=>window.mxNoClick=false,60)}td=null};win.addEventListener('pointerup',tdEnd);win.addEventListener('pointercancel',tdEnd);
  // the scroll wheel walks the playlist, the library / world tiles and the genres
  win.addEventListener('wheel',e=>{const t=e.target,k=t.closest('.mxlw')?'mxl':t.closest('.mxgw')?'mxg':t.closest('.mxlist')?'mxs':null;if(!k)return;e.preventDefault();e.stopPropagation();mxAcc+=e.deltaY;if(Math.abs(mxAcc)>=40){mxScroll(k,Math.sign(mxAcc));mxAcc=0}},{passive:false});
  // the real cube hides behind its stand-in (they look the same), then the stand-in unfolds
@@ -837,7 +866,7 @@ function mxBuild(){if(MXS!==1)return;
 function mxFit(){if(!mxEl||!mxG||!mxG.full||MXS!==2)return;const sat=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat'))||0,d={x:0,y:sat,w:innerWidth,h:innerHeight-sat};
  const kx=d.w/1200,ky=d.h/900,ws=Math.min(d.w/800,d.h/600),dcx=d.w/2,dcy=d.y+d.h/2,w=mxEl.querySelector('.mxw'),l=mxEl.querySelector('.mxl');
  if(Math.abs(mxG.kx-kx)<1e-4&&Math.abs(mxG.ky-ky)<1e-4)return;
- MXW=d.w/ws;MXH=d.h/ws;MXR=15+Math.max(0,Math.floor((MXH-600)/31));MXT=9+3*Math.max(0,Math.floor((MXH-600)/72));Object.assign(mxG,{k:Math.min(kx,ky),kx,ky,dcx,dcy,nl:dcx-600*kx,nt:dcy-450*ky,dx:0,dy:0});
+ MXW=d.w/ws;MXH=d.h/ws;MXR=15+Math.max(0,Math.floor((MXH-600)/31));MXT=9+3*Math.max(0,Math.floor((MXH-600)/72));Object.assign(mxG,{k:Math.min(kx,ky),kx,ky,ws,dcx,dcy,nl:dcx-600*kx,nt:dcy-450*ky,dx:0,dy:0});
  w.style.transform=`scale(${ws})`;w.style.width=MXW+'px';w.style.height=MXH+'px';mxEl.style.setProperty('--nw',d.w+'px');l.style.height=(d.h+4)+'px';mxPlace();mxRender()}
 addEventListener('resize',()=>{setTimeout(mxFit,80);setTimeout(mxFit,400)});
 function mxPlace(){const g=mxG,w=mxEl&&mxEl.querySelector('.mxw'),l=mxEl&&mxEl.querySelector('.mxl'),rg=mxEl&&mxEl.querySelector('.mxr');if(!w)return;w.style.left=(g.nl+g.dx)+'px';w.style.top=(g.nt+g.dy)+'px';l.style.left=(g.nl+g.dx)+'px';l.style.top=(g.nt+g.dy-2)+'px';rg.style.transform=`translate(${g.dcx-g.cx-150*g.kx+g.dx}px,${g.dcy-g.cy+g.dy}px) scale(${g.kx},${g.ky})`}
@@ -857,7 +886,7 @@ function mxClose(then){if(MXS!==2||!mxEl)return;MXS=3;const ov=mxEl,rig=ov.query
  mxLater(()=>ov.classList.remove('flaps'),520);
  mxLater(()=>{ov.classList.remove('open','rev');rig.style.transform=`translate(0px,0px) scale(${csz})`},900);
  mxLater(()=>{ov.remove();mxEl=null;MXS=0;mxPg=null;CR=upright('NOW PLAYING');snapT=null;s_rest=true;renderFaces();if(then)then()},1560)}
-function mxClick(e){const t=e.target.closest('[data-act]');if(!t||MXS!==2)return;const a=t.dataset.act;
+function mxClick(e){if(window.mxNoClick)return;const t=e.target.closest('[data-act]');if(!t||MXS!==2)return;const a=t.dataset.act;
  if(a==='mxclose'){mxClose();return}if(a==='mxquit'){mxClose(()=>breakApart());return}
  if(a==='mxpong'){if(mxPg){mxPg.joined=true;mxPg.ut=Date.now();const r=t.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100}return}
  if(/^mx[lgs]:/.test(a)){const [k,v]=a.split(':');mxScroll(k,+v);return}
@@ -869,27 +898,31 @@ const MXG={prev:'<svg width="13" height="13" viewBox="0 0 10 10" aria-hidden="tr
  pause:'<svg width="13" height="13" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1h2v8H2zM6 1h2v8H6z" fill="#111"/></svg>',
  play:'<svg width="13" height="13" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="#111"/></svg>'};
 const mxSq=(fill,glyph,act,title)=>`<span class="mxb" data-act="${act}" title="${title}"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" fill="${fill}" stroke="#111" stroke-width="3"/>${glyph}</svg></span>`;
-function mxRender(){const w=mxEl&&mxEl.querySelector('.mxw');if(!w)return;const s=song(),pl=PLS[P.pl]||{n:'',songs:[]},radio=MODE==='radio',L=pl.songs||[],n=L.length;
+function mxCaught(){const all=CST().get(),R=all.map((x,i)=>[x,i]).reverse();
+ return `<div class="mxcatch"><div class="mxh2" style="background:#e0281a">♥ CAUGHT · ${all.length}</div><div class="mxcl">${R.length?R.map(([x,i])=>`<div class="mxcr"><b>♥</b><span>${esc(x.t)}<small>${esc([x.st,x.n].filter(Boolean).join(' · '))}</small></span><em data-act="cs:sp:${i}">SPOTIFY</em><em data-act="cs:yt:${i}">YT</em></div>`).join(''):`<div class="mxce">Nothing caught yet. When a station shows what's playing, tap ♡ on the cube's On Air face.</div>`}</div></div>`}
+function mxRender(){const w=mxEl&&mxEl.querySelector('.mxw');if(!w)return;const ccl=w.querySelector('.mxcl'),cTop=ccl?ccl.scrollTop:0;const s=song(),pl=PLS[P.pl]||{n:'',songs:[]},radio=MODE==='radio',L=pl.songs||[],n=L.length;
  const st=mxList==null?Math.max(0,Math.min(Math.max(0,n-MXR),P.idx-3)):Math.max(0,Math.min(Math.max(0,n-MXR),mxList)),rows=L.slice(st,st+MXR).map((x,j)=>{const i=st+j;return `<div class="mxrow${P.has&&i===P.idx?' on':''}" data-act="song:${i}"><b>${radio?(x.br?x.br+'K':'·'):String(i+1).padStart(2,'0')}</b><span>${esc(x.t)}</span></div>`}).join('');
  const l0=Math.max(0,Math.min(Math.max(0,Math.ceil((PLS.length-MXT)/3)*3),mxLib)),tiles=PLS.slice(l0,l0+MXT).map((p,j)=>`<div class="mxtile${l0+j===P.pl?' on':''}" data-act="pl:${l0+j}" style="background:${p.art}"><span>${esc(short(p.n,14))}</span></div>`).join('');
  const c=radio?cityOf(s):null,note=radio?`<div class="mxk">STATION</div><div class="mxnn">${esc(c?c.n:'—')}</div><div class="mxk" style="margin-top:3px">${[esc((s.st||'').toUpperCase()),c?local(c)+' THERE':''].filter(Boolean).join(' · ')}</div><div class="mxnp">${esc(s.nowT?'Now playing: '+s.nowT:(s.g||[]).join(' · ')||'Live radio')}</div>`
   :`<div class="mxk">ARTIST</div><div class="mxnn">${esc(s.a||'Unknown')}</div><div class="mxk" style="margin-top:3px">${esc(pl.n)}</div><div class="mxnp">${s.lines?'Synced lyrics on the cube’s lyrics face.':'No lyrics file for this one.'}</div><div class="mxk" style="margin-top:6px">TRACK ${P.idx+1} OF ${n}${s.d?' · '+fmt(s.d):''}</div><div class="mxbar"><i style="flex:${Math.max(1,P.idx)}"></i><u></u><i style="flex:${Math.max(0,n-P.idx-1)};background:#b9c1cc"></i></div>`;
  const MW=MXW-448,PHh=Math.round(MW*122/352),NT=28+PHh+2,VT=NT+252,VH=MXH-4-VT;
- const cov=s.cov?`url('${s.cov}') center/cover no-repeat,#111`:(s.art||'#111');
+ const cy=radio?(c&&c.art?c:pl):null,cov=s.cov?`url('${s.cov}') center/cover no-repeat,#111`:radio&&cy&&cy.art?cy.art:(s.art||'#111');
  w.innerHTML=`<div class="mxs0 mxtb" style="width:${MXW-4}px">${mxSq('#e0281a','<path d="M5 5l6 6M11 5l-6 6" stroke="#111" stroke-width="2.4" stroke-linecap="square"/>','mxquit','close the cube')}${mxSq('#ffc21a','<g fill="none" stroke="#111" stroke-width="1.5"><rect x="4.75" y="6.75" width="4.5" height="4.5"/><path d="M6.75 6.75V4.75h4.5v4.5h-2" stroke-linecap="square"/></g>','mxclose','back into the cube')}${mxSq('#111','<path d="M5 9.5L8 6.5l3 3" fill="none" stroke="#ff7a1a" stroke-width="1.8"/>','mxclose','back into the cube')}<span style="margin-left:8px">LU CUBE · UNFOLDED</span><span class="mxpill" data-act="mode">${radio?'♫ LU CUBE':'RADIO'}</span></div>
 <div class="mxs0" style="left:0;top:28px;width:220px;height:${MXH-32}px;background:#cfd6df"><div class="mxh1" style="background:#e0281a">${radio?'CHANNELS':'PLAYLIST'} · ${esc(short(pl.n,18))} · ${n}</div><div class="mxlist">${rows}</div></div>
 <div class="mxs0" style="left:222px;top:28px;width:${MW}px;height:${PHh}px;background:#111"><canvas id="mxpong" data-act="mxpong" width="${MW*2}" height="${PHh*2}" style="width:${MW}px;height:${PHh}px;display:block;cursor:pointer;touch-action:none"></canvas></div>
 <div class="mxs0" style="left:222px;top:${NT}px;width:${MW}px;height:250px;background:#ffc21a;display:flex;gap:12px;padding:14px">
-<div style="width:128px;height:128px;flex:none;border:2px solid #111;background:${cov}"></div>
+<div style="width:128px;height:128px;flex:none;border:2px solid #111;background:${cov};position:relative">${radio&&cy?`<span class="mxcc">${esc((cy.n||'').toUpperCase())}</span>`:''}</div>
 <div style="flex:1;min-width:0;height:128px;display:flex;flex-direction:column"><div class="mxk">${radio?(P.playing?'ON AIR':'PAUSED'):'NOW PLAYING · '+(P.idx+1)+' / '+n}</div><div class="mxt" style="font-size:${(P.has?s.t:'').length>38?20:(P.has?s.t:'').length>22?25:31}px">${esc(P.has?s.t:'Pick something')}</div><div class="mxa">${esc(s.a||pl.n)}</div>${radio?'':'<div class="mxprog" data-act="mxseek" id="mxpg"></div>'}</div>
-<div class="mxctl"><b data-act="prev">${MXG.prev}</b><b class="p" data-act="play">${P.playing?MXG.pause:MXG.play}</b><b data-act="next">${MXG.next}</b><b class="mxmute" data-act="mute" title="mute">${VOLI()}</b><div class="mxvol" data-act="mxvol" style="background:linear-gradient(90deg,#2f6be8 ${(UVOL*100).toFixed(2)}%,#fff ${(UVOL*100).toFixed(2)}%)"></div></div></div>
+<div class="mxctl"><b data-act="prev">${MXG.prev}</b><b class="p" data-act="play">${P.playing?MXG.pause:MXG.play}</b><b data-act="next">${MXG.next}</b><b class="mxfav${isFav(s)?' on':''}" data-act="fav" title="${radio?'save this station':'favourite'}"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="display:block"><polygon points="8,1.4 9.9,5.9 14.7,6.2 11,9.3 12.2,14 8,11.4 3.8,14 5,9.3 1.3,6.2 6.1,5.9" fill="${isFav(s)?'currentColor':'none'}" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></b><b class="mxmute" data-act="mute" title="mute">${VOLI()}</b><div class="mxvol" data-act="mxvol" style="background:linear-gradient(90deg,#2f6be8 ${(UVOL*100).toFixed(2)}%,#fff ${(UVOL*100).toFixed(2)}%)"></div></div></div>
 <div class="mxs0" style="left:222px;top:${VT}px;width:${MW}px;height:${VH}px;background:#0c0e13"><div class="mxh1" style="background:#111;color:#ffc21a">VISUALISER · DEPTH</div><canvas id="mxviz" width="${MW*2}" height="${(VH-21)*2}" style="width:${MW}px;height:${VH-21}px;display:block"></canvas></div>
 <div class="mxs0" style="left:${MXW-224}px;top:28px;width:220px;height:${MXH-32}px;background:#cfd6df"><div class="mxh1" style="background:#2f6be8">${radio?'WORLD':'LIBRARY'} · ${radio?PLS.filter(p=>p.cc).length+' COUNTRIES':PLS.length}</div>
 ${radio?`<div class="mxgw"><div class="mxgbox"><div class="mxgin">${GENRES.map((g,k)=>`<b data-act="gen:${k}" class="${k===RGI?'on':''}">${esc(g[0])}<i>${genreCount(k)}</i></b>`).join('')}</div></div><div class="mxsc mxgsc"><b data-act="mxg:-1">▲</b><b data-act="mxg:1">▼</b></div></div>`:''}
 <div class="mxlw"><div class="mxlib">${tiles}</div><div class="mxsc"><b data-act="mxl:-1" class="${l0>0?'':'off'}">▲</b><b data-act="mxl:1" class="${l0+MXT<PLS.length?'':'off'}">▼</b></div></div>
 <div class="mxpills"><span data-act="shuf">${SHUF?'SHUFFLE ON':'SHUFFLE OFF'}</span><span data-act="xf">FADE ${XF?XF+' S':'OFF'}</span><span data-act="sleep">${sleepTxt()}</span></div>
-<div class="mxnote"><div class="mxh2">${radio?'LIVE FROM':'LINER NOTES'}</div><div style="padding:8px 9px">${note}</div></div></div>`;
- drawDepth(document.getElementById('mxviz'),true);mxGenFit();mxTick()}
+<div class="mxnote"><div class="mxh2">${radio?'LIVE FROM':'LINER NOTES'}</div><div style="padding:8px 9px">${note}</div></div>${radio?mxCaught():''}</div>`;
+ drawDepth(document.getElementById('mxviz'),true,true);mxGenFit();mxTick();
+ // the caught list fills what's left of the right-hand column and keeps its place when the window redraws
+ const cb=w.querySelector('.mxcatch');if(cb){const col=cb.parentNode,h=col.clientHeight-cb.offsetTop-8;cb.style.height=Math.max(70,h)+'px';const l=cb.querySelector('.mxcl');if(l)l.scrollTop=cTop}}
 function mxTick(){const pg=document.getElementById('mxpg');if(pg){const s=song(),f=(s.d?Math.min(100,P.el/s.d*100):0).toFixed(2);pg.style.background=`linear-gradient(90deg,#e0281a ${f}%,#fff ${f}%)`}}
 // idle Pong in the top-centre square: the computer plays both sides; move the mouse over it and the yellow paddle is yours
 function mxPong(){const W2=288,H2=100,PH=22;mxPg={bx:144,by:50,vx:2.8,vy:1.1,p1:39,p2:39,s1:0,s2:0,e1:0,e2:0,uy:50,ut:0,joined:false};

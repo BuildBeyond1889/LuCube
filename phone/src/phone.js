@@ -7,7 +7,10 @@ const LS=window.LUSTORE,N=window.lucall,HAS=!!window.LUNATIVE;
 const $=id=>document.getElementById(id),E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const vib=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 breakApart=function(){};   // on a phone the cube stays a cube
-WPER=9;WCOL=3;   // the World face: nine countries, three across, so the names have room
+WPER=9;WCOL=3;
+// the genre arrows stand as tall as the three rows of genres beside them
+{const _gw=gwFit;gwFit=function(){_gw.apply(this,arguments);const box=document.querySelector('#F_LIB .gbox'),sc=document.querySelector('#F_LIB .gscr');if(!box||!sc)return;
+ const h=box.offsetHeight;if(!h)return;sc.style.top=box.offsetTop+'px';sc.querySelectorAll('b').forEach(b=>b.style.height=Math.max(20,(h-4)/2)+'px')}}   // the World face: nine countries, three across, so the names have room
 
 // ---------- no music yet (or no permission): friendly faces instead of empty ones ----------
 const _lrf=luRenderFaces,_ltf=luTickFaces;

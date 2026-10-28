@@ -72,3 +72,7 @@ body.skin-4 .f>.skt:after{content:'';position:absolute;inset:-6px;background:lin
 #ptop h2{font-size:26px!important;line-height:1}#ptop h2{display:flex;align-items:flex-start;gap:3px;line-height:.86!important}#ptop h2 svg{margin-top:-3px}
 
 .f .scr.pscr{top:52px}
+
+/* the genre arrows: as tall as the three genre rows, easy to hit with a thumb */
+.f .scr.gscr{gap:4px;right:6px}.f .scr.gscr b{width:30px;font-size:12px;border-width:2px}
+.f .gbox{margin-right:42px}
