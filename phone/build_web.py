@@ -94,20 +94,27 @@ IPAD_CSS = """#lucube{left:auto!important;right:calc(env(safe-area-inset-right) 
  padding:9px 16px;font:700 11px 'Space Mono',monospace;letter-spacing:.08em;cursor:pointer;-webkit-tap-highlight-color:transparent}.lupill:active{background:#ffc21a;color:#111}
 html .keys{padding-left:190px;padding-right:230px}
 html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}"""
-IPAD_JS = """<script>(function(){const pill=(id,t,f)=>{const b=document.createElement('div');b.id=id;b.className='lupill';b.textContent=t;b.onclick=f;document.body.append(b);return b};
+IPAD_JS = """<script>(function(){
+ // no songs yet: the Lu cube shows how to add some, instead of failing to draw (which left it invisible)
+ const _lr=luRenderFaces,_lt=luTickFaces,_ac=act;
+ luRenderFaces=function(){if(PLS.length)return _lr();
+  F_NOW.style.background='var(--y)';F_NOW.innerHTML=TB('LU CUBE // YOUR MUSIC')+`<div style="padding:18px 16px"><div class="big" style="font-size:44px">NO SONGS<br>YET</div><div style="font:700 9px/1.7 'Space Mono';margin-top:10px">Tap ＋ ADD SONGS and pick songs from Files (iCloud Drive, On My iPad, Downloads). Each album becomes a playlist; they stay in the app.</div><div style="margin-top:14px;display:flex;gap:6px;flex-wrap:wrap"><span class="pill" data-act="lu:add">＋ ADD SONGS</span><span class="pill" style="background:var(--b);color:#fff" data-act="lu:radio">📻 THE RADIO</span></div></div>`;
+  [F_COVER,F_PL,F_LIB,F_LYR,F_VIZ].forEach((f,k)=>{f.style.background=k%2?'var(--g)':'var(--b)';f.innerHTML=TB(['COVER','PLAYLIST','LIBRARY','LYRICS','VISUALISER'][k])+`<div style="position:absolute;inset:20px 0 0;display:grid;place-items:center;font:400 34px Anton;color:${k%2?'#111':'#fff'}">＋ SONGS</div>`})};
+ luTickFaces=function(){if(PLS.length)return _lt()};
+ act=function(a){if(a==='lu:add'){window.luAddSongs();return}if(a==='lu:radio'){switchMode();return}return _ac.apply(this,arguments)};const pill=(id,t,f)=>{const b=document.createElement('div');b.id=id;b.className='lupill';b.textContent=t;b.onclick=f;document.body.append(b);return b};
  pill('luadd','＋ ADD SONGS',()=>window.luAddSongs());
  const cb=pill('lucube','▣ SHOW THE CUBE',()=>out(true));
  const k=document.querySelector('.keys');if(k)k.textContent='SWIPE the cube to turn it · TAP its buttons · DRAG a corner to resize · ORANGE square unfolds it · RED square puts it away';
  // a touchscreen has no mouse to find the wheel with: the cube comes out, big, in the middle
- function out(force){if(!PLS.length)return;csz=Math.max(csz,Math.min(1.35,Math.min(innerWidth,innerHeight)/560));toCube(innerWidth*.5,innerHeight*.52)}
+ function out(force){if(!PLS.length&&MODE!=='lu')return;csz=Math.max(csz,Math.min(1.35,Math.min(innerWidth,innerHeight)/560));toCube(innerWidth*.5,innerHeight*.52)}
  let first=true,bounced=false;
  setInterval(()=>{if(!LUREADY)return;
   // no songs yet: the radio fills the cube instead of an empty one
-  if(MODE==='lu'&&!PLS.length){if(cubeOn){cubeOn=false;document.body.classList.remove('cubemode')}if(!bounced){bounced=true;switchMode(true)}
+  if(MODE==='lu'&&!PLS.length){if(!bounced){bounced=true;switchMode(true)}
    const li=document.getElementById('libinfo');if(li)li.textContent='No songs yet: tap ＋ ADD SONGS to bring songs in from Files. Until then, the radio.';}
   if(MODE==='lu'&&PLS.length)bounced=false;
   if(first&&PLS.length&&!cubeOn){first=false;out()}
-  cb.style.display=!cubeOn&&PLS.length&&!window.mxEl?'block':'none'},300)})();</script>"""
+  cb.style.display=!cubeOn&&!window.mxEl?'block':'none'},300)})();</script>"""
 ipad = base(TO_PHONE).replace("__CSS__", IPAD_CSS)
 ipad = swap(ipad, "songs. Hover the right edge to open the wheel; drag it out for the cube.`", "songs. Tap the wheel in the corner for your playlists.`")
 ipad = swap(ipad, "`Your Music folder is empty: ${L.music}. Run Get Classical Music.bat, or drop folders of songs in there.`", "`No songs yet: ${L.music}.`")
