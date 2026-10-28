@@ -323,6 +323,16 @@ public class LuNativePlugin extends Plugin {
         }).start();
     }
 
+    // the opening holds the screen upright while it plays (lock: true), then lets it turn freely again
+    @PluginMethod
+    public void lockPortrait(PluginCall call) {
+        boolean lock = call.getBoolean("lock", true);
+        main.post(() -> {
+            try { getActivity().setRequestedOrientation(lock ? android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT : android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED); } catch (Exception ignored) { }
+            call.resolve();
+        });
+    }
+
     @PluginMethod
     public void downloadFile(PluginCall call) {
         String url = call.getString("url");

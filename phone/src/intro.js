@@ -95,5 +95,8 @@ function frame(n){if(gone)return;if(!t0){t0=n;lastN=n}clock+=Math.min(1/30,(n-la
  render(t);requestAnimationFrame(frame)}
 // no skipping: jumping ahead dropped you into the app while it was still starting up, and it stuttered
 window.luIntroSkip=()=>{skip=99};
+const hold=on=>{try{const N=window.LUNATIVE;if(N&&N.lockPortrait)N.lockPortrait({lock:on}).catch(()=>{})}catch(e){}};
+hold(true);addEventListener('luintroend',()=>hold(false),{once:true});setTimeout(()=>hold(false),15000);   // (safety: never stays locked)
+addEventListener('resize',()=>{if(gone||!ready)return;build();FIN=null});
 fontReady().then(()=>{build();requestAnimationFrame(frame)});
 })();
