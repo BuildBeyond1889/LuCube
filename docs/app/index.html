@@ -1591,14 +1591,17 @@ let MYB=0;const UPD={n:0,url:'',busy:false};
 N('info').then(r=>{VERS=(r.version||'')+(r.build?' (build '+r.build+')':'');MYB=r.build|0;setTimeout(()=>checkUpdate(false),5000)});
 // updates: the app asks GitHub for the newest build and installs it itself (no browser download needed)
 async function checkUpdate(loud){if(!HAS||!MYB)return;const say=t=>{const b=$('pupd');if(b)b.textContent=t};if(loud)say('CHECKING…');
- try{const j=await (await fetch('https://api.github.com/repos/BuildBeyond1889/LuCube/releases/tags/phone-latest')).json(),m=/build (\d+)/i.exec(j.name||''),a=(j.assets||[]).find(x=>/\.apk$/i.test(x.name));
+ try{const j=await (await fetch('https://api.github.com/repos/BuildBeyond1889/LuCube/releases/tags/phone-latest')).json(),m=/build (\d+)/i.exec(j.name||''),A=j.assets||[],a=m&&A.find(x=>x.name==='LuCube-'+m[1]+'.apk')||A.find(x=>/\.apk$/i.test(x.name));   // the build's own copy (never changes) first
   if(m&&a){UPD.n=+m[1];UPD.url=a.browser_download_url}
   if(UPD.n>MYB){bar('NEW VERSION READY · BUILD '+UPD.n+' · TAP TO UPDATE');say('⬇ UPDATE TO BUILD '+UPD.n)}else if(loud)say('✓ UP TO DATE · BUILD '+MYB)}catch(e){if(loud)say('NO INTERNET · TRY AGAIN')}}
 function bar(t){let b=$('pupbar');if(!b){b=document.createElement('div');b.id='pupbar';b.onclick=()=>doUpdate();document.body.append(b)}b.textContent=t;b.style.display='block'}
-async function doUpdate(){if(UPD.busy||!UPD.url)return;UPD.busy=true;bar('DOWNLOADING THE UPDATE…');
- try{const r=await window.LUNATIVE.installUpdate({url:UPD.url});
-  if(r.needsPermission)bar('ALLOW LU CUBE TO INSTALL UPDATES, THEN COME BACK AND TAP HERE');else bar('TAP UPDATE ON THE NEXT SCREEN · BUILD '+UPD.n)}
- catch(e){bar('UPDATE DIDN\'T DOWNLOAD · TAP TO TRY AGAIN')}finally{UPD.busy=false}}
+async function doUpdate(){if(UPD.busy||!UPD.url)return;UPD.busy=true;bar('DOWNLOADING THE UPDATE…');let err='';
+ // up to three tries (a slow or dropped connection), then the reason is shown so it can be fixed
+ try{for(let k=1;k<=3;k++){try{const r=await window.LUNATIVE.installUpdate({url:UPD.url});
+   if(r.needsPermission)bar('ALLOW LU CUBE TO INSTALL UPDATES, THEN COME BACK AND TAP HERE');else bar('TAP UPDATE ON THE NEXT SCREEN · BUILD '+UPD.n);return}
+  catch(e){err=String((e&&e.message)||e||'');if(k<3){bar('CONNECTION DROPPED · TRYING AGAIN ('+(k+1)+' OF 3)…');await new Promise(r=>setTimeout(r,2500*k))}}}
+  bar('UPDATE DIDN\'T DOWNLOAD'+(err?' ('+err.slice(0,60).toUpperCase()+')':'')+' · TAP TO TRY AGAIN')}
+ finally{UPD.busy=false}}
 if(HAS)window.LUNATIVE.addListener('update',e=>{if(e.pct>=0)bar('DOWNLOADING THE UPDATE · '+e.pct+'%')});
 
 // ---------- cube skins, unlocked by passport banners ----------

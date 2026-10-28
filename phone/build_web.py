@@ -99,7 +99,7 @@ IPAD_CSS = """.cube{will-change:transform}
 #lucube{left:auto!important;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 66px)!important;background:#ffc21a!important;color:#111!important;display:none}
 .lupill{position:fixed;left:calc(env(safe-area-inset-left) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:20;background:#111;color:#fff;border-radius:99px;
  padding:9px 16px;font:700 11px 'Space Mono',monospace;letter-spacing:.08em;cursor:pointer;-webkit-tap-highlight-color:transparent}.lupill:active{background:#ffc21a;color:#111}
-html .keys{padding-left:190px;padding-right:230px}
+html .keys{padding-left:190px;padding-right:230px}.keys{pointer-events:none}
 html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}"""
 IPAD_JS = """<script>(function(){
  window.MXFULL=true;   // the orange square unfolds the cube into the whole screen
