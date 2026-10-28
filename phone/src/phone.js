@@ -7,6 +7,7 @@ const LS=window.LUSTORE,N=window.lucall,HAS=!!window.LUNATIVE;
 const $=id=>document.getElementById(id),E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const vib=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 breakApart=function(){};   // on a phone the cube stays a cube
+WPER=9;WCOL=3;   // the World face: nine countries, three across, so the names have room
 
 // ---------- no music yet (or no permission): friendly faces instead of empty ones ----------
 const _lrf=luRenderFaces,_ltf=luTickFaces;
