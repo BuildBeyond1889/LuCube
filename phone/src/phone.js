@@ -233,11 +233,13 @@ async function pcSync(){if(SYNCING)return;const pc=LS.get('lu_pc',{}),msg=t=>{SY
   const mine={pass:PASS,rfavs:MODE==='radio'?FAVS:RFAVS,caught:CAUGHT()};
   const mg=await (await fetch(base+'/sync/state?'+q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(mine)})).json();
   if(mg&&mg.pass){PASS=mg.pass;RFAVS=(mg.rfavs||[]).filter(x=>typeof x==='string');if(MODE==='radio'){FAVS=RFAVS;if(WORLD)rebuildRadio()}LS.set('lu_caught',mg.caught||CAUGHT());bnCheck();saveState();renderFaces()}
-  const lib=await (await fetch(base+'/sync/library?'+q)).json(),files=lib.files||[],done=LS.get('lu_synced',{});let k=0,got=0,pics=0;
+  const lib=await (await fetch(base+'/sync/library?'+q)).json(),files=lib.files||[],done=LS.get('lu_synced',{});let k=0,got=0,pics=0,gone=0;
+  // audiobooks stay on the PC: copies an earlier sync put on the phone are removed
+  const old=(lib.books||[]).filter(p=>done[p]!=null);if(old.length&&window.LUNATIVE.removeSynced){msg(`Taking ${old.length} audiobook files off the phone…`);try{const r=await window.LUNATIVE.removeSynced({paths:old});gone=r.removed|0}catch(e){}old.forEach(p=>delete done[p]);LS.set('lu_synced',done)}
   for(const f of files){k++;if(done[f.p]===f.s)continue;msg(`${f.img?'Cover':'Copying'} ${k} of ${files.length} · ${short(f.p.split('/').pop(),28)}`);
    try{await window.LUNATIVE.downloadFile({url:base+'/sync/file?'+q+'&p='+encodeURIComponent(f.p),dest:f.p});done[f.p]=f.s;if(f.img)pics++;else got++;if(got%5===0)LS.set('lu_synced',done)}catch(e){}}
-  LS.set('lu_synced',done);msg(`Done · ${got} new song${got===1?'':'s'}${pics?` · ${pics} cover${pics===1?'':'s'}`:''} from ${hi.name||'your PC'} · passport synced`);
-  if(got||pics)setTimeout(relib,2500)}
+  LS.set('lu_synced',done);msg(`Done · ${got} new song${got===1?'':'s'}${pics?` · ${pics} cover${pics===1?'':'s'}`:''} from ${hi.name||'your PC'}${gone?` · ${gone} audiobook file${gone===1?'':'s'} removed`:''} · passport synced`);
+  if(got||pics||gone)setTimeout(relib,2500)}
  catch(e){msg('Can\'t reach '+pc.addr+'. Same Wi-Fi? Is Phone Sync.bat running?')}finally{SYNCING=false}}
 
 // ---------- the phone's player follows the cube's settings; Android Auto gets the same lists ----------

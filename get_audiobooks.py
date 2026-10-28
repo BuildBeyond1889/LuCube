@@ -1,4 +1,4 @@
-"""Lu Cube: pulls public-domain LibriVox audiobooks from the Internet Archive.
+r"""Lu Cube: pulls public-domain LibriVox audiobooks from the Internet Archive.
 Each book gets its own folder in Music\<Book Title>\ with its chapters (001 - ....mp3, in order)
 and cover.jpg, which Lu Cube shows on the album face. Safe to re-run: finished files are skipped."""
 import json, os, re, sys, urllib.parse, urllib.request
@@ -49,6 +49,7 @@ def fetch_book(title):
     files = meta.get("files", [])
     folder = os.path.join(MUSIC, clean(title))
     os.makedirs(folder, exist_ok=True)
+    open(os.path.join(folder, ".audiobook"), "w").write("LibriVox audiobook: Lu Cube keeps it on the PC when it syncs a phone\n")
     # chapters: the 64kbps mp3s (fall back to any mp3), in track order
     mp3 = [f for f in files if f.get("format") == "64Kbps MP3"] or [f for f in files if f["name"].lower().endswith(".mp3")]
     mp3.sort(key=lambda f: (tracknum(f), f["name"]))

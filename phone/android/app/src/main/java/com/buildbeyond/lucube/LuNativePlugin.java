@@ -298,6 +298,31 @@ public class LuNativePlugin extends Plugin {
     }
 
     // ---------------- songs from Lu Cube on your PC (over Wi-Fi) ----------------
+    // removes files an earlier PC sync copied (only inside the app's own "Lu Cube" folder) and tells the music library
+    @PluginMethod
+    public void removeSynced(PluginCall call) {
+        JSArray paths = call.getArray("paths", new JSArray());
+        new Thread(() -> {
+            int n = 0;
+            List<String> gone = new ArrayList<>();
+            try {
+                File[] media = getContext().getExternalMediaDirs();
+                File root = new File(media != null && media.length > 0 && media[0] != null ? media[0] : getContext().getExternalFilesDir(null), "Lu Cube");
+                String rootPath = root.getCanonicalPath();
+                for (int i = 0; i < paths.length(); i++) {
+                    String dest = paths.getString(i).replace("\\", "/").replaceAll("(^|/)\\.\\.(?=/|$)", "").replaceAll("^/+", "");
+                    File f = new File(root, dest);
+                    if (!f.getCanonicalPath().startsWith(rootPath + File.separator)) continue;
+                    if (f.isFile() && f.delete()) { n++; gone.add(f.getPath()); }
+                    File d = f.getParentFile();
+                    while (d != null && !d.getCanonicalPath().equals(rootPath)) { String[] left = d.list(); if (left != null && left.length == 0 && d.delete()) d = d.getParentFile(); else break; }
+                }
+            } catch (Exception ignored) { }
+            if (!gone.isEmpty()) MediaScannerConnection.scanFile(getContext(), gone.toArray(new String[0]), null, null);
+            JSObject r = new JSObject(); r.put("removed", n); call.resolve(r);
+        }).start();
+    }
+
     @PluginMethod
     public void downloadFile(PluginCall call) {
         String url = call.getString("url");

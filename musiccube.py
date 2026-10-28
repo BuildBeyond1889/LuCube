@@ -635,11 +635,42 @@ def sync_code():
     return c
 
 
-def sync_files():
+def _book_names():
+    """the audiobooks Get Audiobooks.bat downloads, by folder name"""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("lu_books", os.path.join(os.path.dirname(os.path.abspath(__file__)), "get_audiobooks.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return {m.clean(b).lower() for b in m.BOOKS}
+    except Exception:
+        return set()
+
+
+BOOK_NAMES = None
+
+
+def is_book(dp, songs):
+    """an audiobook folder: marked by Get Audiobooks, one of its titles, or mostly chapters"""
+    global BOOK_NAMES
+    if BOOK_NAMES is None:
+        BOOK_NAMES = _book_names()
+    if os.path.exists(os.path.join(dp, ".audiobook")) or os.path.exists(os.path.join(dp, "AUDIOBOOK.txt")):
+        return True
+    if os.path.basename(dp).lower() in BOOK_NAMES:
+        return True
+    ch = sum(1 for f in songs if re.search(r"chapter|kapitel|chapitre|capitulo|\bch\.? ?\d", f, re.I))
+    return len(songs) >= 5 and ch >= len(songs) / 2
+
+
+def sync_files(books=False):
+    """what Phone Sync copies: your music (with covers). Audiobooks stay on the PC; books=True lists them instead."""
     out = []
     for dp, dn, fn in os.walk(MUSIC):
         dn.sort(key=str.lower)
         songs = [f for f in sorted(fn, key=str.lower) if f.lower().endswith(AUDIO)]
+        if songs and is_book(dp, songs) != books:
+            continue
         for f in songs:
             full = os.path.join(dp, f)
             out.append({"p": os.path.relpath(full, MUSIC).replace(os.sep, "/"), "s": os.path.getsize(full)})
@@ -732,7 +763,7 @@ class SyncH(BaseHTTPRequestHandler):
             print(f"  phone connected from {self.client_address[0]}", flush=True)
             return self.reply({"ok": True, "name": socket.gethostname(), "songs": len([x for x in files if not x.get("img")])})
         if path == "/sync/library":
-            return self.reply({"files": sync_files()})
+            return self.reply({"files": sync_files(), "books": [f["p"] for f in sync_files(True)]})
         if path == "/sync/file":
             f = os.path.realpath(os.path.join(MUSIC, (q.get("p") or [""])[0]))
             if not f.startswith(os.path.realpath(MUSIC) + os.sep) or not os.path.isfile(f):
