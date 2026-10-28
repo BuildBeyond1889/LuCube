@@ -22,6 +22,7 @@ ov.innerHTML=`<div id="liFlood"><i></i></div><div id="liTxt"></div>
 </div></div></div><div id="liMeas"></div>`;
 document.body.append(ov);document.body.classList.add('lintro-on','lintro-hide');window.LU_INTRO_ON=true;
 const q=s=>ov.querySelector(s),txt=$('liTxt'),meas=$('liMeas'),icons=[...ov.querySelectorAll('.lf>i')];
+const baseI=q('.lf-base>i');baseI.style.transform='translateZ(-.6px)';
 const fL=q('.lf-left'),fR=q('.lf-right'),fT=q('.lf-top'),fF=q('.lf-front'),fLid=q('.lf-lid'),cube=$('liCube'),mover=$('liMover');
 let PW=innerWidth,PH=innerHeight,FS=30,L=[],SL=[],TX=0,TY=0,TH=0,PAD=0,FIN=null,ready=false;
 // the words, measured once in the real font: every letter's place on the line.
@@ -51,6 +52,8 @@ function render(t){if(!ready)return;
  fLid.style.transform=`translateY(84px) rotateX(${90*f(1.75,.65)}deg)`;
  const c=io(P(t,.6,1.8));cube.style.transform=`rotateX(${-30*c}deg) rotateY(${45*c}deg) rotateX(${90*c}deg)`;
  const io2=1-P(t,2.34,.08);icons.forEach(i=>i.style.opacity=io2);   // the symbols go the moment the lid shuts
+ // the bottom's target ends up inside the box: it fades as the sides rise round it (Safari drew it on top of them)
+ baseI.style.opacity=Math.min(io2,1-P(t,.75,.3));
  const pul=s=>{const u=P(t,s,.3);return u>0&&u<1?1+.2*Math.sin(u*Math.PI):1};
  let cx=PW/2,cy=PH*.4,cs=(.85+.15*ap)*pul(2.4);
  // 2. the pulse at 2.4 floods the screen yellow
