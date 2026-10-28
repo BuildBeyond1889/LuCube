@@ -283,7 +283,7 @@ const short=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s;
 // lyrics: a song.lrc next to the song gives synced lines; classical pieces show the piece's details instead
 async function loadLrc(s){if(s.lines!==undefined)return;s.lines=null;if(!s.lrc)return;try{const t=await (await fetch(s.lrc)).text(),L=[];t.split(/\r?\n/).forEach(l=>{const m=[...l.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g)],txt=l.replace(/\[[^\]]*\]/g,'').trim();m.forEach(x=>L.push({t:+x[1]*60+ +x[2],x:txt}))});L.sort((a,b)=>a.t-b.t);s.lines=L.length?L:null;renderFaces()}catch(e){}}
 const LYR=s=>s.lines?s.lines.map(l=>l.x||'♪'):[short(s.t,22),s.a||'',PLS[P.pl]?short(PLS[P.pl].n,22):'','','INSTRUMENTAL','NO LYRICS FOR','THIS PIECE'];
-let AC=null,AN=null,FQ=null;function audioGraph(){if(AC)return;try{AC=new AudioContext();AN=AC.createAnalyser();AN.fftSize=256;AN.smoothingTimeConstant=.45;FQ=new Uint8Array(AN.frequencyBinCount);[AU,AU2].forEach(el=>AC.createMediaElementSource(el).connect(AN));AN.connect(AC.destination)}catch(e){AC=1}}
+let AC=null,AN=null,FQ=null;function audioGraph(){if(AC)return;try{AC=new AudioContext();AN=AC.createAnalyser();AN.fftSize=1024;AN.smoothingTimeConstant=.45;FQ=new Uint8Array(AN.frequencyBinCount);[AU,AU2].forEach(el=>AC.createMediaElementSource(el).connect(AN));AN.connect(AC.destination)}catch(e){AC=1}}
 function stopXf(){if(xf){xf.old.pause();xf=null;mix()}}
 function play(pl,idx,at,paused){stopXf();P.pl=pl;P.idx=idx;P.el=at||0;P.has=true;const s=song();if(!paused){audioGraph();if(AC&&AC.resume)AC.resume()}AU.src=s.src;
  if(at)AU.addEventListener('loadedmetadata',()=>{AU.currentTime=at},{once:true});
@@ -810,13 +810,18 @@ const DN=30,DB=48,DH=[];for(let i=0;i<DN;i++)DH.push(new Float32Array(DB).fill(.
 let dSeed=7;const dRnd=()=>(dSeed=dSeed*16807%2147483647)/2147483647;
 // the live sound, levelled: a quiet piece (much of Beethoven) is lifted to fill the room and a loud one eased down,
 // following the music within a few seconds; a sudden attack (a chord, a timpani hit) throws the waves up for a moment
-const DAGC={p:.5,kick:0,prev:null};
+const DAGC={p:.5,kick:0,prev:null,bp:null,ba:null};
 function dLevel(out){let pk=0;for(let i=0;i<DB;i++)pk=Math.max(pk,out[i]);
  DAGC.p=pk>DAGC.p?DAGC.p*.55+pk*.45:Math.max(.16,DAGC.p*.993);const g=Math.min(3.2,.95/DAGC.p);
  let fl=0;if(DAGC.prev)for(let i=0;i<DB;i++)fl+=Math.max(0,out[i]*g-DAGC.prev[i]);DAGC.kick=Math.max(fl/DB*7,DAGC.kick*.78);const boost=1+Math.min(.5,DAGC.kick);
- DAGC.prev=out.map(v=>v*g);for(let i=0;i<DB;i++)out[i]=Math.min(1,Math.pow(out[i]*g,1.2)*boost)}
+ DAGC.prev=out.map(v=>v*g);
+ // each band also levels to itself, so the high strings, cymbals and the top of the piano use the whole height too
+ // (measured against the band's own recent average, so a steady hiss stays low and only real notes and swells rise)
+ if(!DAGC.bp){DAGC.bp=new Float32Array(DB).fill(.3);DAGC.ba=new Float32Array(DB).fill(.1)}
+ for(let i=0;i<DB;i++){const v=out[i],b=DAGC.bp[i]=Math.max(.1+.06*(1-i/DB),v>DAGC.bp[i]?DAGC.bp[i]*.5+v*.5:DAGC.bp[i]*.996),a=DAGC.ba[i]=Math.min(b*.75,DAGC.ba[i]*.985+v*.015),own=Math.max(0,Math.min(1,(v-a*.85)/Math.max(.05,b-a*.85)));
+  out[i]=Math.min(1,Math.pow(.42*Math.min(1,v*g)+.58*own*Math.min(1,pk*g+.15),1.25)*boost)}}
 function dSpectrum(){const out=new Float32Array(DB);
- if(AN&&FQ){AN.getByteFrequencyData(FQ);for(let i=0;i<DB;i++){const lo=Math.floor(Math.pow(i/DB,1.7)*110),hi=Math.max(lo+1,Math.floor(Math.pow((i+1)/DB,1.7)*110));let m=0;for(let k=lo;k<hi;k++)m=Math.max(m,FQ[k]);out[i]=m/255}dLevel(out)}
+ if(AN&&FQ){AN.getByteFrequencyData(FQ);const MB=Math.floor(FQ.length*Math.min(.82,16000/(((AN.context||{}).sampleRate||44100)/2)));/* up to 16 kHz: above that most files are silent */for(let i=0;i<DB;i++){const lo=Math.floor(Math.pow(i/DB,1.9)*MB),hi=Math.max(lo+1,Math.floor(Math.pow((i+1)/DB,1.9)*MB));let m=0;for(let k=lo;k<hi;k++)m=Math.max(m,FQ[k]);out[i]=m/255}dLevel(out)}
  else{const t=performance.now()/1000,g=(u,c,w)=>Math.exp(-((u-c)*(u-c))/(2*w*w)),kick=Math.exp(-(t%.5)/.07);   // no live sound to read (the phone): a stand-in that keeps time
   for(let i=0;i<DB;i++){const u=i/(DB-1);out[i]=(.9*kick*g(u,.07,.05)+.5*g(u,.18+.03*Math.sin(t*2),.05)+.55*g(u,.36+.08*Math.sin(t*1.7),.035)+.4*g(u,.55+.1*Math.sin(t*1.1+1),.03)+.06*dRnd())*(1-.35*u)}}
  const live=P.has&&P.playing;for(let i=0;i<DB;i++)out[i]=live?Math.max(.02,Math.min(1,out[i])):.02;
