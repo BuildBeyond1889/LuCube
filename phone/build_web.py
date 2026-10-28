@@ -110,7 +110,7 @@ IPAD_CSS = """.cube{will-change:transform}
 html .keys{padding-left:190px;padding-right:230px}.keys{pointer-events:none}
 html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}"""
 IPAD_JS = """<script>(function(){
- window.MXFULL=true;   // the orange square unfolds the cube into the whole screen
+ window.MXFULL=true; window.VIZTAP=true;   // tap the unfolded visualiser: it fills the screen   // the orange square unfolds the cube into the whole screen
  // no songs yet: the Lu cube shows how to add some, instead of failing to draw (which left it invisible)
  const _lr=luRenderFaces,_lt=luTickFaces,_ac=act;
  luRenderFaces=function(){if(PLS.length)return _lr();
