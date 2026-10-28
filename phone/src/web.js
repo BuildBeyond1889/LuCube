@@ -112,7 +112,8 @@ window.lucall=call;
 
 // ---------- the /api the cube asks for ----------
 let LIBP=null;const lib=()=>LIBP||(LIBP=library().finally(()=>setTimeout(()=>LIBP=null,0)));
-async function state(){const st=LS.get('lu_state',{})||{};delete st.xf;await lib();try{return JSON.parse(toUrls(JSON.stringify(st)))}catch(e){return st}}
+async function state(){const st=LS.get('lu_state',{})||{};delete st.xf;await lib();if(!/ipad\.html/.test(location.pathname))st.mode='lu';   // the iPhone always opens on Lu: the opening lands there
+try{return JSON.parse(toUrls(JSON.stringify(st)))}catch(e){return st}}
 window.fetch=function(u,o){const s=typeof u==='string'?u:(u&&u.url)||'';
  if(!s.startsWith('/api/'))return ofetch(u,o);const url=new URL(s,'https://x'),p=url.pathname,q=url.searchParams;
  if(p==='/api/state'){if(o&&o.method==='POST'){try{const nw=JSON.parse(toIds(o.body)),old=LS.get('lu_state',{})||{};nw.phone=old.phone;nw.place=old.place;for(const k of ['radio','mode'])if(nw[k]===undefined&&old[k]!==undefined)nw[k]=old[k];LS.set('lu_state',nw)}catch(e){}return Promise.resolve(J({ok:true}))}return state().then(J)}

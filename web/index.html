@@ -238,7 +238,8 @@ html.dk,html.dk body{background:transparent!important}html.dk .desk,html.dk .int
 [data-act]{cursor:pointer}[data-act].hov{outline:2px solid var(--k);outline-offset:-2px;filter:brightness(1.06)}
 .pl div[data-act].hov{background:#fff}.lib div[data-act]{position:relative}.lib div span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere;max-width:100%}.lib div.on{box-shadow:inset 0 0 0 4px var(--k)}
 .scr{position:absolute;right:6px;top:26px;display:flex;flex-direction:column;gap:4px;z-index:2}.scr b{width:22px;height:20px;border:2px solid var(--k);background:#fff;display:grid;place-items:center;font-size:9px}.scr b.off{opacity:.3}.f .pl{padding-right:34px}.f .lib{margin-right:30px}
-.hnd{position:fixed;left:0;top:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--y);border:2px solid #111;box-shadow:0 0 0 2px rgba(255,194,26,.25);z-index:12;cursor:nwse-resize;opacity:0;transition:opacity .35s,transform 0s;touch-action:none;pointer-events:none}.hnd.on{opacity:1;pointer-events:auto}.hnd:hover{background:#fff}
+.hnd{position:fixed;left:0;top:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--y);border:2px solid #111;box-shadow:0 0 0 2px rgba(255,194,26,.25);z-index:12;cursor:nwse-resize;opacity:0;transition:opacity .35s,transform 0s;touch-action:none;pointer-events:none}.hnd.on{opacity:1;pointer-events:auto}
+.hnd.tch{width:24px;height:24px;margin:-12px 0 0 -12px}.hnd.tch:before{content:'';position:absolute;inset:-14px;border-radius:50%}.hnd:hover{background:#fff}
 .vizc{position:absolute;left:50%;top:58%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%}
 /* weather + time of day, laid over the cube's faces */
 .f:before,.f:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:20;transition:opacity 1.5s,background 1.5s}
@@ -373,7 +374,7 @@ function frame(n){const t=n/1000;exT=(TW||hoverW||moving||performance.now()-last
  if(exT&&!frame.wasEx&&EX<.25&&P.has&&!cubeOn&&PLS[P.pl]&&(mode!=='songs'||openPl!==P.pl||sel!==P.idx)){if(mode==='songs'&&openPl===P.pl){sel=tgt=P.idx;rot=sel*STEP;wheelNow()}else openList(P.pl)}frame.wasEx=exT;EX+=(exT-EX)*(exT?.16:.14);const ex=geo();
  document.querySelectorAll('.now,.back,.qbtn').forEach(el=>{el.style.opacity=cubeOn?'':ex;el.style.pointerEvents=!cubeOn&&ex<.3?'none':''});
  if(!cubeOn&&!(TWD&&TWD.moved))rot+=(tgt*STEP-rot)*.2;
- drawWheel(t);placeToks(t);
+ if(!(cubeOn&&EX<.02)){drawWheel(t);placeToks(t)}
  const ca=Math.cos(A0()),sa=Math.sin(A0()),x=CX+ca*RAD*.8,y=CY+sa*RAD*.8;ring.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%) scale(${lerp(.3,.75,EX)})`;const isP=P.has&&(mode==='songs'?P.pl===openPl&&P.idx===sel:P.pl===sel);ring.style.opacity=isP?EX:0;document.getElementById('ringp').setAttribute('stroke-dashoffset',isP&&song().d?1-P.el/song().d:1);
  {const px=CX+ca*RAD*1.08,py=CY+sa*RAD*1.08+(vtop<0?14:-14),sc=lerp(.7,.85,EX),hh=125*sc;now.style.transformOrigin=(side>0?'100% ':'0 ')+(vtop<0?'0':'100%');now.style.transform=`translate(${side>0?px-420:px}px,${vtop<0?py:py-125}px) scale(${sc})`;now.querySelector('svg').style.margin=side>0?'2px 0 0 auto':'2px auto 0 0';
   const bx=CX-side*14,b1=CY-vtop*14,tx=side>0?'-100%':'0',ty=vtop<0?'0':'-100%';bubbles();backB.style.transform=`translate(${bx}px,${b1-vtop*36}px) translate(${tx},${ty})`}
@@ -415,9 +416,9 @@ const sane=M=>M.every(r=>r.every(Number.isFinite));
 function toCube(x,y){cubeOn=true;document.body.classList.add('cubemode');{const dd=(DISPLAYS&&DISPLAYS.length?DISPLAYS:[{x:0,y:0,w:W,h:Hh}])[dispAt(x,y)];cpos=[Math.max(dd.x+200,Math.min(dd.x+dd.w-200,x)),Math.max(dd.y+200,Math.min(dd.y+dd.h-240,y))]};CR=mul(Rx(-.6),Ry(.9));om=[.07,-.05];snapT=null;cbirth=performance.now();shatter=0;
  Object.values(FACE).forEach(f=>{const e=document.getElementById(f.el);e.style.opacity='';e.style.transform=''});renderFaces();hold.style.display='';cname.style.display='';dockB.style.display=''}
 function overCube(e){return cubeOn&&!shatter&&!mxEl&&Math.hypot(e.clientX-cpos[0],e.clientY-cpos[1])<230*csz}
-let csz=1,rs=null,nearC=false;const HND=[...Array(8)].map((_,i)=>{const d=document.createElement('div');d.className='hnd';d.title='drag to resize';document.body.append(d);
+let csz=1,rs=null,nearC=false,TOUCHUI=false;const CMAX=()=>TOUCHUI?Math.max(1.6,Math.min(innerWidth,innerHeight)/330):1.6;addEventListener('pointerdown',e=>{TOUCHUI=e.pointerType==='touch'},true);const HND=[...Array(8)].map((_,i)=>{const d=document.createElement('div');d.className='hnd';d.title='drag to resize';document.body.append(d);
  d.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();d.setPointerCapture(e.pointerId);rs={d0:Math.max(30,Math.hypot(e.clientX-cpos[0],e.clientY-cpos[1])),s0:csz}});
- d.addEventListener('pointermove',e=>{if(!rs)return;csz=Math.max(.2,Math.min(1.6,rs.s0*Math.hypot(e.clientX-cpos[0],e.clientY-cpos[1])/rs.d0))});
+ d.addEventListener('pointermove',e=>{if(!rs)return;csz=Math.max(.2,Math.min(CMAX(),rs.s0*Math.hypot(e.clientX-cpos[0],e.clientY-cpos[1])/rs.d0))});
  d.addEventListener('pointerup',()=>{rs=null});return d});
 let MX=-1e4,MY=-1e4,hndI=-1;addEventListener('pointermove',e=>{MX=e.clientX;MY=e.clientY;nearC=cubeOn&&!shatter&&Math.hypot(e.clientX-cpos[0],e.clientY-cpos[1])<Math.max(150,300*csz)});
 // drag spins it; a press that doesn't move is a click on whatever button is under it
@@ -427,7 +428,10 @@ const pad=document.getElementById('pad');
 function listAt(x,y){const f=document.getElementById(FACE[front()].el);if(!f)return null;const inBox=e=>{const r=e.getBoundingClientRect();return r.width>4&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom};
  const box=[...f.querySelectorAll('.pl,.lib,.pass')].find(inBox);if(!box)return null;const b=[...f.querySelectorAll('.scr:not(.gscr) b[data-act]')].map(e=>e.dataset.act.split(':')[0]);if(!b.length)return null;
  let k=b[0];if(k==='libp')k='libs';return{k,step:({pls:30,ccs:60,libs:62,pas:95}[k]||40)*csz}}
-function actAt(x,y){const f=document.getElementById(FACE[front()].el);let best=null,ba=1e12;f.querySelectorAll('[data-act]').forEach(e=>{const r=e.getBoundingClientRect(),a=r.width*r.height;if(a>4&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&a<ba){ba=a;best=e}});return best}
+function actAt(x,y){const f=document.getElementById(FACE[front()].el);let best=null,ba=1e12;f.querySelectorAll('[data-act]').forEach(e=>{const r=e.getBoundingClientRect(),a=r.width*r.height;if(a>4&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&a<ba){ba=a;best=e}});
+ // a fingertip that lands just beside a small button (the title-bar squares, the arrows) still presses it
+ if(!best&&TOUCHUI){let bd=16;f.querySelectorAll('[data-act]').forEach(e=>{const r=e.getBoundingClientRect();if(r.width*r.height<=4)return;const d=Math.hypot(Math.max(r.left-x,0,x-r.right),Math.max(r.top-y,0,y-r.bottom));if(d<bd){bd=d;best=e}})}
+ return best}
 let hovEl=null;const setHov=e=>{if(hovEl===e)return;hovEl&&hovEl.classList.remove('hov');hovEl=e;e&&e.classList.add('hov');pad.classList.toggle('hand',!!e)};
 pad.addEventListener('pointerdown',e=>{if(shatter)return;{const sa=!miniOn&&!e.shiftKey&&!e.ctrlKey&&!snapT&&actAt(e.clientX,e.clientY);if(sa&&(sa.dataset.act==='seek'||sa.dataset.act==='vol')){cdrag={seek:sa};pad.setPointerCapture(e.pointerId);seekTo(sa,e.clientX);return}
   if(sa&&sa.closest('.gbox')){cdrag={gw:{y:e.clientY,o:GROW,moved:false,el:sa}};pad.setPointerCapture(e.pointerId);return}}s_rest=false;setHov(null);cdrag={x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now(),moveCube:e.shiftKey||e.ctrlKey||e.metaKey,moved:false,mini:miniOn&&!e.shiftKey&&!e.ctrlKey,ls:miniOn||e.shiftKey||e.ctrlKey||e.metaKey?null:listAt(e.clientX,e.clientY)};pad.setPointerCapture(e.pointerId);om=[0,0];snapT=null});
@@ -456,9 +460,9 @@ function cubeFrame(t){if(!cubeOn){HND.forEach(h=>h.classList.remove('on'));hold.
  if(!sane(CR)){CR=upright('NOW PLAYING');snapT=null;om=[0,0]}
  const M=CR.map(r=>r.map(x=>x*sc)),bob=cdrag||shatter?0:Math.sin(t*1.6)*3,m=[M[0][0],M[1][0],M[2][0],0,M[0][1],M[1][1],M[2][1],0,M[0][2],M[1][2],M[2][2],0,0,0,0,1];
  hold.style.transform=`translate3d(${cpos[0]}px,${cpos[1]+bob}px,0)`;stage.style.perspectiveOrigin=`${cpos[0]}px ${cpos[1]+bob}px`;pad.style.transform=`translate(${cpos[0]}px,${cpos[1]+bob}px) scale(${csz})`;
- {const show=(nearC||rs)&&!shatter&&!cdrag&&born>=1,ox=cpos[0],oy=cpos[1]+bob;let k=0,best=-1,bd=1e9;const hp=[];for(const a of[-1,1])for(const b2 of[-1,1])for(const c of[-1,1]){const v=app(CR,[a*150,b2*150,c*150]).map(x=>x*sc),f=1600/(1600-v[2]),x=ox+(cpos[0]+v[0]-ox)*f,y=oy+(cpos[1]+bob+v[1]-oy)*f;
-  const h=HND[k];h.style.transform=`translate(${x}px,${y}px) scale(${v[2]>0?1:.75})`;h.style.zIndex=v[2]>0?12:7;const dd=Math.hypot(x-MX,y-MY)+(v[2]>0?0:40);if(dd<bd){bd=dd;best=k}k++}
-  if(!rs)hndI=best;HND.forEach((h,i)=>h.classList.toggle('on',!!show&&i===hndI))}cubeEl.style.transform=`matrix3d(${m.join(',')})`;
+ {const show=(nearC||rs||TOUCHUI)&&!shatter&&!cdrag&&!snapT&&born>=1,ox=cpos[0],oy=cpos[1]+bob;let k=0,best=-1,bd=1e9;const hp=[];for(const a of[-1,1])for(const b2 of[-1,1])for(const c of[-1,1]){const v=app(CR,[a*150,b2*150,c*150]).map(x=>x*sc),f=1600/(1600-v[2]),x=ox+(cpos[0]+v[0]-ox)*f,y=oy+(cpos[1]+bob+v[1]-oy)*f;
+  const h=HND[k];h.style.transform=`translate(${x}px,${y}px) scale(${v[2]>0?1:.75})`;h.style.zIndex=v[2]>0?12:7;hp.push(v[2]>0);h.classList.toggle('tch',TOUCHUI);const dd=Math.hypot(x-MX,y-MY)+(v[2]>0?0:40);if(dd<bd){bd=dd;best=k}k++}
+  if(!rs)hndI=best;HND.forEach((h,i)=>h.classList.toggle('on',!!show&&(TOUCHUI&&!rs?hp[i]:i===hndI)))}cubeEl.style.transform=`matrix3d(${m.join(',')})`;
  {MINI=csz<.5;const el=document.getElementById('mini'),sz=300*sc*.98,on=MINI&&!shatter&&!(cdrag&&(cdrag.moved||cdrag.seek))&&!rs&&born>=1&&!snapT&&Math.hypot(MX-cpos[0],MY-cpos[1]-bob)<170*csz;
   el.classList.toggle('on',on);el.style.width=el.style.height=sz+'px';el.style.transform=`translate(${cpos[0]-sz/2}px,${cpos[1]+bob-sz/2}px)`;el.style.fontSize=Math.max(14,sz*.42)+'px';el.textContent=P.playing?'❚❚':'▶';miniOn=on}
  cname.textContent=MODE==='radio'&&!shatter&&performance.now()-stampT<4500?(newStamp.startsWith('BANNER')?'✦ PASSPORT '+newStamp+' UNLOCKED ✦':'✦ NEW PASSPORT STAMP · '+newStamp.toUpperCase()+' ✦'):shatter?'':short(front()+' · '+song().t.toUpperCase(),60);{const fs=Math.round(lerp(11,18,Math.max(0,Math.min(1,(csz-.2)/.8)))),y0=cpos[1]+bob+172*csz+8;cname.style.fontSize=fs+'px';cname.style.left=cpos[0]+'px';cname.style.top=y0+'px';dockB.style.left=cpos[0]+'px';dockB.style.top=(y0+fs+10)+'px';dockB.style.transform=`translateX(-50%) scale(${csz<.6?.85:1})`;dockB.style.transformOrigin='50% 0'}{const on=(nearC||rs||cdrag)&&!shatter;cname.style.opacity=dockB.style.opacity=on?1:0;dockB.style.pointerEvents=on?'auto':'none'}}
@@ -827,7 +831,7 @@ function depthBox(){if(depthBox.b)return depthBox.b;const yaw=.5236,pit=.3665,C=
  const P=(px,py,pz)=>{py-=.45;pz-=D/2;const x1=px*cyw+pz*syw,z1=-px*syw+pz*cyw,y2=py*cp+z1*sp,z2=-py*sp+z1*cp,d=C+z2;return[760*x1/d,-760*y2/d]};
  const pts=[];for(const px of[-1.46,-1.12])for(const py of[-.12,1.3])for(const pz of[0,.28])pts.push(P(px,py,pz));for(const px of[-.94,.94])for(const pz of[.08,D*.62])for(const py of[0,1])pts.push(P(px,py,pz));
  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);return depthBox.b={x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)}}
-setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;drawDepth(document.getElementById('vizd'),true);if(MXS)drawDepth(document.getElementById('mxviz'),true,true)},55);
+setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;if(app(CR,FACE.VISUALISER.n)[2]>-.25&&!mxEl)drawDepth(document.getElementById('vizd'),true);if(MXS)drawDepth(document.getElementById('mxviz'),true,true)},55);
 
 const _rfMX=renderFaces;renderFaces=function(){_rfMX();if(MODE==='radio')F_VIZ.classList.remove('dk3');if(mxEl&&MXS!==3)mxRender()};const _tfMX=tickFaces;tickFaces=function(){_tfMX();if(mxEl)mxTick()};
 // ===================== MAXIMIZE: the orange button unfolds the cube into one big window =====================

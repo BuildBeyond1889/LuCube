@@ -102,8 +102,8 @@ async function library(){if(!LN)return{playlists:[],music:'this phone'};
  return{playlists:(r.playlists||[]).map(p=>({name:p.name,cover:p.cover||'',tracks:p.tracks.map(t=>({t:t.t,a:t.a,d:t.d,src:t.src}))})),music:r.granted?'your phone (Music, Download…)':'your phone — Lu Cube needs permission to see your music'}}
 // your settings live on the phone; if the phone's player is already going (you closed the app with music on), carry on from there
 const bootP=LN?call('getState').then(s=>{if(s&&s.count>0&&s.id)BOOT=s;return s}):Promise.resolve({});
-async function state(){const st=LS.get('lu_state',{})||{};delete st.xf;await bootP;
- if(BOOT){const live=!!BOOT.live||/^https?:/.test(BOOT.id);if(live){st.mode='radio';st.radio=st.radio||{};st.radio.last={src:BOOT.id}}else{st.mode='lu';st.last={src:BOOT.id,pl:(st.last||{}).pl||'',t:Math.round((BOOT.position||0)/1000)}}}
+async function state(){const st=LS.get('lu_state',{})||{};delete st.xf;await bootP;st.mode='lu';   // the phone always opens on Lu: the opening lands there
+ if(BOOT){const live=!!BOOT.live||/^https?:/.test(BOOT.id);if(live){st.radio=st.radio||{};st.radio.last={src:BOOT.id}}else{st.last={src:BOOT.id,pl:(st.last||{}).pl||'',t:Math.round((BOOT.position||0)/1000)}}}
  return st}
 window.fetch=function(u,o){const s=typeof u==='string'?u:(u&&u.url)||'';
  if(!s.startsWith('/api/'))return ofetch(u,o);const url=new URL(s,'https://x'),p=url.pathname,q=url.searchParams;

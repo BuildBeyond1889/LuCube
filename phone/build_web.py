@@ -89,7 +89,8 @@ iphone = html
 
 # ---------- iPad: the full PC cube ----------
 TO_PHONE = "if(Math.min(screen.width,screen.height)<700)location.replace('./'+location.search);"
-IPAD_CSS = """.intro{top:calc(env(safe-area-inset-top) + 14px)!important}.intro h1,#h1{display:none!important}.intro p{margin:0!important}
+IPAD_CSS = """.f:before,.f:after{animation:none!important}.cube{will-change:transform}
+.intro{top:calc(env(safe-area-inset-top) + 14px)!important}.intro h1,#h1{display:none!important}.intro p{margin:0!important}
 .find{top:calc(env(safe-area-inset-top) + 40px)!important}
 #swp{position:fixed;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);top:auto;margin:0;padding:10px 16px;font-size:11px;z-index:21}
 :root{--sat:env(safe-area-inset-top)}
@@ -111,7 +112,7 @@ IPAD_JS = """<script>(function(){
  const cb=pill('lucube','▣ SHOW THE CUBE',()=>out(true));
  const k=document.querySelector('.keys');if(k)k.textContent='SWIPE the cube to turn it · TAP its buttons · DRAG a corner to resize · ORANGE square unfolds it · RED square puts it away · the WHEEL in the corner: tap to open, drag round, tap the middle one for the cube';
  // a touchscreen has no mouse to find the wheel with: the cube comes out, big, in the middle
- function out(force){if(!PLS.length&&MODE!=='lu')return;csz=Math.max(csz,Math.min(1.6,Math.min(innerWidth,innerHeight)/470));toCube(innerWidth*.5,innerHeight*.5)}
+ function out(force){if(!PLS.length&&MODE!=='lu')return;csz=Math.min(1.3,Math.min(innerWidth,innerHeight)/590);toCube(innerWidth*.5,innerHeight*.5)}
  window.luCubeOut=()=>out(true);
  let first=true,bounced=false;
  setInterval(()=>{if(!LUREADY)return;
@@ -122,7 +123,7 @@ IPAD_JS = """<script>(function(){
   if(first&&PLS.length&&!cubeOn){first=false;out()}
   cb.style.display=!cubeOn&&!window.mxEl?'block':'none'},300)
  // turning the iPad: the cube stays in the middle at a size that fits
- addEventListener('resize',()=>setTimeout(()=>{if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(1.6,Math.min(innerWidth,innerHeight)/470));cpos=[innerWidth*.5,innerHeight*.5]}},120));
+ addEventListener('resize',()=>setTimeout(()=>{if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(innerWidth,innerHeight)/330);cpos=[innerWidth*.5,innerHeight*.5]}},120));
 })();</script>"""
 ipad = base(TO_PHONE).replace("__CSS__", IPAD_CSS)
 ipad = swap(ipad, "songs. Hover the right edge to open the wheel; drag it out for the cube.`", "songs. Tap the wheel in the corner for your playlists.`")
