@@ -93,6 +93,15 @@ function worldJSON(){const w=WB.w||(WB.w=LS.get('lu_world',null));const fresh=w&
  return w&&w.countries?w:{building:true,error:WB.busy?'':WB.error}}
 async function search(q){const rows=[],seen=new Set();for(const key of ['name','state','tag']){try{for(const s of await rb('/json/stations/search',{[key]:q,hidebroken:'true',order:'clickcount',reverse:'true',limit:'25'})){const t=trim(s);if(t&&!seen.has(t.u)){seen.add(t.u);rows.push(t)}}}catch(e){}}return rows.slice(0,40)}
 
+// ---------- what's playing: a browser can't read the song title out of a stream, but Icecast stations publish it ----------
+// (status-json.xsl, readable from any page). Stations that don't publish it just show no title.
+const ICYNO={};
+async function icy(u){let U;try{U=new URL(u)}catch(e){return''}if(ICYNO[U.origin]>Date.now())return'';
+ try{const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),5000),r=await ofetch(U.origin+'/status-json.xsl',{signal:ac.signal,cache:'no-store'});clearTimeout(tm);if(!r.ok)throw 0;
+  const j=await r.json(),src=[].concat((j.icestats||{}).source||[]),mine=src.find(x=>{try{return new URL(x.listenurl).pathname===U.pathname}catch(e){return false}})||(src.length===1?src[0]:null);
+  if(!mine)return'';const t=String(mine.title||'').trim(),a=String(mine.artist||'').trim();return (a&&t&&!t.includes(a)?a+' - '+t:t||a).slice(0,140)}
+ catch(e){ICYNO[U.origin]=Date.now()+10*60e3;return''}}
+
 // ---------- the few things the phone layer asks the "phone" for ----------
 const call=(m,a)=>{a=a||{};
  if(m==='audioAccess'){pick();return Promise.resolve({})}
@@ -111,7 +120,7 @@ window.fetch=function(u,o){const s=typeof u==='string'?u:(u&&u.url)||'';
  if(p==='/api/libsig')return Promise.resolve(T(SIG));
  if(p==='/api/radio/world')return Promise.resolve(J(worldJSON()));
  if(p==='/api/radio/search')return search(q.get('q')||'').then(r=>J({results:r}));
- if(p==='/api/radio/title')return Promise.resolve(J({t:''}));   // a browser can't read a station's now-playing line
+ if(p==='/api/radio/title')return icy(q.get('u')||'').then(t=>J({t}));
  return Promise.resolve(new Response('',{status:404}))};
 
 // ---------- offline + updates: the service worker keeps the app on the device; a new version arrives on the next open ----------

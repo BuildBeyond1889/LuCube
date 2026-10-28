@@ -171,6 +171,9 @@
 .mxcr em{font-style:normal;font-size:6.5px;border:1.5px solid #111;padding:2px 4px;background:#fff;cursor:pointer;flex:none}.mxcr em:hover{background:#111;color:#ffc21a}
 .mxce{padding:9px;font:400 8.5px/1.45 Inter,sans-serif}
 .mxlist,.mxlw,.mxgw{touch-action:none}
+.mxnow{margin-top:7px;font:700 8.5px/1.3 'Space Mono',monospace;max-height:34px;overflow:hidden}.mxnow small{display:block;font-size:6.5px;letter-spacing:.12em;opacity:.7}.mxnow.off{opacity:.45}
+.mxctl .mxvol{flex:1 1 auto;width:auto;max-width:110px;min-width:44px}
+.mxctl b.mxht.on{background:#e0281a;color:#fff}.mxctl b.mxht.off{opacity:.35;pointer-events:none}
 .mxpills{display:flex;flex-wrap:wrap;gap:5px;margin:12px 8px 0}.mxpills span{background:#111;color:#fff;border-radius:99px;padding:5px 10px;font-size:7.5px;font-weight:700;letter-spacing:.08em;cursor:pointer}.mxpills span:hover{background:#ffc21a;color:#111}
 
 /* ===== the PC opening: in the wheel's corner only; clicks pass through ===== */
@@ -462,6 +465,15 @@ function worldJSON(){const w=WB.w||(WB.w=LS.get('lu_world',null));const fresh=w&
  return w&&w.countries?w:{building:true,error:WB.busy?'':WB.error}}
 async function search(q){const rows=[],seen=new Set();for(const key of ['name','state','tag']){try{for(const s of await rb('/json/stations/search',{[key]:q,hidebroken:'true',order:'clickcount',reverse:'true',limit:'25'})){const t=trim(s);if(t&&!seen.has(t.u)){seen.add(t.u);rows.push(t)}}}catch(e){}}return rows.slice(0,40)}
 
+// ---------- what's playing: a browser can't read the song title out of a stream, but Icecast stations publish it ----------
+// (status-json.xsl, readable from any page). Stations that don't publish it just show no title.
+const ICYNO={};
+async function icy(u){let U;try{U=new URL(u)}catch(e){return''}if(ICYNO[U.origin]>Date.now())return'';
+ try{const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),5000),r=await ofetch(U.origin+'/status-json.xsl',{signal:ac.signal,cache:'no-store'});clearTimeout(tm);if(!r.ok)throw 0;
+  const j=await r.json(),src=[].concat((j.icestats||{}).source||[]),mine=src.find(x=>{try{return new URL(x.listenurl).pathname===U.pathname}catch(e){return false}})||(src.length===1?src[0]:null);
+  if(!mine)return'';const t=String(mine.title||'').trim(),a=String(mine.artist||'').trim();return (a&&t&&!t.includes(a)?a+' - '+t:t||a).slice(0,140)}
+ catch(e){ICYNO[U.origin]=Date.now()+10*60e3;return''}}
+
 // ---------- the few things the phone layer asks the "phone" for ----------
 const call=(m,a)=>{a=a||{};
  if(m==='audioAccess'){pick();return Promise.resolve({})}
@@ -480,7 +492,7 @@ window.fetch=function(u,o){const s=typeof u==='string'?u:(u&&u.url)||'';
  if(p==='/api/libsig')return Promise.resolve(T(SIG));
  if(p==='/api/radio/world')return Promise.resolve(J(worldJSON()));
  if(p==='/api/radio/search')return search(q.get('q')||'').then(r=>J({results:r}));
- if(p==='/api/radio/title')return Promise.resolve(J({t:''}));   // a browser can't read a station's now-playing line
+ if(p==='/api/radio/title')return icy(q.get('u')||'').then(t=>J({t}));
  return Promise.resolve(new Response('',{status:404}))};
 
 // ---------- offline + updates: the service worker keeps the app on the device; a new version arrives on the next open ----------
@@ -660,8 +672,8 @@ pad.addEventListener('pointerdown',e=>{if(shatter)return;{const sa=!miniOn&&!e.s
 pad.addEventListener('pointerleave',()=>{if(!cdrag)setHov(null)});
 pad.addEventListener('pointermove',e=>{if(cdrag&&cdrag.seek){seekTo(cdrag.seek,e.clientX);return}
  if(cdrag&&cdrag.ls){const L=cdrag.ls,dx=e.clientX-cdrag.x0,dy=e.clientY-cdrag.y0;
-  if(!L.on&&Math.hypot(dx,dy)>8){if(Math.abs(dy)>Math.abs(dx)*1.1){L.on=true;L.y=e.clientY;cdrag.moved=true}else cdrag.ls=null}
-  if(L.on){let d=e.clientY-L.y;while(d<=-L.step){act(L.k+':1');L.y-=L.step;d+=L.step;try{navigator.vibrate&&navigator.vibrate(5)}catch(_){}}while(d>=L.step){act(L.k+':-1');L.y+=L.step;d-=L.step;try{navigator.vibrate&&navigator.vibrate(5)}catch(_){}}return}}
+  if(!L.on){if(Math.hypot(dx,dy)<=10)return;if(Math.abs(dy)>=Math.abs(dx)*.7){L.on=true;L.y=e.clientY;cdrag.moved=true;om=[0,0]}else{cdrag.ls=null;cdrag.x=e.clientX;cdrag.y=e.clientY;cdrag.t=performance.now()}}
+  if(cdrag.ls&&L.on){let d=e.clientY-L.y;while(d<=-L.step){act(L.k+':1');L.y-=L.step;d+=L.step;try{navigator.vibrate&&navigator.vibrate(5)}catch(_){}}while(d>=L.step){act(L.k+':-1');L.y+=L.step;d-=L.step;try{navigator.vibrate&&navigator.vibrate(5)}catch(_){}}return}}
  if(cdrag&&cdrag.gw){const g=cdrag.gw,dy=e.clientY-g.y;if(Math.abs(dy)>6)g.moved=true;if(!g.moved)return;const n=Math.max(0,Math.min(Math.max(0,GROWS-GNR),Math.round(g.o-dy/(16*csz))));if(n!==GROW){GROW=n;renderFaces();try{navigator.vibrate&&navigator.vibrate(6)}catch(_){}}return}if(!cdrag){if(!snapT&&!om[0]&&!om[1])setHov(actAt(e.clientX,e.clientY));return}const dx=e.clientX-cdrag.x,dy=e.clientY-cdrag.y,dt=Math.max(.008,(performance.now()-cdrag.t)/1000);cdrag.x=e.clientX;cdrag.y=e.clientY;cdrag.t=performance.now();if(Math.hypot(e.clientX-cdrag.x0,e.clientY-cdrag.y0)>(cdrag.mini?10:5))cdrag.moved=true;if(cdrag.mini&&!cdrag.moved)return;
  if(cdrag.moveCube){cpos=[cpos[0]+dx,cpos[1]+dy];return}const k=.0105;CR=orth(mul(mul(Ry(dx*k),Rx(-dy*k)),CR));om=[dx*k/dt/60,-dy*k/dt/60];s_rest=false});
 pad.addEventListener('pointerup',e=>{if(!cdrag)return;if(cdrag.seek||(cdrag.ls&&cdrag.ls.on)){cdrag=null;return}
@@ -1028,7 +1040,7 @@ function dCol(f){const x=f*(DPAL.length-1),i=Math.min(DPAL.length-2,Math.floor(x
 function drawDepth(cv,meter,fit){if(!cv||!cv.width)return;const W=cv.width,H=cv.height,x=cv.getContext('2d');x.globalAlpha=1;x.fillStyle='#0c0e13';x.fillRect(0,0,W,H);
  let s=Math.min(W/634,H/554),ox=(W-634*s)/2+(meter?0:-30*s),oy=(H-554*s)/2;
  const yaw=.5236,pit=.3665,C=4.3,D=2.3;let F=760*s,cx=ox+372*s,cy=oy+268*s;
- if(fit){const B=depthBox();s=Math.min(W*.96/B.w,H*.92/B.h);F=760*s;cx=W/2-s*(B.x0+B.x1)/2;cy=H/2-s*(B.y0+B.y1)/2}
+ if(fit){const B=depthBox();s=Math.min(W*.97/B.w,H*.94/B.h);F=760*s;cx=W/2-s*(B.x0+B.x1)/2;cy=H/2-s*(B.y0+B.y1)/2}
  const cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit);
  const P3=(px,py,pz)=>{py-=.45;pz-=D/2;const x1=px*cyw+pz*syw,z1=-px*syw+pz*cyw,y2=py*cp+z1*sp,z2=-py*sp+z1*cp,d=C+z2;return[cx+F*x1/d,cy-F*y2/d]};
  // an open floor, no walls: the grid runs on past the last line and fades out
@@ -1042,7 +1054,7 @@ function drawDepth(cv,meter,fit){if(!cv||!cv.width)return;const W=cv.width,H=cv.
   x.globalAlpha=.94*Math.pow(1-f,1.6);x.fillStyle='#0c0e13';x.fill();x.globalAlpha=Math.pow(1-f,1.25);x.strokeStyle=dCol(f);x.lineWidth=(2.6-1.6*f)*1.25*s;x.stroke()}
  x.globalAlpha=1;
  // the level meter stands in the same room, a column of blocks at the front-left corner
- if(meter){const segs=22,lvl=DH[0].reduce((a,b)=>a+b,0)/DB*2.6,mx0=-1.34,mx1=-1.14,mz=.2,mH=1.15,st=mH/segs;
+ if(meter){const segs=22,lvl=DH[0].reduce((a,b)=>a+b,0)/DB*2.6,mx0=fit?-1.46:-1.34,mx1=fit?-1.12:-1.14,mz=fit?.28:.2,mH=1.15,st=mH/segs;
   const poly=(L,col)=>{x.fillStyle=col;x.beginPath();L.forEach((q,n)=>{const r=P3(q[0],q[1],q[2]);n?x.lineTo(r[0],r[1]):x.moveTo(r[0],r[1])});x.closePath();x.fill()};
   for(let i=0;i<segs;i++){const on=i/segs<lvl,f=i/(segs-1),y0=i*st+st*.12,y1=(i+1)*st-st*.12,c=on?(f>.8?'#e0281a':f>.55?'#ff7a1a':'#ffc21a'):'#232838';
    const side=[[mx1,y0,0],[mx1,y0,mz],[mx1,y1,mz],[mx1,y1,0]];poly(side,c);poly(side,on?'rgba(0,0,0,.4)':'rgba(0,0,0,.3)');poly([[mx0,y0,0],[mx1,y0,0],[mx1,y1,0],[mx0,y1,0]],c)}
@@ -1051,7 +1063,7 @@ function drawDepth(cv,meter,fit){if(!cv||!cv.width)return;const W=cv.width,H=cv.
 // the scene's own outline (floor, the tallest wave, the meter) at scale 1, so a box of any shape can be filled with it
 function depthBox(){if(depthBox.b)return depthBox.b;const yaw=.5236,pit=.3665,C=4.3,D=2.3,cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit);
  const P=(px,py,pz)=>{py-=.45;pz-=D/2;const x1=px*cyw+pz*syw,z1=-px*syw+pz*cyw,y2=py*cp+z1*sp,z2=-py*sp+z1*cp,d=C+z2;return[760*x1/d,-760*y2/d]};
- const pts=[];for(const px of[-1.34,1])for(const pz of[0,D])for(const py of[-.05,1.25])pts.push(P(px,py,pz));
+ const pts=[];for(const px of[-1.46,-1.12])for(const py of[-.12,1.3])for(const pz of[0,.28])pts.push(P(px,py,pz));for(const px of[-.94,.94])for(const pz of[.08,D*.62])for(const py of[0,1])pts.push(P(px,py,pz));
  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);return depthBox.b={x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)}}
 setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;drawDepth(document.getElementById('vizd'),true);if(MXS)drawDepth(document.getElementById('mxviz'),true,true)},55);
 
@@ -1149,15 +1161,15 @@ function mxRender(){const w=mxEl&&mxEl.querySelector('.mxw');if(!w)return;const 
  const l0=Math.max(0,Math.min(Math.max(0,Math.ceil((PLS.length-MXT)/3)*3),mxLib)),tiles=PLS.slice(l0,l0+MXT).map((p,j)=>`<div class="mxtile${l0+j===P.pl?' on':''}" data-act="pl:${l0+j}" style="background:${p.art}"><span>${esc(short(p.n,14))}</span></div>`).join('');
  const c=radio?cityOf(s):null,note=radio?`<div class="mxk">STATION</div><div class="mxnn">${esc(c?c.n:'—')}</div><div class="mxk" style="margin-top:3px">${[esc((s.st||'').toUpperCase()),c?local(c)+' THERE':''].filter(Boolean).join(' · ')}</div><div class="mxnp">${esc(s.nowT?'Now playing: '+s.nowT:(s.g||[]).join(' · ')||'Live radio')}</div>`
   :`<div class="mxk">ARTIST</div><div class="mxnn">${esc(s.a||'Unknown')}</div><div class="mxk" style="margin-top:3px">${esc(pl.n)}</div><div class="mxnp">${s.lines?'Synced lyrics on the cube’s lyrics face.':'No lyrics file for this one.'}</div><div class="mxk" style="margin-top:6px">TRACK ${P.idx+1} OF ${n}${s.d?' · '+fmt(s.d):''}</div><div class="mxbar"><i style="flex:${Math.max(1,P.idx)}"></i><u></u><i style="flex:${Math.max(0,n-P.idx-1)};background:#b9c1cc"></i></div>`;
- const MW=MXW-448,PHh=Math.round(MW*122/352),NT=28+PHh+2,VT=NT+252,VH=MXH-4-VT;
+ const got=radio&&!!s.nowT&&CST().get().some(x=>x.t===s.nowT),MW=MXW-448,PHh=Math.round(MW*122/352),NT=28+PHh+2,VT=NT+252,VH=MXH-4-VT;
  const cy=radio?(c&&c.art?c:pl):null,cov=s.cov?`url('${s.cov}') center/cover no-repeat,#111`:radio&&cy&&cy.art?cy.art:(s.art||'#111');
  w.innerHTML=`<div class="mxs0 mxtb" style="width:${MXW-4}px">${mxSq('#e0281a','<path d="M5 5l6 6M11 5l-6 6" stroke="#111" stroke-width="2.4" stroke-linecap="square"/>','mxquit','close the cube')}${mxSq('#ffc21a','<g fill="none" stroke="#111" stroke-width="1.5"><rect x="4.75" y="6.75" width="4.5" height="4.5"/><path d="M6.75 6.75V4.75h4.5v4.5h-2" stroke-linecap="square"/></g>','mxclose','back into the cube')}${mxSq('#111','<path d="M5 9.5L8 6.5l3 3" fill="none" stroke="#ff7a1a" stroke-width="1.8"/>','mxclose','back into the cube')}<span style="margin-left:8px">LU CUBE · UNFOLDED</span><span class="mxpill" data-act="mode">${radio?'♫ LU CUBE':'RADIO'}</span></div>
 <div class="mxs0" style="left:0;top:28px;width:220px;height:${MXH-32}px;background:#cfd6df"><div class="mxh1" style="background:#e0281a">${radio?'CHANNELS':'PLAYLIST'} · ${esc(short(pl.n,18))} · ${n}</div><div class="mxlist">${rows}</div></div>
 <div class="mxs0" style="left:222px;top:28px;width:${MW}px;height:${PHh}px;background:#111"><canvas id="mxpong" data-act="mxpong" width="${MW*2}" height="${PHh*2}" style="width:${MW}px;height:${PHh}px;display:block;cursor:pointer;touch-action:none"></canvas></div>
 <div class="mxs0" style="left:222px;top:${NT}px;width:${MW}px;height:250px;background:#ffc21a;display:flex;gap:12px;padding:14px">
 <div style="width:128px;height:128px;flex:none;border:2px solid #111;background:${cov};position:relative">${radio&&cy?`<span class="mxcc">${esc((cy.n||'').toUpperCase())}</span>`:''}</div>
-<div style="flex:1;min-width:0;height:128px;display:flex;flex-direction:column"><div class="mxk">${radio?(P.playing?'ON AIR':'PAUSED'):'NOW PLAYING · '+(P.idx+1)+' / '+n}</div><div class="mxt" style="font-size:${(P.has?s.t:'').length>38?20:(P.has?s.t:'').length>22?25:31}px">${esc(P.has?s.t:'Pick something')}</div><div class="mxa">${esc(s.a||pl.n)}</div>${radio?'':'<div class="mxprog" data-act="mxseek" id="mxpg"></div>'}</div>
-<div class="mxctl"><b data-act="prev">${MXG.prev}</b><b class="p" data-act="play">${P.playing?MXG.pause:MXG.play}</b><b data-act="next">${MXG.next}</b><b class="mxfav${isFav(s)?' on':''}" data-act="fav" title="${radio?'save this station':'favourite'}"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="display:block"><polygon points="8,1.4 9.9,5.9 14.7,6.2 11,9.3 12.2,14 8,11.4 3.8,14 5,9.3 1.3,6.2 6.1,5.9" fill="${isFav(s)?'currentColor':'none'}" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></b><b class="mxmute" data-act="mute" title="mute">${VOLI()}</b><div class="mxvol" data-act="mxvol" style="background:linear-gradient(90deg,#2f6be8 ${(UVOL*100).toFixed(2)}%,#fff ${(UVOL*100).toFixed(2)}%)"></div></div></div>
+<div style="flex:1;min-width:0;height:128px;display:flex;flex-direction:column"><div class="mxk">${radio?(P.playing?'ON AIR':'PAUSED'):'NOW PLAYING · '+(P.idx+1)+' / '+n}</div><div class="mxt" style="font-size:${(P.has?s.t:'').length>38?20:(P.has?s.t:'').length>22?25:31}px">${esc(P.has?s.t:'Pick something')}</div><div class="mxa">${esc(s.a||pl.n)}</div>${radio?`<div class="mxnow${s.nowT?'':' off'}"><small>NOW PLAYING</small>${esc(s.nowT||'This station doesn’t say')}</div>`:''}${radio?'':'<div class="mxprog" data-act="mxseek" id="mxpg"></div>'}</div>
+<div class="mxctl"><b data-act="prev">${MXG.prev}</b><b class="p" data-act="play">${P.playing?MXG.pause:MXG.play}</b><b data-act="next">${MXG.next}</b>${radio?`<b class="mxfav mxht${got?' on':''}${s.nowT?'':' off'}" data-act="catch" title="${s.nowT?'catch this song':'this station doesn\'t say what\'s playing'}"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="display:block"><path d="M8 13.6S2 10 2 6.1A3 3 0 0 1 8 4.6a3 3 0 0 1 6 1.5C14 10 8 13.6 8 13.6z" fill="${got?'currentColor':'none'}" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></b>`:''}<b class="mxfav${isFav(s)?' on':''}" data-act="fav" title="${radio?'save this station':'favourite'}"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true" style="display:block"><polygon points="8,1.4 9.9,5.9 14.7,6.2 11,9.3 12.2,14 8,11.4 3.8,14 5,9.3 1.3,6.2 6.1,5.9" fill="${isFav(s)?'currentColor':'none'}" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></b><b class="mxmute" data-act="mute" title="mute">${VOLI()}</b><div class="mxvol" data-act="mxvol" style="background:linear-gradient(90deg,#2f6be8 ${(UVOL*100).toFixed(2)}%,#fff ${(UVOL*100).toFixed(2)}%)"></div></div></div>
 <div class="mxs0" style="left:222px;top:${VT}px;width:${MW}px;height:${VH}px;background:#0c0e13"><div class="mxh1" style="background:#111;color:#ffc21a">VISUALISER · DEPTH</div><canvas id="mxviz" width="${MW*2}" height="${(VH-21)*2}" style="width:${MW}px;height:${VH-21}px;display:block"></canvas></div>
 <div class="mxs0" style="left:${MXW-224}px;top:28px;width:220px;height:${MXH-32}px;background:#cfd6df"><div class="mxh1" style="background:#2f6be8">${radio?'WORLD':'LIBRARY'} · ${radio?PLS.filter(p=>p.cc).length+' COUNTRIES':PLS.length}</div>
 ${radio?`<div class="mxgw"><div class="mxgbox"><div class="mxgin">${GENRES.map((g,k)=>`<b data-act="gen:${k}" class="${k===RGI?'on':''}">${esc(g[0])}<i>${genreCount(k)}</i></b>`).join('')}</div></div><div class="mxsc mxgsc"><b data-act="mxg:-1">▲</b><b data-act="mxg:1">▼</b></div></div>`:''}
