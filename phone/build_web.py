@@ -125,6 +125,8 @@ IPAD_JS = """<script>(function(){
   if(first&&PLS.length&&!cubeOn){first=false;out()}
   cb.style.display=!cubeOn&&!window.mxEl?'block':'none'},300)
  // turning the iPad: the cube stays in the middle at a size that fits
+ // the size can arrive late after a turn: keep checking, and re-centre whenever it changes
+ let lw=innerWidth,lh=innerHeight;setInterval(()=>{if(innerWidth===lw&&innerHeight===lh)return;lw=innerWidth;lh=innerHeight;if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(innerWidth,innerHeight)/330);cpos=[innerWidth*.5,innerHeight*.5]}},400);
  addEventListener('resize',()=>setTimeout(()=>{if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(innerWidth,innerHeight)/330);cpos=[innerWidth*.5,innerHeight*.5]}},120));
 })();</script>"""
 ipad = base(TO_PHONE).replace("__CSS__", IPAD_CSS)
