@@ -190,10 +190,11 @@ public class LuNativePlugin extends Plugin {
             Uri base = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
             boolean rel = Build.VERSION.SDK_INT >= 29;
             String[] proj = { MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM_ID,
-                    MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.DISPLAY_NAME, rel ? MediaStore.Audio.Media.RELATIVE_PATH : MediaStore.Audio.Media.DATA };
+                    MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.DISPLAY_NAME, rel ? MediaStore.Audio.Media.RELATIVE_PATH : MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.DATA };
             Map<String, JSArray> byFolder = new LinkedHashMap<>();
             Map<String, Uri> firstOf = new HashMap<>();
             Map<String, Long> albumOf = new HashMap<>();
+            Map<String, String> dirOf = new HashMap<>();
             try (Cursor c = cr.query(base, proj, MediaStore.Audio.Media.DURATION + ">=20000", null, MediaStore.Audio.Media.DISPLAY_NAME + " ASC")) {
                 while (c != null && c.moveToNext()) {
                     long id = c.getLong(0);
@@ -216,7 +217,7 @@ public class LuNativePlugin extends Plugin {
                     t.put("src", u.toString());
                     t.put("art", ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), c.getLong(3)).toString());
                     JSArray arr = byFolder.get(folder);
-                    if (arr == null) { arr = new JSArray(); byFolder.put(folder, arr); firstOf.put(folder, u); albumOf.put(folder, c.getLong(3)); }
+                    if (arr == null) { arr = new JSArray(); byFolder.put(folder, arr); firstOf.put(folder, u); albumOf.put(folder, c.getLong(3)); String fp = c.getString(7); if (fp != null && fp.lastIndexOf('/') > 0) dirOf.put(folder, fp.substring(0, fp.lastIndexOf('/'))); }
                     arr.put(t);
                     total++;
                 }
@@ -226,7 +227,7 @@ public class LuNativePlugin extends Plugin {
             for (String f : names) {
                 JSObject p = new JSObject();
                 p.put("name", f);
-                p.put("cover", cover(cr, firstOf.get(f), albumOf.get(f)));
+                p.put("cover", cover(cr, firstOf.get(f), albumOf.get(f), dirOf.get(f)));
                 p.put("tracks", byFolder.get(f));
                 pls.put(p);
             }
@@ -237,17 +238,35 @@ public class LuNativePlugin extends Plugin {
         }).start();
     }
 
-    private String cover(ContentResolver cr, Uri track, Long albumId) {
+    // the folder's own picture first (cover.jpg, folder.jpg… as on the PC, synced with the songs), then the art inside the song
+    private static final String[] COVERS = { "cover.jpg", "cover.png", "folder.jpg", "folder.png", "front.jpg" };
+    private static Bitmap folderImage(String dir) {
+        if (dir == null) return null;
+        try {
+            File d = new File(dir);
+            File pick = null;
+            for (String n : COVERS) { File f = new File(d, n); if (f.isFile()) { pick = f; break; } }
+            if (pick == null) { File[] all = d.listFiles(); if (all != null) { java.util.Arrays.sort(all); for (File f : all) { String n = f.getName().toLowerCase(); if (f.isFile() && (n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".png"))) { pick = f; break; } } } }
+            if (pick == null) return null;
+            BitmapFactory.Options o = new BitmapFactory.Options(); o.inJustDecodeBounds = true; BitmapFactory.decodeFile(pick.getPath(), o);
+            int s = 1; while (Math.max(o.outWidth, o.outHeight) / (s * 2) >= 200) s *= 2;
+            BitmapFactory.Options o2 = new BitmapFactory.Options(); o2.inSampleSize = s;
+            return BitmapFactory.decodeFile(pick.getPath(), o2);
+        } catch (Exception e) { return null; }
+    }
+
+    private String cover(ContentResolver cr, Uri track, Long albumId, String dir) {
         String key = String.valueOf(track);
         if (artCache.containsKey(key)) return artCache.get(key);
         String res = "";
         try {
-            Bitmap b = null;
+            Bitmap b = folderImage(dir);
+            if (b != null) { res = dataUrl(b, 200); artCache.put(key, res); return res; }
             if (Build.VERSION.SDK_INT >= 29) b = cr.loadThumbnail(track, new Size(200, 200), null);
             else if (albumId != null) try (InputStream in = cr.openInputStream(ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId))) { b = BitmapFactory.decodeStream(in); }
             if (b != null) res = dataUrl(b, 200);
         } catch (Exception ignored) { }
-        artCache.put(key, res);
+        if (!res.isEmpty()) artCache.put(key, res);   // no picture yet: look again next time (a cover may arrive with the next sync)
         return res;
     }
 

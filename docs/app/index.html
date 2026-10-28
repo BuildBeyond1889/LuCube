@@ -32,7 +32,7 @@
 .A.t1 .pat{background:conic-gradient(#cfd6df 25%,#111 0 50%,#cfd6df 0 75%,#111 0) 0 0/9px 9px}
 .A.t2 .pat{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='40'%3E%3Crect width='26' height='40' fill='%232f6be8'/%3E%3Ccircle cx='6' cy='9' r='4.2' fill='%23ffc21a'/%3E%3Ccircle cx='18' cy='20' r='2.2' fill='%23ffc21a'/%3E%3Ccircle cx='6' cy='31' r='4.2' fill='%23ffc21a'/%3E%3Ccircle cx='18' cy='6' r='1.3' fill='%23ffc21a'/%3E%3Ccircle cx='18' cy='34' r='1.3' fill='%23ffc21a'/%3E%3C/svg%3E") 0 0/26px 40px space}
 .A.t3 .pat{background:repeating-linear-gradient(-58deg,#ffc21a 0 5px,#e0281a 5px 13px)}
-.A.t4 .pat{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='40'%3E%3Crect width='22' height='40' fill='%23ffc21a'/%3E%3Cpath d='M4 13l14 14M18 13L4 27' stroke='%23111' stroke-width='4.2' stroke-linecap='square'/%3E%3C/svg%3E") 0 0/20px 36px}
+.A.t4 .pat{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='40'%3E%3Crect width='22' height='40' fill='%23ffc21a'/%3E%3Cpath d='M4 13l14 14M18 13L4 27' stroke='%23111' stroke-width='4.2' stroke-linecap='square'/%3E%3C/svg%3E") 0 0/20px 36px space}
 .A .lab{display:flex;align-items:center;gap:5px;padding:0 6px;height:100%;background:var(--base)}
 .A .ic{width:17px;height:17px;color:var(--ink)}
 .A .box{width:19px;height:19px;background:var(--ink);color:var(--base);display:grid;place-items:center}.A .box svg{width:14px;height:14px}
@@ -1553,11 +1553,11 @@ async function pcSync(){if(SYNCING)return;const pc=LS.get('lu_pc',{}),msg=t=>{SY
   const mine={pass:PASS,rfavs:MODE==='radio'?FAVS:RFAVS,caught:CAUGHT()};
   const mg=await (await fetch(base+'/sync/state?'+q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(mine)})).json();
   if(mg&&mg.pass){PASS=mg.pass;RFAVS=(mg.rfavs||[]).filter(x=>typeof x==='string');if(MODE==='radio'){FAVS=RFAVS;if(WORLD)rebuildRadio()}LS.set('lu_caught',mg.caught||CAUGHT());bnCheck();saveState();renderFaces()}
-  const lib=await (await fetch(base+'/sync/library?'+q)).json(),files=lib.files||[],done=LS.get('lu_synced',{});let k=0,got=0;
-  for(const f of files){k++;if(done[f.p]===f.s)continue;msg(`Copying ${k} of ${files.length} · ${short(f.p.split('/').pop(),28)}`);
-   try{await window.LUNATIVE.downloadFile({url:base+'/sync/file?'+q+'&p='+encodeURIComponent(f.p),dest:f.p});done[f.p]=f.s;got++;if(got%5===0)LS.set('lu_synced',done)}catch(e){}}
-  LS.set('lu_synced',done);msg(`Done · ${got} new song${got===1?'':'s'} from ${hi.name||'your PC'} · passport synced`);
-  if(got)setTimeout(relib,2500)}
+  const lib=await (await fetch(base+'/sync/library?'+q)).json(),files=lib.files||[],done=LS.get('lu_synced',{});let k=0,got=0,pics=0;
+  for(const f of files){k++;if(done[f.p]===f.s)continue;msg(`${f.img?'Cover':'Copying'} ${k} of ${files.length} · ${short(f.p.split('/').pop(),28)}`);
+   try{await window.LUNATIVE.downloadFile({url:base+'/sync/file?'+q+'&p='+encodeURIComponent(f.p),dest:f.p});done[f.p]=f.s;if(f.img)pics++;else got++;if(got%5===0)LS.set('lu_synced',done)}catch(e){}}
+  LS.set('lu_synced',done);msg(`Done · ${got} new song${got===1?'':'s'}${pics?` · ${pics} cover${pics===1?'':'s'}`:''} from ${hi.name||'your PC'} · passport synced`);
+  if(got||pics)setTimeout(relib,2500)}
  catch(e){msg('Can\'t reach '+pc.addr+'. Same Wi-Fi? Is Phone Sync.bat running?')}finally{SYNCING=false}}
 
 // ---------- the phone's player follows the cube's settings; Android Auto gets the same lists ----------

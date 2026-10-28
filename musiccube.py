@@ -639,10 +639,17 @@ def sync_files():
     out = []
     for dp, dn, fn in os.walk(MUSIC):
         dn.sort(key=str.lower)
-        for f in sorted(fn, key=str.lower):
-            if f.lower().endswith(AUDIO):
-                full = os.path.join(dp, f)
-                out.append({"p": os.path.relpath(full, MUSIC).replace(os.sep, "/"), "s": os.path.getsize(full)})
+        songs = [f for f in sorted(fn, key=str.lower) if f.lower().endswith(AUDIO)]
+        for f in songs:
+            full = os.path.join(dp, f)
+            out.append({"p": os.path.relpath(full, MUSIC).replace(os.sep, "/"), "s": os.path.getsize(full)})
+        # the folder's cover goes too (the same picture the PC shows), so the phone's playlist has it
+        if songs:
+            cov = next((c for c in COVERS if os.path.exists(os.path.join(dp, c))), None) or \
+                next((f for f in sorted(fn, key=str.lower) if f.lower().endswith((".jpg", ".jpeg", ".png"))), None)
+            if cov:
+                full = os.path.join(dp, cov)
+                out.append({"p": os.path.relpath(full, MUSIC).replace(os.sep, "/"), "s": os.path.getsize(full), "img": 1})
     return out
 
 
@@ -723,7 +730,7 @@ class SyncH(BaseHTTPRequestHandler):
         if path == "/sync/hello":
             files = sync_files()
             print(f"  phone connected from {self.client_address[0]}", flush=True)
-            return self.reply({"ok": True, "name": socket.gethostname(), "songs": len(files)})
+            return self.reply({"ok": True, "name": socket.gethostname(), "songs": len([x for x in files if not x.get("img")])})
         if path == "/sync/library":
             return self.reply({"files": sync_files()})
         if path == "/sync/file":
