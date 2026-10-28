@@ -138,12 +138,36 @@ async function search(q){const rows=[],seen=new Set();for(const key of ['name','
 
 // ---------- what's playing: a browser can't read the song title out of a stream, but Icecast stations publish it ----------
 // (status-json.xsl, readable from any page). Stations that don't publish it just show no title.
-const ICYNO={};
-async function icy(u){let U;try{U=new URL(u)}catch(e){return''}if(ICYNO[U.origin]>Date.now())return'';
- try{const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),5000),r=await ofetch(U.origin+'/status-json.xsl',{signal:ac.signal,cache:'no-store'});clearTimeout(tm);if(!r.ok)throw 0;
-  const j=await r.json(),src=[].concat((j.icestats||{}).source||[]),mine=src.find(x=>{try{return new URL(x.listenurl).pathname===U.pathname}catch(e){return false}})||(src.length===1?src[0]:null);
-  if(!mine)return'';const t=String(mine.title||'').trim(),a=String(mine.artist||'').trim();return (a&&t&&!t.includes(a)?a+' - '+t:t||a).slice(0,140)}
- catch(e){ICYNO[U.origin]=Date.now()+10*60e3;return''}}
+const ICYNO={},ICYHOW={},ICYC={};
+const tmo=(ms)=>{const ac=new AbortController();setTimeout(()=>ac.abort(),ms);return ac.signal};
+const pretty=(a,t)=>{a=String(a||'').trim();t=String(t||'').trim();return (a&&t&&!t.includes(a)?a+' - '+t:t||a).slice(0,140)};
+// each way a station can say what's playing (tried in turn; the one that works is remembered for that server)
+const WAYS={
+ // Icecast: its status page lists every stream on the server
+ async icecast(U){const r=await ofetch(U.origin+'/status-json.xsl',{signal:tmo(5000),cache:'no-store'});if(!r.ok)throw 0;
+  const src=[].concat(((await r.json()).icestats||{}).source||[]),m=src.find(x=>{try{return new URL(x.listenurl).pathname===U.pathname}catch(e){return false}})||(src.length===1?src[0]:null);
+  if(!m)throw 0;return pretty(m.artist,m.title)},
+ // AzuraCast: /listen/<station>/… has a now-playing file
+ async azura(U){const k=(U.pathname.match(/^\/listen\/([^/]+)\//)||[])[1];if(!k)throw 0;const r=await ofetch(`${U.origin}/api/nowplaying_static/${k}.json`,{signal:tmo(5000),cache:'no-store'});if(!r.ok)throw 0;
+  const s=((await r.json()).now_playing||{}).song||{};return pretty(s.artist,s.title)||String(s.text||'')},
+ // Radio.co
+ async radioco(U){const k=U.hostname.endsWith('radio.co')&&(U.pathname.match(/^\/([a-z0-9]{6,})\//i)||[])[1];if(!k)throw 0;const r=await ofetch(`https://public.radio.co/stations/${k}/status`,{signal:tmo(5000),cache:'no-store'});if(!r.ok)throw 0;
+  return String(((await r.json()).current_track||{}).title||'')},
+ // Shoutcast 2
+ async shoutcast(U){const r=await ofetch(U.origin+'/stats?sid=1&json=1',{signal:tmo(5000),cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();if(!('songtitle' in j))throw 0;return String(j.songtitle||'')},
+ // the title inside the stream itself (the way the PC reads it), when the station lets a page ask for it
+ async instream(U){const r=await ofetch(U.href,{headers:{'Icy-MetaData':'1'},signal:tmo(9000),cache:'no-store'});const mi=parseInt(r.headers.get('icy-metaint'));if(!r.ok||!mi||!r.body)throw 0;
+  const rd=r.body.getReader();let buf=new Uint8Array(0),need=mi+1;
+  try{while(true){const {done,value}=await rd.read();if(done)throw 0;const b=new Uint8Array(buf.length+value.length);b.set(buf);b.set(value,buf.length);buf=b;
+   if(buf.length>=need){const L=buf[mi]*16;if(!L)return'';if(buf.length>=mi+1+L){const t=new TextDecoder().decode(buf.subarray(mi+1,mi+1+L)),m=/StreamTitle='(.*?)';/.exec(t);return m?m[1].trim().slice(0,140):''}need=mi+1+L}
+   if(buf.length>mi+4200)throw 0}}finally{try{rd.cancel()}catch(e){}}}};
+async function icy(u){let U;try{U=new URL(u)}catch(e){return''}const o=U.origin;if(ICYNO[o]>Date.now())return'';
+ // the in-stream read downloads a little of the stream each time, so it's asked at most every 20 s
+ const c=ICYC[u];if(c&&Date.now()-c.at<(ICYHOW[o]==='instream'?20000:7000))return c.t;
+ const order=ICYHOW[o]?[ICYHOW[o]]:Object.keys(WAYS);
+ for(const w of order){try{const t=await WAYS[w](U);ICYHOW[o]=w;ICYC[u]={t,at:Date.now()};return t}catch(e){}}
+ if(ICYHOW[o]){delete ICYHOW[o];return''}   // the way that worked stopped: try them all again next time
+ ICYNO[o]=Date.now()+10*60e3;return''}
 
 // ---------- the few things the phone layer asks the "phone" for ----------
 const call=(m,a)=>{a=a||{};
