@@ -38,6 +38,8 @@ function build(){PW=innerWidth;PH=innerHeight;meas.innerHTML=[...WORDS].map(c=>`
 function header(){const t=$('ptitle');if(!t)return null;const sp=t.querySelector('span'),sv=t.querySelector('svg');if(!sp||!sv)return null;
  const a=sp.getBoundingClientRect(),b=sv.getBoundingClientRect();if(!a.width)return null;
  return{lu:{x:a.left,y:a.top,w:a.width,h:a.height},cube:{x:b.left+b.width/2,y:b.top+b.height/2,w:b.width}}}
+// a letter's window and type at a given size (sharp at any size: nothing is magnified)
+function size(s,l,k){const key=k.toFixed(4);if(s.k===key)return;s.k=key;s.slot.style.width=(l.w+4)*k+'px';s.slot.style.height=(TH+PAD)*k+'px';s.sp.style.fontSize=FS*k+'px';s.sp.style.top=PAD*k+'px'}
 function render(t){if(!ready)return;
  // 1. fade in behind a veil (never by fading the 3D cube), fold like origami, camera turns to the logo angle
  const ap=out(P(t,0,.6));$('liVeil').style.opacity=1-ap;
@@ -59,14 +61,14 @@ function render(t){if(!ready)return;
  // Before 3.8 s (and once sunk) the words are switched off entirely, so nothing can show while the cube folds.
  const up=out(P(t,3.8,.7)),dn=inn(P(t,5.45,.5)),on=t>=3.8;
  L.forEach((l,i)=>{const s=SL[i];if(!s)return;const keep=i===0||i===UI,d=keep?0:dn;
-  s.slot.style.visibility=on&&d<1?'visible':'hidden';s.slot.style.overflow='hidden';s.sp.style.color='#111';
+  s.slot.style.visibility=on&&d<1?'visible':'hidden';s.slot.style.overflow='hidden';s.sp.style.color='#111';size(s,l,1);
   s.slot.style.transform=`translate(${l.x}px,${TY-PAD}px)`;s.sp.style.transform=`translateY(${TH*1.2*(1-up)+TH*1.2*d}px)`});
  if(t>=5.3&&t<5.6)cs*=1+.12*Math.sin(Math.PI*P(t,5.3,.3));
  // 6. from 6.3 the L, U and cube come together straight into the centre, growing into the logo (and then hold still)
  const fs=Math.min(PW*.34,140),k=fs/FS,gr=io(P(t,6.3,1.3)),K=lerp(1,k,gr),Lc=L[0],Uc=L[UI];
  const fcw=fs*.46,Wl=(Lc.w+Uc.w)*k+fcw*1.17,LxT=(PW-Wl)/2,LyT=PH*.42-TH*k/2,fcx=LxT+(Lc.w+Uc.w)*k+fcw*.62,fcy=LyT+fcw*.42;
  const place=(i,x,y,sc,col)=>{const s=SL[i];s.slot.style.overflow='visible';s.slot.style.visibility='visible';s.sp.style.transform='none';
-  s.slot.style.transform=`translate(${x}px,${y-PAD*sc}px) scale(${sc})`;if(col)s.sp.style.color=col};
+  size(s,L[i],sc);s.slot.style.transform=`translate(${x}px,${y-PAD*sc}px)`;if(col)s.sp.style.color=col};
  if(t>=6.3){place(0,lerp(Lc.x,LxT,gr),lerp(TY,LyT,gr),K);place(UI,lerp(Uc.x,LxT+Lc.w*k,gr),lerp(TY,LyT,gr),K);
   cx=lerp(ex0,fcx,gr);cy=lerp(ey0,fcy,gr);cs=lerp(cw,fcw,gr)/(S*1.42)}
  // 7. into the app: the yellow fades and the logo flies to the header, turning white
