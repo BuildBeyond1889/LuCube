@@ -1144,8 +1144,21 @@ function mxClose(then){if(MXS!==2||!mxEl)return;MXS=3;const ov=mxEl,rig=ov.query
  mxLater(()=>ov.classList.remove('flaps'),520);
  mxLater(()=>{ov.classList.remove('open','rev');rig.style.transform=`translate(0px,0px) scale(${csz})`},900);
  mxLater(()=>{ov.remove();mxEl=null;MXS=0;mxPg=null;CR=upright('NOW PLAYING');snapT=null;s_rest=true;renderFaces();if(then)then()},1560)}
+// the red square while unfolded: the window clears and the flat panels it unfolded from break apart and fall,
+// the same way the cube shatters, then the wheel comes back
+function mxShatter(){if(MXS!==2||!mxEl)return;MXS=3;mxT.forEach(clearTimeout);mxT=[];const ov=mxEl;
+ const parts=[...ov.querySelectorAll('.mxf,.mfl')].map(el=>{const r=el.getBoundingClientRect();return{el,r}}).filter(o=>o.r.width>4&&o.r.height>4);
+ const box=document.createElement('div');box.id='mxshat';box.style.cssText='position:fixed;inset:0;z-index:31;pointer-events:none;perspective:1600px';
+ const P=parts.map(({el,r})=>{const c=el.cloneNode(true);c.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));const sx=r.width/300,sy=r.height/300;
+  c.style.cssText+=`;position:absolute;margin:0;left:${r.x+r.width/2-150}px;top:${r.y+r.height/2-150}px;width:300px;height:300px;transform-origin:50% 50%;visibility:visible;transition:none;backface-visibility:visible;transform:scale(${sx},${sy})`;
+  box.append(c);return{c,sx,sy,v:[(Math.random()-.5)*600,-200-Math.random()*320],ax:[Math.random()-.5,Math.random()-.5,Math.random()-.5],s:(Math.random()<.5?-1:1)*(220+Math.random()*420)}});
+ document.body.append(box);ov.remove();mxEl=box;mxPg=null;   // (mxEl stays set while they fall, so the real cube stays hidden)
+ const t0=performance.now();(function fall(){const u=(performance.now()-t0)/1000;
+  P.forEach(q=>{q.c.style.transform=`translate(${q.v[0]*u}px,${q.v[1]*u+1400*u*u}px) rotate3d(${q.ax.join(',')},${q.s*u}deg) scale(${q.sx},${q.sy})`;q.c.style.opacity=Math.max(0,1-Math.max(0,u-.55)/.5)});
+  if(u<1.1){requestAnimationFrame(fall);return}
+  box.remove();mxEl=null;MXS=0;cubeOn=false;shatter=0;CR=upright('NOW PLAYING');snapT=null;document.body.classList.remove('cubemode');fadeT=performance.now();renderFaces()})()}
 function mxClick(e){if(window.mxNoClick)return;const t=e.target.closest('[data-act]');if(!t||MXS!==2)return;const a=t.dataset.act;
- if(a==='mxclose'){mxClose();return}if(a==='mxmin'){cubeDesk.minimize();return}if(a==='mxquit'){mxClose(()=>breakApart());return}
+ if(a==='mxclose'){mxClose();return}if(a==='mxmin'){cubeDesk.minimize();return}if(a==='mxquit'){mxShatter();return}
  if(a==='mxpong'){if(mxPg){if(mxPg.over)Object.assign(mxPg,{over:false,drawnOver:false,s1:0,s2:0,bx:144,by:50,vx:2.8,vy:1.1});mxPg.joined=true;mxPg.ut=Date.now();const r=t.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*(mxPg.H2||100)}return}
  if(/^mx[lgs]:/.test(a)){const [k,v]=a.split(':');mxScroll(k,+v);return}
  if(a.startsWith('gen:')){act(a);mxGSeek=false;setTimeout(mxRender,60);return}
