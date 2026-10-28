@@ -62,26 +62,37 @@ const VOLRO=(()=>{try{if(/[?&]ro=1/.test(location.search))return true;const t=ne
 let CTX=null,ANL=null;const EVS=['loadstart','loadedmetadata','durationchange','canplay','canplaythrough','play','playing','pause','waiting','stalled','seeking','seeked','timeupdate','ended','error','emptied','progress'];
 const sameSite=u=>/^(blob:|data:)/.test(u)||u.startsWith('/')||u.startsWith(location.origin);
 class LuAudio extends EventTarget{
- constructor(){super();this.a=new Audio();this.r=new Audio();this.a.preload=this.r.preload='auto';this.cur=this.a;this._v=1;this.g=null;
-  for(const el of [this.a,this.r])for(const ev of EVS)el.addEventListener(ev,()=>{if(el===this.cur)this.dispatchEvent(new Event(ev))})}
+ // a: your songs (always through the knob); c: a radio stream tried through the knob (works when the station lets
+ // web pages read it, as most Icecast stations do); r: the plain player, for stations that don't (side buttons)
+ constructor(){super();this.a=new Audio();this.c=new Audio();this.c.crossOrigin='anonymous';this.r=new Audio();this.a.preload=this.c.preload=this.r.preload='auto';
+  this.cur=this.a;this._v=1;this.ga=null;this.gc=null;this.want=false;this.cOK=false;
+  for(const el of [this.a,this.c,this.r])for(const ev of EVS)el.addEventListener(ev,()=>{if(el!==this.cur)return;
+   if(el===this.c){if(ev==='playing'||ev==='canplay'||ev==='loadedmetadata')this.cOK=true;if(ev==='error'&&!this.cOK){this.fallback();return}}
+   this.dispatchEvent(new Event(ev))})}
+ fallback(){const u=this.c.getAttribute('src')||'';try{NOCORS[new URL(u).origin]=1}catch(e){}this.clear(this.c);this.cur=this.r;this.r.src=u;this.apply();if(this.want)this.r.play().catch(()=>{})}
+ clear(el){if(el.getAttribute('src')){el.pause();el.removeAttribute('src');try{el.load()}catch(e){}}}
  get src(){return this.cur.src}
- set src(u){u=u||'';const el=u&&!sameSite(u)?this.r:this.a,o=el===this.a?this.r:this.a;if(o.getAttribute('src')){o.pause();o.removeAttribute('src');try{o.load()}catch(e){}}this.cur=el;el.src=u;this.apply()}
+ set src(u){u=u||'';let el=this.a;if(u&&!sameSite(u)){let o='';try{o=new URL(u).origin}catch(e){}el=NOCORS[o]?this.r:this.c}
+  for(const x of [this.a,this.c,this.r])if(x!==el)this.clear(x);this.cur=el;this.cOK=false;el.src=u;this.apply()}
  getAttribute(k){return this.cur.getAttribute(k)}
  setAttribute(k,v){if(k==='src')this.src=v;else this.cur.setAttribute(k,v)}
- removeAttribute(k){this.a.removeAttribute(k);this.r.removeAttribute(k)}
+ removeAttribute(k){for(const x of [this.a,this.c,this.r])x.removeAttribute(k)}
  load(){try{this.cur.load()}catch(e){}}
- play(){this.route();if(CTX&&CTX.state!=='running')CTX.resume().catch(()=>{});return this.cur.play()}
- pause(){this.cur.pause()}
+ play(){this.want=true;this.route();if(CTX&&CTX.state!=='running')CTX.resume().catch(()=>{});return this.cur.play().catch(e=>{if(this.cur===this.c&&!this.cOK){this.fallback();return}throw e})}
+ pause(){this.want=false;this.cur.pause()}
  get paused(){return this.cur.paused}get ended(){return this.cur.ended}get duration(){return this.cur.duration}get readyState(){return this.cur.readyState}
  get currentTime(){return this.cur.currentTime}set currentTime(t){this.cur.currentTime=t}
- get preload(){return this.a.preload}set preload(v){this.a.preload=this.r.preload=v}
+ get preload(){return this.a.preload}set preload(v){this.a.preload=this.c.preload=this.r.preload=v}
  get volume(){return this._v}set volume(v){this._v=Math.max(0,Math.min(1,+v||0));this.apply()}
- route(){if(this.g||this.cur!==this.a)return;try{if(!CTX){CTX=new (window.AudioContext||window.webkitAudioContext)();ANL=CTX.createAnalyser();ANL.fftSize=256;ANL.connect(CTX.destination)}
-  const sN=CTX.createMediaElementSource(this.a);this.g=CTX.createGain();sN.connect(this.g);this.g.connect(ANL)}catch(e){}this.apply()}
- apply(){if(this.g)this.g.gain.value=this._v;try{this.a.volume=this._v;this.r.volume=this._v}catch(e){}
-  // the visualiser reads the real sound while one of your songs plays, and keeps time on its own for the radio
-  try{if(typeof AU!=='undefined'&&this===AU){if(this.cur===this.a&&this.g&&ANL){AN=ANL;FQ=new Uint8Array(ANL.frequencyBinCount)}else{AN=null;FQ=null}}}catch(e){}}
+ // ask for the volume knob on whichever player needs one
+ route(){if(this.cur===this.r)return this.apply();try{if(!CTX){CTX=new (window.AudioContext||window.webkitAudioContext)();ANL=CTX.createAnalyser();ANL.fftSize=256;ANL.connect(CTX.destination)}
+  const k=this.cur===this.a?'ga':'gc';if(!this[k]){const sN=CTX.createMediaElementSource(this.cur);this[k]=CTX.createGain();sN.connect(this[k]);this[k].connect(ANL)}}catch(e){}this.apply()}
+ apply(){for(const g of [this.ga,this.gc])if(g)g.gain.value=this._v;try{this.a.volume=this.c.volume=this.r.volume=this._v}catch(e){}
+  // the visualiser reads the real sound whenever it goes through the knob, and keeps time on its own otherwise
+  try{if(typeof AU!=='undefined'&&this===AU){const live=(this.cur===this.a&&this.ga)||(this.cur===this.c&&this.gc);if(live&&ANL){AN=ANL;FQ=new Uint8Array(ANL.frequencyBinCount)}else{AN=null;FQ=null}}}catch(e){}}
+ get knob(){return this.cur!==this.r}
 }
+const NOCORS={};
 window.luAudio=()=>VOLRO?new LuAudio():new Audio();
 window.LUVOLRO=VOLRO;
 
