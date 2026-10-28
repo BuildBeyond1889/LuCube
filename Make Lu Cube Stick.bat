@@ -3,8 +3,9 @@ setlocal
 title Lu Cube - make a stick
 cd /d "%~dp0"
 echo Puts Lu Cube on a USB stick so you can install it on another computer.
-echo The stick gets the player, the desktop cube, the music downloader and its own Python,
-echo so the other computer doesn't need anything installed. Plug the stick in there and run
+echo The stick gets the newest Lu Cube (straight from GitHub), your stuff (favourites, saved
+echo stations, caught songs, passport, alarm, weather town and settings), the desktop cube and its
+echo own Python, so the other computer doesn't need anything. Plug the stick in there and run
 echo "Install Lu Cube.bat" from it.
 echo.
 echo Removable drives plugged in:
@@ -20,20 +21,45 @@ REM a stick made before the rename: reuse what's already on it
 if exist "%D%:\Music Cube\musiccube.py" if not exist "%OUT%" ren "%D%:\Music Cube" "Lu Cube"
 if exist "%D%:\Install Music Cube.bat" del "%D%:\Install Music Cube.bat"
 for %%f in ("Music Cube.bat" "Music Cube Desktop.bat" "Make Music Cube Stick.bat") do if exist "%OUT%\%%~f" del "%OUT%\%%~f"
-REM if a file won't copy it now tries twice and moves on (it used to retry for ages, which looked like it was stuck),
+REM 1) the newest Lu Cube from GitHub, so this computer and the stick are both on the current version
+REM    (only the program files: your music, settings, Python and Electron here are never touched)
+echo.
+echo Getting the newest Lu Cube from GitHub ...
+set "NEW=%TEMP%\lucube-latest"
+set "G="
+if exist "%NEW%" rmdir /s /q "%NEW%"
+mkdir "%NEW%"
+curl -L --fail -s -o "%NEW%\lc.zip" "https://github.com/BuildBeyond1889/LuCube/archive/refs/heads/main.zip" && tar -xf "%NEW%\lc.zip" -C "%NEW%"
+if exist "%NEW%\LuCube-main\musiccube.py" set "G=%NEW%\LuCube-main"
+if not defined G (echo Couldn't reach GitHub, so the stick gets the version on this computer. & goto copyit)
+robocopy "%G%" "%~dp0." *.py *.bat README.md LICENSE /COPY:D /R:0 /W:0 /NJH /NJS /NDL /NP /NFL /XF "Make Lu Cube Stick.bat"
+robocopy "%G%\web" "%~dp0web" /E /COPY:D /R:0 /W:0 /NJH /NJS /NDL /NP /NFL
+robocopy "%G%\desktop" "%~dp0desktop" /E /COPY:D /R:0 /W:0 /NJH /NJS /NDL /NP /NFL
+robocopy "%G%\stick" "%~dp0stick" /E /COPY:D /R:0 /W:0 /NJH /NJS /NDL /NP /NFL
+echo This computer is on the newest version now too (a running Lu Cube picks it up next time it starts).
+:copyit
+
+REM 2) onto the stick. If a file won't copy it tries once and moves on (it used to retry for ages, which looked like it was stuck),
 REM and every file is listed as it goes. Running this again only copies what's missing.
 echo.
 echo Copying Lu Cube to %OUT% ...
 REM Electron's files come out of its zip dated 1 Jan 1980, which USB sticks reject ("ERROR 87"). Re-date them to today first.
 powershell -NoProfile -Command "Get-ChildItem -LiteralPath '%~dp0desktop' -Recurse -File | Where-Object { $_.LastWriteTime.Year -lt 1990 -or $_.CreationTime.Year -lt 1990 } | ForEach-Object { $n=Get-Date; $_.CreationTime=$n; $_.LastWriteTime=$n; $_.LastAccessTime=$n }"
-robocopy "%~dp0." "%OUT%" musiccube.py get_classical.py README.md "Lu Cube.bat" "Lu Cube Desktop.bat" "Get Classical Music.bat" "Get Lofi Music.bat" "Set Up Desktop Cube.bat" "Make Taskbar Shortcut.bat" "Set Weather Town.bat" "Phone Sync.bat" get_audiobooks.py "Get Audiobooks.bat" /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP
-robocopy "%~dp0web" "%OUT%\web" /E /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP
-robocopy "%~dp0desktop" "%OUT%\desktop" /E /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP
+REM the program files always overwrite what's on the stick, so an older stick comes up to date
+robocopy "%~dp0." "%OUT%" *.py *.bat README.md LICENSE /COPY:D /DCOPY:D /R:0 /W:0 /NJH /NJS /NDL /NP /XF "Update Lu Cube*.bat" "Finish Lu Cube Rename.bat" "Install Lu Cube.bat"
+robocopy "%~dp0web" "%OUT%\web" /E /COPY:D /DCOPY:D /R:0 /W:0 /NJH /NJS /NDL /NP
+robocopy "%~dp0desktop" "%OUT%\desktop" /E /COPY:D /DCOPY:D /R:0 /W:0 /NJH /NJS /NDL /NP /XD electron
+if exist "%~dp0desktop\electron" robocopy "%~dp0desktop\electron" "%OUT%\desktop\electron" /E /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP /NFL
+if defined G copy /y "%G%\Make Lu Cube Stick.bat" "%OUT%\" >nul
 if not exist "%OUT%\musiccube.py" (echo Copy failed. Is the stick full or read-only? & pause & exit /b)
-REM your current Lu Cube favourites ride along on the stick (and replace the old ones wherever you install it)
+REM 3) your stuff rides along: favourites, saved stations, caught songs, passport, alarm, weather town, settings.
+REM    Every computer installed or updated from this stick folds it in the next time Lu Cube starts
+REM    (added to what that computer already has, nothing of its own is lost). Window position stays per computer.
 set "PYX=python"
 if exist "%~dp0python\python.exe" set "PYX=%~dp0python\python.exe"
-if exist "%~dp0state.json" "%PYX%" -c "import json,sys;s=json.load(open(sys.argv[1],encoding='utf-8'));json.dump(s.get('favs',[]),open(sys.argv[2],'w',encoding='utf-8'))" "%~dp0state.json" "%OUT%\favs.json"
+if exist "%OUT%\favs.json" del "%OUT%\favs.json"
+if exist "%~dp0state.json" "%PYX%" -c "import json,sys,time;s=json.load(open(sys.argv[1],encoding='utf-8'));s.pop('ui',None);s['stamp']=time.strftime('%%Y%%m%%d%%H%%M%%S');json.dump(s,open(sys.argv[2],'w',encoding='utf-8'))" "%~dp0state.json" "%OUT%\mystuff.json"
+if exist "%OUT%\mystuff.json" (echo Your favourites, saved stations, caught songs and settings are on the stick.) else (echo Couldn't copy your favourites and settings onto the stick.)
 
 REM its own Python (the official "embeddable" build from python.org, about 11 MB), so the other PC needs nothing
 if exist "%OUT%\python\python.exe" goto havepy
@@ -66,4 +92,8 @@ echo.
 echo If any file above said ERROR, the stick may be full or failing; check its free space and run this again.
 echo.
 echo Done. On the other computer: plug the stick in and open "Install Lu Cube.bat".
+echo A computer that already has Lu Cube offers to update itself when the stick is plugged in.
 pause
+REM last of all, this file updates itself to the newest version (it can't while it's still running above)
+if defined G (copy /y "%G%\Make Lu Cube Stick.bat" "%~f0" >nul & exit /b)
+exit /b

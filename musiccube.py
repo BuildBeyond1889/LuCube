@@ -823,11 +823,64 @@ def phone_sync():
 CODE = ""
 
 
+def take_stick_stuff():
+    """A stick made on your main PC carries your stuff (mystuff.json): favourites, saved stations, caught songs,
+    passport stamps, wake-up alarm, weather town and settings. Fold it into this computer's state.json once."""
+    f = os.path.join(ROOT, "mystuff.json")
+    if not os.path.exists(f):
+        return
+    try:
+        new = json.load(open(f, encoding="utf-8"))
+        try:
+            st = json.load(open(STATE, encoding="utf-8"))
+        except (OSError, ValueError):
+            st = {}
+
+        def union(a, b, key=lambda x: json.dumps(x, sort_keys=True)):
+            seen, out = set(), []
+            for x in (b or []) + (a or []):  # the stick's order first, then anything only this computer had
+                k = key(x)
+                if k not in seen:
+                    seen.add(k)
+                    out.append(x)
+            return out
+
+        st["favs"] = union(st.get("favs"), new.get("favs"))
+        for k in ("vol", "shuf", "xf", "place", "mode"):
+            if k in new:
+                st[k] = new[k]
+        if not st.get("last") and new.get("last"):
+            st["last"] = new["last"]
+        r, nr = st.get("radio") if isinstance(st.get("radio"), dict) else {}, new.get("radio") or {}
+        if nr:
+            r["favs"] = union(r.get("favs"), nr.get("favs"))
+            r["caught"] = sorted(union(r.get("caught"), nr.get("caught"), key=lambda c: (c.get("t"), c.get("at"))), key=lambda c: c.get("at") or 0)
+            r["finfo"] = {**(r.get("finfo") or {}), **(nr.get("finfo") or {})}
+            ps = dict(r.get("pass") or {})
+            for n, v in (nr.get("pass") or {}).items():
+                old = ps.get(n)
+                ps[n] = v if not old else {**v, "d": old.get("d") or v.get("d"), "cities": union(old.get("cities"), v.get("cities"))}
+            r["pass"] = ps
+            for k in ("al", "tier", "gi"):
+                if k in nr:
+                    r[k] = nr[k]
+            if not r.get("last") and nr.get("last"):
+                r["last"] = nr["last"]
+            st["radio"] = r
+        with open(STATE + ".tmp", "w", encoding="utf-8") as w:
+            json.dump(st, w)
+        os.replace(STATE + ".tmp", STATE)
+        os.replace(f, os.path.join(ROOT, "mystuff.applied.json"))
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+
+
 def main():
     if "--phone-sync" in sys.argv:
         return phone_sync()
     if "--set-town" in sys.argv:
         return set_town(" ".join(sys.argv[sys.argv.index("--set-town") + 1:]))
+    take_stick_stuff()
     srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
     url = f"http://127.0.0.1:{srv.server_address[1]}/"
     threading.Thread(target=srv.serve_forever, daemon=True).start()
