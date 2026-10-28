@@ -1224,7 +1224,7 @@ function mxPong(){const W2=288,PH=22;let H2=100;mxPg={bx:144,by:50,vx:2.8,vy:1.1
    g.p1=you?Math.max(0,Math.min(H2-PH,g.uy-PH/2)):chase(g.p1,g.vx<0?g.by+g.e1:H2/2,1.1);g.p2=chase(g.p2,g.vx>0?g.by+g.e2:H2/2,1.1);
    if(g.vx<0&&g.bx<=11&&g.bx>=4&&g.by>=g.p1-2&&g.by<=g.p1+PH+2){g.bx=11;g.vx=Math.min(5.4,-g.vx*1.07);g.vy+=(g.by-(g.p1+PH/2))*.14;g.e2=(Math.random()-.5)*30}
    if(g.vx>0&&g.bx>=277&&g.bx<=285&&g.by>=g.p2-2&&g.by<=g.p2+PH+2){g.bx=277;g.vx=-Math.min(5.4,g.vx*1.07);g.vy+=(g.by-(g.p2+PH/2))*.14;g.e1=(Math.random()-.5)*30}
-   if(g.bx<-4){g.s2++;serve(1)}if(g.bx>W2+4){g.s1++;serve(-1)}if(g.s1>=7||g.s2>=7){g.over=true;g.joined=false;break}}
+   if(g.bx<-4){g.s2++;serve(1)}if(g.bx>W2+4){g.s1++;serve(-1)}}
   const cv=document.getElementById('mxpong');if(cv){const x=cv.getContext('2d'),k=cv.width/W2;x.setTransform(k,0,0,k,0,0);x.fillStyle='#111';x.fillRect(0,0,W2,H2);
    x.strokeStyle='#3a3f4d';x.lineWidth=2;x.setLineDash([4,5]);x.beginPath();x.moveTo(144,4);x.lineTo(144,H2-4);x.stroke();x.setLineDash([]);
    x.font='24px Anton,sans-serif';x.textAlign='right';x.fillStyle='#ffc21a';x.fillText(g.s1,130,28);x.textAlign='left';x.fillStyle='#2f6be8';x.fillText(g.s2,158,28);
