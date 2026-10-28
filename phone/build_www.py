@@ -22,6 +22,10 @@ def swap(html, old, new, count=1):
 
 
 html = read(WEB, "index.html")
+# phones: the title bars keep the original small corner squares (the PC has the full-height ones)
+html = swap(html, "\n/* the three squares stand the full height of the bar: from the top edge down to the black line under it */\n.tb i.tl{width:20px;height:20px;flex:none}.tb{gap:3px;padding-left:3px}.tb b{max-width:calc(100% - 82px)}\n.tb i.tl>s{width:20px;height:20px;margin:-10px 0 0 -10px}", "")
+for col in ("#e0281a", "#ffc21a", "#ff7a1a"):
+    html = swap(html, f'<rect x="1" y="1" width="14" height="14" fill="{col}" stroke="#111" stroke-width="2"/>', f'<rect x="1.5" y="1.5" width="13" height="13" fill="{col}" stroke="#111" stroke-width="3"/>')
 # the phone's media player stands in for the browser's <audio>
 html = swap(html, "let AU=new Audio(),AU2=new Audio();", "let AU=new NativeAudio(true),AU2=new NativeAudio(false);")
 # no Web Audio graph (the visualiser dances on its own) and no gapless/crossfade handover between two players
