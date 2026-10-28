@@ -89,12 +89,14 @@ iphone = html
 
 # ---------- iPad: the full PC cube ----------
 TO_PHONE = "if(Math.min(screen.width,screen.height)<700)location.replace('./'+location.search);"
-IPAD_CSS = """#lucube{left:auto!important;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px)!important;background:#ffc21a!important;color:#111!important;display:none}
+IPAD_CSS = """:root{--sat:env(safe-area-inset-top)}
+#lucube{left:auto!important;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px)!important;background:#ffc21a!important;color:#111!important;display:none}
 .lupill{position:fixed;left:calc(env(safe-area-inset-left) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:20;background:#111;color:#fff;border-radius:99px;
  padding:9px 16px;font:700 11px 'Space Mono',monospace;letter-spacing:.08em;cursor:pointer;-webkit-tap-highlight-color:transparent}.lupill:active{background:#ffc21a;color:#111}
 html .keys{padding-left:190px;padding-right:230px}
 html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}"""
 IPAD_JS = """<script>(function(){
+ window.MXFULL=true;   // the orange square unfolds the cube into the whole screen
  // no songs yet: the Lu cube shows how to add some, instead of failing to draw (which left it invisible)
  const _lr=luRenderFaces,_lt=luTickFaces,_ac=act;
  luRenderFaces=function(){if(PLS.length)return _lr();

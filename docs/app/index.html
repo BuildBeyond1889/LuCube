@@ -1031,7 +1031,8 @@ const _rfMX=renderFaces;renderFaces=function(){_rfMX();if(MODE==='radio')F_VIZ.c
 // The cube turns to its playing face, unfolds into a cross, six corner panels swing out (Liner notes opens the top-left,
 // the visualiser opens the one to its right and that one opens the next, library and cover open the ones above them, the playlist the one
 // below it), then the radio's line of light sweeps across and leaves the full window behind. Closing plays it backwards, fast.
-var MXS=0;let mxLib=0,mxList=null,mxGrow=0,mxGRows=0,mxGSeek=true,mxAcc=0,mxEl=null,mxG=null,mxT=[],mxPg=null;
+var MXS=0,MXFULL=false,MXW=800,MXH=600,MXR=15,MXT=9;   // MXFULL: unfold to fill the whole screen (iPad); MXW x MXH: the window's own size
+let mxLib=0,mxList=null,mxGrow=0,mxGRows=0,mxGSeek=true,mxAcc=0,mxEl=null,mxG=null,mxT=[],mxPg=null;
 const mxLater=(f,ms)=>mxT.push(setTimeout(f,ms));
 function mxDisp(){const L=DISPLAYS&&DISPLAYS.length?DISPLAYS:[{x:0,y:0,w:W,h:Hh}];return L[dispAt(cpos[0],cpos[1])]||L[0]}
 function maximize(){if(!cubeOn||shatter||MXS)return;MXS=1;goFace('NOW PLAYING');const t0=performance.now();
@@ -1042,9 +1043,10 @@ function mxClone(id){const f=document.getElementById(id),c=document.createElemen
 function mxFlap(cls){const d=document.createElement('div');d.className='mfl '+cls;return d}
 function mxHinge(cls,face,flaps){const h=document.createElement('div');h.className='mhg '+cls;flaps.forEach(f=>h.append(f));h.append(face);return h}
 function mxBuild(){if(MXS!==1)return;
- const d=mxDisp(),k=Math.min(.9*d.w/1200,.86*d.h/900),dcx=d.x+d.w/2,dcy=d.y+d.h/2,bob=Math.sin(performance.now()/1000*1.6)*3,cx=cpos[0],cy=cpos[1]+bob;
- mxG={k,dcx,dcy,cx,cy,nl:dcx-600*k,nt:dcy-450*k,dx:0,dy:0};mxLib=Math.floor(Math.max(0,P.pl-3)/3)*3;mxList=null;mxGrow=0;mxGSeek=true;
- const ov=document.createElement('div');ov.id='mx';ov.style.setProperty('--nw',(1200*k)+'px');
+ const full=!!window.MXFULL,sat=full?parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat'))||0:0,d=full?{x:0,y:sat,w:innerWidth,h:innerHeight-sat}:mxDisp(),k=full?Math.min(d.w/1200,d.h/900):Math.min(.9*d.w/1200,.86*d.h/900),kx=full?d.w/1200:k,ky=full?d.h/900:k,ws=full?Math.min(d.w/800,d.h/600):1.5*k,dcx=d.x+d.w/2,dcy=d.y+d.h/2,bob=Math.sin(performance.now()/1000*1.6)*3,cx=cpos[0],cy=cpos[1]+bob;
+ MXW=full?d.w/ws:800;MXH=full?d.h/ws:600;MXR=15+Math.max(0,Math.floor((MXH-600)/31));MXT=9+3*Math.max(0,Math.floor((MXH-600)/72));
+ mxG={k,kx,ky,full,dcx,dcy,cx,cy,nl:dcx-600*kx,nt:dcy-450*ky,dx:0,dy:0};mxLib=Math.floor(Math.max(0,P.pl-3)/3)*3;mxList=null;mxGrow=0;mxGSeek=true;
+ const ov=document.createElement('div');ov.id='mx';ov.style.setProperty('--nw',(1200*kx)+'px');
  const sc=document.createElement('div');sc.className='mxs';sc.style.left=cx+'px';sc.style.top=cy+'px';
  const rig=document.createElement('div');rig.className='mxr';rig.style.transform=`translate(0px,0px) scale(${csz})`;
  const hub=document.createElement('div');hub.className='mxh';
@@ -1054,26 +1056,26 @@ function mxBuild(){if(MXS!==1)return;
  const hr=mxHinge('mh-r',mxClone('F_LIB'),[mxFlap('t d2')]);hr.append(hb);
  hub.append(front,mxHinge('mh-l',mxClone('F_PL'),[mxFlap('b d4')]),hr,mxHinge('mh-t',mxClone('F_LYR'),[mxFlap('l d1')]),mxHinge('mh-d',mxClone('F_VIZ'),[fD]));
  rig.append(hub);sc.append(rig);
- const win=document.createElement('div');win.className='mxw';win.style.left=mxG.nl+'px';win.style.top=mxG.nt+'px';win.style.transform=`scale(${1.5*k})`;
- const line=document.createElement('div');line.className='mxl';line.style.left=mxG.nl+'px';line.style.top=(mxG.nt-2)+'px';line.style.height=(900*k+4)+'px';
+ const win=document.createElement('div');win.className='mxw';win.style.left=mxG.nl+'px';win.style.top=mxG.nt+'px';win.style.transform=`scale(${ws})`;win.style.width=MXW+'px';win.style.height=MXH+'px';
+ const line=document.createElement('div');line.className='mxl';line.style.left=mxG.nl+'px';line.style.top=(mxG.nt-2)+'px';line.style.height=(900*ky+4)+'px';
  ov.append(sc,win,line);document.body.append(ov);mxEl=ov;mxRender();
  win.addEventListener('click',mxClick);win.addEventListener('mousemove',e=>{const c=e.target.closest&&e.target.closest('#mxpong');if(c&&mxPg&&mxPg.joined){const r=c.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100;mxPg.ut=Date.now()}});
  // drag the blue title bar to put the window anywhere
- win.addEventListener('pointerdown',e=>{if(MXS!==2||!e.target.closest('.mxtb')||e.target.closest('[data-act]'))return;e.preventDefault();const r0={x:e.clientX,y:e.clientY,dx:mxG.dx,dy:mxG.dy},rg=mxEl.querySelector('.mxr');win.setPointerCapture(e.pointerId);rg.style.transition='none';window.mxDrag=true;
+ win.addEventListener('pointerdown',e=>{if(MXS!==2||mxG.full||!e.target.closest('.mxtb')||e.target.closest('[data-act]'))return;e.preventDefault();const r0={x:e.clientX,y:e.clientY,dx:mxG.dx,dy:mxG.dy},rg=mxEl.querySelector('.mxr');win.setPointerCapture(e.pointerId);rg.style.transition='none';window.mxDrag=true;
   const mv=ev=>{mxG.dx=r0.dx+ev.clientX-r0.x;mxG.dy=r0.dy+ev.clientY-r0.y;mxPlace()},up=()=>{win.removeEventListener('pointermove',mv);win.removeEventListener('pointerup',up);win.removeEventListener('pointercancel',up);rg.style.transition='';window.mxDrag=false};
   win.addEventListener('pointermove',mv);win.addEventListener('pointerup',up);win.addEventListener('pointercancel',up)});
  // the scroll wheel walks the playlist, the library / world tiles and the genres
  win.addEventListener('wheel',e=>{const t=e.target,k=t.closest('.mxlw')?'mxl':t.closest('.mxgw')?'mxg':t.closest('.mxlist')?'mxs':null;if(!k)return;e.preventDefault();e.stopPropagation();mxAcc+=e.deltaY;if(Math.abs(mxAcc)>=40){mxScroll(k,Math.sign(mxAcc));mxAcc=0}},{passive:false});
  // the real cube hides behind its stand-in (they look the same), then the stand-in unfolds
- requestAnimationFrame(()=>requestAnimationFrame(()=>{if(MXS!==1)return;ov.classList.add('open');rig.style.transform=`translate(${dcx-cx-150*k}px,${dcy-cy}px) scale(${k})`;
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{if(MXS!==1)return;ov.classList.add('open');rig.style.transform=`translate(${dcx-cx-150*kx}px,${dcy-cy}px) scale(${kx},${ky})`;
   mxLater(()=>ov.classList.add('flaps'),1450);
   mxLater(()=>{mxRender();ov.classList.add('max');mxPong()},2500);
   mxLater(()=>{MXS=2},3750)}))}
-function mxPlace(){const g=mxG,w=mxEl&&mxEl.querySelector('.mxw'),l=mxEl&&mxEl.querySelector('.mxl'),rg=mxEl&&mxEl.querySelector('.mxr');if(!w)return;w.style.left=(g.nl+g.dx)+'px';w.style.top=(g.nt+g.dy)+'px';l.style.left=(g.nl+g.dx)+'px';l.style.top=(g.nt+g.dy-2)+'px';rg.style.transform=`translate(${g.dcx-g.cx-150*g.k+g.dx}px,${g.dcy-g.cy+g.dy}px) scale(${g.k})`}
+function mxPlace(){const g=mxG,w=mxEl&&mxEl.querySelector('.mxw'),l=mxEl&&mxEl.querySelector('.mxl'),rg=mxEl&&mxEl.querySelector('.mxr');if(!w)return;w.style.left=(g.nl+g.dx)+'px';w.style.top=(g.nt+g.dy)+'px';l.style.left=(g.nl+g.dx)+'px';l.style.top=(g.nt+g.dy-2)+'px';rg.style.transform=`translate(${g.dcx-g.cx-150*g.kx+g.dx}px,${g.dcy-g.cy+g.dy}px) scale(${g.kx},${g.ky})`}
 function mxScroll(k,d){const N=PLS.length,L=(PLS[P.pl]||{songs:[]}).songs.length;
- if(k==='mxl')mxLib=Math.max(0,Math.min(Math.max(0,Math.ceil((N-9)/3)*3),mxLib+3*d));
+ if(k==='mxl')mxLib=Math.max(0,Math.min(Math.max(0,Math.ceil((N-MXT)/3)*3),mxLib+3*d));
  else if(k==='mxg')mxGrow=Math.max(0,Math.min(Math.max(0,mxGRows-3),mxGrow+d));
- else{const cur=mxList==null?Math.max(0,Math.min(Math.max(0,L-15),P.idx-3)):mxList;mxList=Math.max(0,Math.min(Math.max(0,L-15),cur+2*d))}
+ else{const cur=mxList==null?Math.max(0,Math.min(Math.max(0,L-MXR),P.idx-3)):mxList;mxList=Math.max(0,Math.min(Math.max(0,L-MXR),cur+2*d))}
  mxRender()}
 function mxGenFit(){const box=mxEl&&mxEl.querySelector('.mxgbox'),inn=box&&box.firstChild;if(!inn)return;const ch=[...inn.children],tops=[...new Set(ch.map(b=>b.offsetTop))].sort((a,b)=>a-b);mxGRows=tops.length;
  if(mxGSeek){mxGSeek=false;const on=inn.querySelector('b.on');if(on)mxGrow=tops.indexOf(on.offsetTop)-1}
@@ -1099,22 +1101,23 @@ const MXG={prev:'<svg width="13" height="13" viewBox="0 0 10 10" aria-hidden="tr
  play:'<svg width="13" height="13" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 1l7 4-7 4z" fill="#111"/></svg>'};
 const mxSq=(fill,glyph,act,title)=>`<span class="mxb" data-act="${act}" title="${title}"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" fill="${fill}" stroke="#111" stroke-width="3"/>${glyph}</svg></span>`;
 function mxRender(){const w=mxEl&&mxEl.querySelector('.mxw');if(!w)return;const s=song(),pl=PLS[P.pl]||{n:'',songs:[]},radio=MODE==='radio',L=pl.songs||[],n=L.length;
- const st=mxList==null?Math.max(0,Math.min(Math.max(0,n-15),P.idx-3)):Math.max(0,Math.min(Math.max(0,n-15),mxList)),rows=L.slice(st,st+15).map((x,j)=>{const i=st+j;return `<div class="mxrow${P.has&&i===P.idx?' on':''}" data-act="song:${i}"><b>${radio?(x.br?x.br+'K':'·'):String(i+1).padStart(2,'0')}</b><span>${esc(x.t)}</span></div>`}).join('');
- const l0=Math.max(0,Math.min(Math.max(0,Math.ceil((PLS.length-9)/3)*3),mxLib)),tiles=PLS.slice(l0,l0+9).map((p,j)=>`<div class="mxtile${l0+j===P.pl?' on':''}" data-act="pl:${l0+j}" style="background:${p.art}"><span>${esc(short(p.n,14))}</span></div>`).join('');
+ const st=mxList==null?Math.max(0,Math.min(Math.max(0,n-MXR),P.idx-3)):Math.max(0,Math.min(Math.max(0,n-MXR),mxList)),rows=L.slice(st,st+MXR).map((x,j)=>{const i=st+j;return `<div class="mxrow${P.has&&i===P.idx?' on':''}" data-act="song:${i}"><b>${radio?(x.br?x.br+'K':'·'):String(i+1).padStart(2,'0')}</b><span>${esc(x.t)}</span></div>`}).join('');
+ const l0=Math.max(0,Math.min(Math.max(0,Math.ceil((PLS.length-MXT)/3)*3),mxLib)),tiles=PLS.slice(l0,l0+MXT).map((p,j)=>`<div class="mxtile${l0+j===P.pl?' on':''}" data-act="pl:${l0+j}" style="background:${p.art}"><span>${esc(short(p.n,14))}</span></div>`).join('');
  const c=radio?cityOf(s):null,note=radio?`<div class="mxk">STATION</div><div class="mxnn">${esc(c?c.n:'—')}</div><div class="mxk" style="margin-top:3px">${[esc((s.st||'').toUpperCase()),c?local(c)+' THERE':''].filter(Boolean).join(' · ')}</div><div class="mxnp">${esc(s.nowT?'Now playing: '+s.nowT:(s.g||[]).join(' · ')||'Live radio')}</div>`
   :`<div class="mxk">ARTIST</div><div class="mxnn">${esc(s.a||'Unknown')}</div><div class="mxk" style="margin-top:3px">${esc(pl.n)}</div><div class="mxnp">${s.lines?'Synced lyrics on the cube’s lyrics face.':'No lyrics file for this one.'}</div><div class="mxk" style="margin-top:6px">TRACK ${P.idx+1} OF ${n}${s.d?' · '+fmt(s.d):''}</div><div class="mxbar"><i style="flex:${Math.max(1,P.idx)}"></i><u></u><i style="flex:${Math.max(0,n-P.idx-1)};background:#b9c1cc"></i></div>`;
+ const MW=MXW-448,PHh=Math.round(MW*122/352),NT=28+PHh+2,VT=NT+252,VH=MXH-4-VT;
  const cov=s.cov?`url('${s.cov}') center/cover no-repeat,#111`:(s.art||'#111');
- w.innerHTML=`<div class="mxs0 mxtb">${mxSq('#e0281a','<path d="M5 5l6 6M11 5l-6 6" stroke="#111" stroke-width="2.4" stroke-linecap="square"/>','mxquit','close the cube')}${mxSq('#ffc21a','<g fill="none" stroke="#111" stroke-width="1.5"><rect x="4.75" y="6.75" width="4.5" height="4.5"/><path d="M6.75 6.75V4.75h4.5v4.5h-2" stroke-linecap="square"/></g>','mxclose','back into the cube')}${mxSq('#111','<path d="M5 9.5L8 6.5l3 3" fill="none" stroke="#ff7a1a" stroke-width="1.8"/>','mxclose','back into the cube')}<span style="margin-left:8px">LU CUBE · UNFOLDED</span><span class="mxpill" data-act="mode">${radio?'♫ LU CUBE':'RADIO'}</span></div>
-<div class="mxs0" style="left:0;top:28px;width:220px;height:568px;background:#cfd6df"><div class="mxh1" style="background:#e0281a">${radio?'CHANNELS':'PLAYLIST'} · ${esc(short(pl.n,18))} · ${n}</div><div class="mxlist">${rows}</div></div>
-<div class="mxs0" style="left:222px;top:28px;width:352px;height:122px;background:#111"><canvas id="mxpong" data-act="mxpong" width="704" height="244" style="width:352px;height:122px;display:block;cursor:pointer"></canvas></div>
-<div class="mxs0" style="left:222px;top:152px;width:352px;height:250px;background:#ffc21a;display:flex;gap:12px;padding:14px">
+ w.innerHTML=`<div class="mxs0 mxtb" style="width:${MXW-4}px">${mxSq('#e0281a','<path d="M5 5l6 6M11 5l-6 6" stroke="#111" stroke-width="2.4" stroke-linecap="square"/>','mxquit','close the cube')}${mxSq('#ffc21a','<g fill="none" stroke="#111" stroke-width="1.5"><rect x="4.75" y="6.75" width="4.5" height="4.5"/><path d="M6.75 6.75V4.75h4.5v4.5h-2" stroke-linecap="square"/></g>','mxclose','back into the cube')}${mxSq('#111','<path d="M5 9.5L8 6.5l3 3" fill="none" stroke="#ff7a1a" stroke-width="1.8"/>','mxclose','back into the cube')}<span style="margin-left:8px">LU CUBE · UNFOLDED</span><span class="mxpill" data-act="mode">${radio?'♫ LU CUBE':'RADIO'}</span></div>
+<div class="mxs0" style="left:0;top:28px;width:220px;height:${MXH-32}px;background:#cfd6df"><div class="mxh1" style="background:#e0281a">${radio?'CHANNELS':'PLAYLIST'} · ${esc(short(pl.n,18))} · ${n}</div><div class="mxlist">${rows}</div></div>
+<div class="mxs0" style="left:222px;top:28px;width:${MW}px;height:${PHh}px;background:#111"><canvas id="mxpong" data-act="mxpong" width="${MW*2}" height="${PHh*2}" style="width:${MW}px;height:${PHh}px;display:block;cursor:pointer"></canvas></div>
+<div class="mxs0" style="left:222px;top:${NT}px;width:${MW}px;height:250px;background:#ffc21a;display:flex;gap:12px;padding:14px">
 <div style="width:128px;height:128px;flex:none;border:2px solid #111;background:${cov}"></div>
 <div style="flex:1;min-width:0;height:128px;display:flex;flex-direction:column"><div class="mxk">${radio?(P.playing?'ON AIR':'PAUSED'):'NOW PLAYING · '+(P.idx+1)+' / '+n}</div><div class="mxt" style="font-size:${(P.has?s.t:'').length>38?20:(P.has?s.t:'').length>22?25:31}px">${esc(P.has?s.t:'Pick something')}</div><div class="mxa">${esc(s.a||pl.n)}</div>${radio?'':'<div class="mxprog" data-act="mxseek" id="mxpg"></div>'}</div>
 <div class="mxctl"><b data-act="prev">${MXG.prev}</b><b class="p" data-act="play">${P.playing?MXG.pause:MXG.play}</b><b data-act="next">${MXG.next}</b><b class="mxmute" data-act="mute" title="mute">${VOLI()}</b><div class="mxvol" data-act="mxvol" style="background:linear-gradient(90deg,#2f6be8 ${(UVOL*100).toFixed(2)}%,#fff ${(UVOL*100).toFixed(2)}%)"></div></div></div>
-<div class="mxs0" style="left:222px;top:404px;width:352px;height:192px;background:#0c0e13"><div class="mxh1" style="background:#111;color:#ffc21a">VISUALISER · DEPTH</div><canvas id="mxviz" width="704" height="342" style="width:352px;height:171px;display:block"></canvas></div>
-<div class="mxs0" style="left:576px;top:28px;width:220px;height:568px;background:#cfd6df"><div class="mxh1" style="background:#2f6be8">${radio?'WORLD':'LIBRARY'} · ${radio?PLS.filter(p=>p.cc).length+' COUNTRIES':PLS.length}</div>
+<div class="mxs0" style="left:222px;top:${VT}px;width:${MW}px;height:${VH}px;background:#0c0e13"><div class="mxh1" style="background:#111;color:#ffc21a">VISUALISER · DEPTH</div><canvas id="mxviz" width="${MW*2}" height="${(VH-21)*2}" style="width:${MW}px;height:${VH-21}px;display:block"></canvas></div>
+<div class="mxs0" style="left:${MXW-224}px;top:28px;width:220px;height:${MXH-32}px;background:#cfd6df"><div class="mxh1" style="background:#2f6be8">${radio?'WORLD':'LIBRARY'} · ${radio?PLS.filter(p=>p.cc).length+' COUNTRIES':PLS.length}</div>
 ${radio?`<div class="mxgw"><div class="mxgbox"><div class="mxgin">${GENRES.map((g,k)=>`<b data-act="gen:${k}" class="${k===RGI?'on':''}">${esc(g[0])}<i>${genreCount(k)}</i></b>`).join('')}</div></div><div class="mxsc mxgsc"><b data-act="mxg:-1">▲</b><b data-act="mxg:1">▼</b></div></div>`:''}
-<div class="mxlw"><div class="mxlib">${tiles}</div><div class="mxsc"><b data-act="mxl:-1" class="${l0>0?'':'off'}">▲</b><b data-act="mxl:1" class="${l0+9<PLS.length?'':'off'}">▼</b></div></div>
+<div class="mxlw"><div class="mxlib">${tiles}</div><div class="mxsc"><b data-act="mxl:-1" class="${l0>0?'':'off'}">▲</b><b data-act="mxl:1" class="${l0+MXT<PLS.length?'':'off'}">▼</b></div></div>
 <div class="mxpills"><span data-act="shuf">${SHUF?'SHUFFLE ON':'SHUFFLE OFF'}</span><span data-act="xf">FADE ${XF?XF+' S':'OFF'}</span><span data-act="sleep">${sleepTxt()}</span></div>
 <div class="mxnote"><div class="mxh2">${radio?'LIVE FROM':'LINER NOTES'}</div><div style="padding:8px 9px">${note}</div></div></div>`;
  drawDepth(document.getElementById('mxviz'),true);mxGenFit();mxTick()}
