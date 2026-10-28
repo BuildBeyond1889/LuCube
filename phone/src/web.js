@@ -53,6 +53,38 @@ async function library(){const rows=await allSongs(),by={};IDS=new Map();
 const toIds=s=>{IDS.forEach((id,u)=>{s=s.split(u).join('luid:'+id)});return s};
 const toUrls=s=>s.replace(/luid:([^"]+)/g,(m,id)=>{const u=URLS.get(JSON.parse('"'+id+'"'));return u||m});
 
+// ---------- the player: iPhone and iPad ignore a page's volume setting, so your songs go through a volume knob ----------
+// Songs (kept in the app) play through Web Audio: a gain for the volume bar and fades, and an analyser so the
+// visualiser follows the real sound. Radio streams come from other sites, which Web Audio can't open, so they
+// play on a plain player beside it (their volume is the side buttons). Where the browser can set volume itself
+// (desktop), the plain <audio> is used as before.
+const VOLRO=(()=>{try{if(/[?&]ro=1/.test(location.search))return true;const t=new Audio();t.volume=.5;return t.volume!==.5}catch(e){return false}})();
+let CTX=null,ANL=null;const EVS=['loadstart','loadedmetadata','durationchange','canplay','canplaythrough','play','playing','pause','waiting','stalled','seeking','seeked','timeupdate','ended','error','emptied','progress'];
+const sameSite=u=>/^(blob:|data:)/.test(u)||u.startsWith('/')||u.startsWith(location.origin);
+class LuAudio extends EventTarget{
+ constructor(){super();this.a=new Audio();this.r=new Audio();this.a.preload=this.r.preload='auto';this.cur=this.a;this._v=1;this.g=null;
+  for(const el of [this.a,this.r])for(const ev of EVS)el.addEventListener(ev,()=>{if(el===this.cur)this.dispatchEvent(new Event(ev))})}
+ get src(){return this.cur.src}
+ set src(u){u=u||'';const el=u&&!sameSite(u)?this.r:this.a,o=el===this.a?this.r:this.a;if(o.getAttribute('src')){o.pause();o.removeAttribute('src');try{o.load()}catch(e){}}this.cur=el;el.src=u;this.apply()}
+ getAttribute(k){return this.cur.getAttribute(k)}
+ setAttribute(k,v){if(k==='src')this.src=v;else this.cur.setAttribute(k,v)}
+ removeAttribute(k){this.a.removeAttribute(k);this.r.removeAttribute(k)}
+ load(){try{this.cur.load()}catch(e){}}
+ play(){this.route();if(CTX&&CTX.state!=='running')CTX.resume().catch(()=>{});return this.cur.play()}
+ pause(){this.cur.pause()}
+ get paused(){return this.cur.paused}get ended(){return this.cur.ended}get duration(){return this.cur.duration}get readyState(){return this.cur.readyState}
+ get currentTime(){return this.cur.currentTime}set currentTime(t){this.cur.currentTime=t}
+ get preload(){return this.a.preload}set preload(v){this.a.preload=this.r.preload=v}
+ get volume(){return this._v}set volume(v){this._v=Math.max(0,Math.min(1,+v||0));this.apply()}
+ route(){if(this.g||this.cur!==this.a)return;try{if(!CTX){CTX=new (window.AudioContext||window.webkitAudioContext)();ANL=CTX.createAnalyser();ANL.fftSize=256;ANL.connect(CTX.destination)}
+  const sN=CTX.createMediaElementSource(this.a);this.g=CTX.createGain();sN.connect(this.g);this.g.connect(ANL)}catch(e){}this.apply()}
+ apply(){if(this.g)this.g.gain.value=this._v;try{this.a.volume=this._v;this.r.volume=this._v}catch(e){}
+  // the visualiser reads the real sound while one of your songs plays, and keeps time on its own for the radio
+  try{if(typeof AU!=='undefined'&&this===AU){if(this.cur===this.a&&this.g&&ANL){AN=ANL;FQ=new Uint8Array(ANL.frequencyBinCount)}else{AN=null;FQ=null}}}catch(e){}}
+}
+window.luAudio=()=>VOLRO?new LuAudio():new Audio();
+window.LUVOLRO=VOLRO;
+
 // ---------- the radio: straight from radio-browser.info ----------
 const J=o=>new Response(JSON.stringify(o),{headers:{'Content-Type':'application/json'}});
 const T=t=>new Response(String(t));

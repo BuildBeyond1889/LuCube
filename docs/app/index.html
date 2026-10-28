@@ -30,7 +30,7 @@
 .A{background:var(--base);border:2px solid #111}
 .A .pat{flex:1;align-self:stretch}
 .A.t1 .pat{background:conic-gradient(#cfd6df 25%,#111 0 50%,#cfd6df 0 75%,#111 0) 0 0/9px 9px}
-.A.t2 .pat{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='40'%3E%3Crect width='26' height='40' fill='%232f6be8'/%3E%3Ccircle cx='6' cy='9' r='4.2' fill='%23ffc21a'/%3E%3Ccircle cx='18' cy='20' r='2.2' fill='%23ffc21a'/%3E%3Ccircle cx='6' cy='31' r='4.2' fill='%23ffc21a'/%3E%3Ccircle cx='18' cy='6' r='1.3' fill='%23ffc21a'/%3E%3Ccircle cx='18' cy='34' r='1.3' fill='%23ffc21a'/%3E%3C/svg%3E") 0 0/26px 36px}
+.A.t2 .pat{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='40'%3E%3Crect width='26' height='40' fill='%232f6be8'/%3E%3Ccircle cx='6' cy='9' r='4.2' fill='%23ffc21a'/%3E%3Ccircle cx='18' cy='20' r='2.2' fill='%23ffc21a'/%3E%3Ccircle cx='6' cy='31' r='4.2' fill='%23ffc21a'/%3E%3Ccircle cx='18' cy='6' r='1.3' fill='%23ffc21a'/%3E%3Ccircle cx='18' cy='34' r='1.3' fill='%23ffc21a'/%3E%3C/svg%3E") 0 0/26px 40px space}
 .A.t3 .pat{background:repeating-linear-gradient(-58deg,#ffc21a 0 5px,#e0281a 5px 13px)}
 .A.t4 .pat{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='40'%3E%3Crect width='22' height='40' fill='%23ffc21a'/%3E%3Cpath d='M4 13l14 14M18 13L4 27' stroke='%23111' stroke-width='4.2' stroke-linecap='square'/%3E%3C/svg%3E") 0 0/20px 36px}
 .A .lab{display:flex;align-items:center;gap:5px;padding:0 6px;height:100%;background:var(--base)}
@@ -247,10 +247,10 @@ body.ph-night .f:before{background:linear-gradient(160deg,rgba(20,30,90,.42),rgb
 body.ph-dusk .f:before{background:linear-gradient(160deg,rgba(255,110,60,.22),rgba(110,40,140,.25));mix-blend-mode:multiply}
 body.ph-dawn .f:before{background:linear-gradient(200deg,rgba(255,170,120,.2),rgba(120,160,255,.15));mix-blend-mode:multiply}
 body.ph-day.wx-clear .f:after{background:radial-gradient(circle at 92% 6%,rgba(255,250,210,.55),transparent 38%)}
-body.wx-rain .f:after,body.wx-storm .f:after{background:repeating-linear-gradient(103deg,transparent 0 13px,rgba(190,215,255,.32) 13px 14px,transparent 14px 31px);background-size:62px 62px;animation:rain .55s linear infinite}
+body.wx-rain .f:after,body.wx-storm .f:after{background:repeating-linear-gradient(103deg,transparent 0 13px,rgba(190,215,255,.32) 13px 14px,transparent 14px 31px);background-size:62px 62px;inset:-62px -14px 0 0;animation:rainT .55s linear infinite;will-change:transform}
 body.wx-storm .f:before{animation:flash 7s infinite}
-body.wx-snow .f:after{background-image:radial-gradient(circle,rgba(255,255,255,.95) 0 1.6px,transparent 2.2px),radial-gradient(circle,rgba(255,255,255,.7) 0 1.1px,transparent 1.6px);background-size:46px 46px,29px 29px;animation:snow 4s linear infinite}
-@keyframes rain{to{background-position:-14px 62px}}@keyframes snow{to{background-position:12px 46px,-8px 58px}}@keyframes flash{0%,92%,96%,100%{background:transparent}93%,95%{background:rgba(255,255,255,.55)}}
+body.wx-snow .f:after{background-image:radial-gradient(circle,rgba(255,255,255,.95) 0 1.6px,transparent 2.2px),radial-gradient(circle,rgba(255,255,255,.7) 0 1.1px,transparent 1.6px);background-size:46px 46px,23px 23px;inset:-46px 0 0 0;animation:snowT 4s linear infinite;will-change:transform}
+@keyframes rainT{from{transform:translate(0,0)}to{transform:translate(-14px,62px)}}@keyframes snowT{from{transform:translate(0,0)}to{transform:translate(0,46px)}}@keyframes flash{0%,92%,96%,100%{background:transparent}93%,95%{background:rgba(255,255,255,.55)}}
 </style><script>if(Math.min(screen.width,screen.height)>=700&&!/[?&]phone/.test(location.search))location.replace('ipad.html'+location.search);</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -426,6 +426,38 @@ async function library(){const rows=await allSongs(),by={};IDS=new Map();
 const toIds=s=>{IDS.forEach((id,u)=>{s=s.split(u).join('luid:'+id)});return s};
 const toUrls=s=>s.replace(/luid:([^"]+)/g,(m,id)=>{const u=URLS.get(JSON.parse('"'+id+'"'));return u||m});
 
+// ---------- the player: iPhone and iPad ignore a page's volume setting, so your songs go through a volume knob ----------
+// Songs (kept in the app) play through Web Audio: a gain for the volume bar and fades, and an analyser so the
+// visualiser follows the real sound. Radio streams come from other sites, which Web Audio can't open, so they
+// play on a plain player beside it (their volume is the side buttons). Where the browser can set volume itself
+// (desktop), the plain <audio> is used as before.
+const VOLRO=(()=>{try{if(/[?&]ro=1/.test(location.search))return true;const t=new Audio();t.volume=.5;return t.volume!==.5}catch(e){return false}})();
+let CTX=null,ANL=null;const EVS=['loadstart','loadedmetadata','durationchange','canplay','canplaythrough','play','playing','pause','waiting','stalled','seeking','seeked','timeupdate','ended','error','emptied','progress'];
+const sameSite=u=>/^(blob:|data:)/.test(u)||u.startsWith('/')||u.startsWith(location.origin);
+class LuAudio extends EventTarget{
+ constructor(){super();this.a=new Audio();this.r=new Audio();this.a.preload=this.r.preload='auto';this.cur=this.a;this._v=1;this.g=null;
+  for(const el of [this.a,this.r])for(const ev of EVS)el.addEventListener(ev,()=>{if(el===this.cur)this.dispatchEvent(new Event(ev))})}
+ get src(){return this.cur.src}
+ set src(u){u=u||'';const el=u&&!sameSite(u)?this.r:this.a,o=el===this.a?this.r:this.a;if(o.getAttribute('src')){o.pause();o.removeAttribute('src');try{o.load()}catch(e){}}this.cur=el;el.src=u;this.apply()}
+ getAttribute(k){return this.cur.getAttribute(k)}
+ setAttribute(k,v){if(k==='src')this.src=v;else this.cur.setAttribute(k,v)}
+ removeAttribute(k){this.a.removeAttribute(k);this.r.removeAttribute(k)}
+ load(){try{this.cur.load()}catch(e){}}
+ play(){this.route();if(CTX&&CTX.state!=='running')CTX.resume().catch(()=>{});return this.cur.play()}
+ pause(){this.cur.pause()}
+ get paused(){return this.cur.paused}get ended(){return this.cur.ended}get duration(){return this.cur.duration}get readyState(){return this.cur.readyState}
+ get currentTime(){return this.cur.currentTime}set currentTime(t){this.cur.currentTime=t}
+ get preload(){return this.a.preload}set preload(v){this.a.preload=this.r.preload=v}
+ get volume(){return this._v}set volume(v){this._v=Math.max(0,Math.min(1,+v||0));this.apply()}
+ route(){if(this.g||this.cur!==this.a)return;try{if(!CTX){CTX=new (window.AudioContext||window.webkitAudioContext)();ANL=CTX.createAnalyser();ANL.fftSize=256;ANL.connect(CTX.destination)}
+  const sN=CTX.createMediaElementSource(this.a);this.g=CTX.createGain();sN.connect(this.g);this.g.connect(ANL)}catch(e){}this.apply()}
+ apply(){if(this.g)this.g.gain.value=this._v;try{this.a.volume=this._v;this.r.volume=this._v}catch(e){}
+  // the visualiser reads the real sound while one of your songs plays, and keeps time on its own for the radio
+  try{if(typeof AU!=='undefined'&&this===AU){if(this.cur===this.a&&this.g&&ANL){AN=ANL;FQ=new Uint8Array(ANL.frequencyBinCount)}else{AN=null;FQ=null}}}catch(e){}}
+}
+window.luAudio=()=>VOLRO?new LuAudio():new Audio();
+window.LUVOLRO=VOLRO;
+
 // ---------- the radio: straight from radio-browser.info ----------
 const J=o=>new Response(JSON.stringify(o),{headers:{'Content-Type':'application/json'}});
 const T=t=>new Response(String(t));
@@ -522,7 +554,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&typeof AU
 const PAL=['#ffc21a','#ff7a1a','#e0281a','#2f6be8','#cfd6df','#111'];
 const ART=(i,k)=>{const a=PAL[i%6],b=PAL[(i+2)%6],c=PAL[(i+3)%6],s=[`linear-gradient(${a} 0 38%,${b} 38% 55%,${c} 55%)`,`repeating-linear-gradient(135deg,${a} 0 12px,${b} 12px 18px)`,`radial-gradient(circle,#111 0 18%,${a} 18% 46%,${b} 46% 60%,#111 60%)`,`conic-gradient(${a} 0 25%,${b} 25% 50%,${a} 50% 75%,${b} 75%)`,`linear-gradient(90deg,${a} 0 50%,${b} 50%)`,`repeating-radial-gradient(circle,${a} 0 6px,${c} 6px 9px)`,`linear-gradient(45deg,${a} 0 33%,#fff 33% 66%,${b} 66%)`];return s[(i+k)%s.length]};
 let PLS=[];
-const P={pl:0,idx:0,playing:false,el:0,has:false};let AU=new Audio(),AU2=new Audio();AU.preload=AU2.preload='auto';
+const P={pl:0,idx:0,playing:false,el:0,has:false};let AU=window.luAudio(),AU2=window.luAudio();AU.preload=AU2.preload='auto';
 let UVOL=1,sleepF=1,XF=0,xf=null,SLEEP=null,MINI=false;
 // listen to whichever player is the current one (the other may still be fading out the last song)
 const ON=(ev,fn)=>[AU,AU2].forEach(el=>el.addEventListener(ev,e=>{if(e.target===AU)fn(e)}));
@@ -746,6 +778,7 @@ function seekTo(el,x){const r=el.getBoundingClientRect(),f=Math.max(0,Math.min(1
 let vizMode=3,plOff=0,libOff=0;var WPER=20,WCOL=5;   // the radio's World face: countries per face, and per row (the phone shows 9, three across)
 const SCR=(k,up,dn)=>`<div class="scr"><b data-act="${k}:-1" class="${up?'':'off'}">▲</b><b data-act="${k}:1" class="${dn?'':'off'}">▼</b></div>`;
 function keepInView(){const L=PLS[P.pl].songs.length;if(P.idx<plOff)plOff=P.idx;if(P.idx>=plOff+6)plOff=P.idx-5;plOff=Math.max(0,Math.min(Math.max(0,L-6),plOff))}
+const CTLI={prev:'<svg width="15" height="15" viewBox="0 0 10 10" aria-hidden="true" style="display:block"><path d="M1.4 1.2h1.5v7.6H1.4zM9 1.2L3.3 5 9 8.8z" fill="currentColor"/></svg>',next:'<svg width="15" height="15" viewBox="0 0 10 10" aria-hidden="true" style="display:block"><path d="M7.1 1.2h1.5v7.6H7.1zM1 1.2L6.7 5 1 8.8z" fill="currentColor"/></svg>'};
 const TB=(t,bg='var(--b)',col='#fff')=>`<div class="tb" style="background:${bg};color:${col}"><i class="tl" style="color:#e0281a"><svg viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="13" height="13" fill="#e0281a" stroke="#111" stroke-width="3"/><path class="x" d="M5 5l6 6M11 5l-6 6" stroke="#111" stroke-width="2.4" stroke-linecap="square"/></svg><s data-act="close" title="close"></s></i><i class="tl" style="color:#ffc21a"><svg viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="13" height="13" fill="#ffc21a" stroke="#111" stroke-width="3"/><g class="x" fill="none" stroke="#111" stroke-width="1.5"><rect x="4.75" y="6.75" width="4.5" height="4.5"/><path d="M6.75 6.75V4.75h4.5v4.5h-2" stroke-linecap="square"/></g></svg><s data-act="mini" title="shrink the cube"></s></i><i class="tl" style="color:#ff7a1a"><svg viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="13" height="13" fill="#ff7a1a" stroke="#111" stroke-width="3"/><rect class="x" x="5" y="5" width="6" height="6" fill="none" stroke="#111" stroke-width="1.6"/></svg><s data-act="max" title="unfold the cube"></s></i><b>${t}</b></div>`;
 function luRenderFaces(){keepInView.skip||0;const s=song(),pl=PLS[P.pl],up=s.t.toUpperCase();
  if(s.cov){F_COVER.style.background='#111';F_COVER.innerHTML=TB('COVER.JPG'+(WXL?' · '+WXL:''))+`<div data-act="go:NOW PLAYING" style="position:absolute;left:0;right:0;top:20px;bottom:0;background:url('${s.cov}') center/cover no-repeat,#111"></div><div style="position:absolute;left:0;right:0;bottom:0;padding:8px 10px;background:linear-gradient(transparent,rgba(0,0,0,.85));color:#fff"><div class="mid" style="font-size:16px">${short(up,34)}</div><div style="font:700 8px 'Space Mono';color:#ffc21a">${short(pl.n,44)}</div></div>`}
@@ -754,7 +787,7 @@ function luRenderFaces(){keepInView.skip||0;const s=song(),pl=PLS[P.pl],up=s.t.t
   <div style="padding:0 10px"><span class="pill">${P.playing?'▶ PLAYING':'❚❚ PAUSED'}</span></div><div class="mid" style="padding:8px 10px 0;font-size:24px;border-top:2px solid var(--k);margin-top:10px">→ ${up}</div></div>`;
 }
  F_NOW.style.background='var(--y)';F_NOW.innerHTML=TB('TRANSPORT')+SWB()+`<b class="star ${isFav(s)?'on':''}" data-act="fav" title="favourite">${isFav(s)?'★':'☆'}</b><b class="star shuf ${SHUF?'on':''}" data-act="shuf" title="shuffle"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"><path d="M3 6h4l10 12h4M3 18h4l3-3.6M14 9.6 17 6h4M18 3l3 3-3 3M18 15l3 3-3 3"/></svg></b><div style="padding:14px 12px 6px"><div style="font:700 9px 'Space Mono'">TRACK TITLE:</div><div class="big" style="font-size:${up.length>40?22:up.length>24?28:up.length>9?38:46}px;margin-right:40px;overflow-wrap:anywhere">${up.length>9&&up.length<=24?up.replace(' ','<br>'):up}</div><div class="mid" style="font-size:15px;margin-top:4px">${s.a||pl.n}</div></div>
-  <div class="prog" data-act="seek"><i id="pg"></i></div><div style="display:flex;justify-content:space-between;margin:3px 10px;font:700 9px 'Space Mono'"><span id="tm"></span><span>${fmt(s.d)}</span></div><div class="ctrl"><b data-act="prev">⏮</b><b class="p" data-act="play">${P.playing?'❚❚':'▶'}</b><b data-act="next">⏭</b></div><div class="vol"><b data-act="mute">${VOLI()}</b><div class="vb" data-act="vol"><i id="vb" style="width:${UVOL*100}%"></i></div><span style="font:700 9px 'Space Mono';width:30px;text-align:right" id="vt">${Math.round(UVOL*100)}</span></div><div class="opts"><span class="pill" data-act="xf">FADE ${XF?XF+' S':'OFF'}</span><span class="pill" data-act="sleep" id="slp">${sleepTxt()}</span></div>`;
+  <div class="prog" data-act="seek"><i id="pg"></i></div><div style="display:flex;justify-content:space-between;margin:3px 10px;font:700 9px 'Space Mono'"><span id="tm"></span><span>${fmt(s.d)}</span></div><div class="ctrl"><b data-act="prev">${CTLI.prev}</b><b class="p" data-act="play">${P.playing?'❚❚':'▶'}</b><b data-act="next">${CTLI.next}</b></div><div class="vol"><b data-act="mute">${VOLI()}</b><div class="vb" data-act="vol"><i id="vb" style="width:${UVOL*100}%"></i></div><span style="font:700 9px 'Space Mono';width:30px;text-align:right" id="vt">${Math.round(UVOL*100)}</span></div><div class="opts"><span class="pill" data-act="xf">FADE ${XF?XF+' S':'OFF'}</span><span class="pill" data-act="sleep" id="slp">${sleepTxt()}</span></div>`;
  F_PL.style.background='var(--g)';F_PL.innerHTML=TB('PLAYLIST: '+pl.n,'var(--r)')+SCR('pls',plOff>0,plOff+6<pl.songs.length)+`<div class="pl">${pl.songs.map((x,i)=>[x,i]).slice(plOff,plOff+6).map(([x,i])=>`<div data-act="song:${i}" class="${i===P.idx?'on':''}"><span><b>${String(i+1).padStart(2,'0')}</b>${x.t}</span><span>${fmt(x.d)}</span></div>`).join('')}</div>
   <div style="position:absolute;left:10px;bottom:10px;right:10px;display:flex;justify-content:space-between;align-items:center"><span class="pill" style="background:var(--b)" data-act="go:LIBRARY">ALL PLAYLISTS →</span><span style="font:700 9px 'Space Mono'">${pl.songs.length} TRACKS</span></div>`;
  F_LIB.style.background='var(--g)';F_LIB.innerHTML=TB('LIBRARY // '+PLS.length+' PLAYLISTS')+SCR('libs',libOff>0,libOff+9<PLS.length)+`<div class="lib">${PLS.map((p,i)=>[p,i]).slice(libOff,libOff+9).map(([p,i])=>`<div data-act="pl:${i}" class="${i===P.pl?'on':''}" style="background:${p.art};color:#111"><span style="background:var(--g);padding:1px 3px">${p.n}</span></div>`).join('')}</div>`;
@@ -945,9 +978,9 @@ function radRenderFaces(){const s=song(),c=cityOf(s)||globeCity()||{n:'',N:'',cc
   <div style="padding:10px 12px 0;margin-right:42px"><div style="display:flex;gap:6px;align-items:center">${badge2}${P.has?`<span class="chs"><b data-act="prev">◀</b>CH ${ci+1}/${chs.length||1}<b data-act="next">▶</b></span>`:''}</div>
   <div class="big" style="font-size:${fsz(P.has?s.t:'')}px;margin-top:8px;overflow:hidden;max-height:92px;overflow-wrap:anywhere">${P.has?esc(s.t):WORLD?'PICK A COUNTRY':'TUNING THE WORLD…'}</div>
   <div class="chips">${!P.has?'':(s.g||[]).map(x=>`<span>${esc(x.toUpperCase().slice(0,14))}</span>`).join('')}${P.has&&s.br?`<span>${s.br}K ${s.codec}</span>`:''}</div>
-  <div class="rk">${P.has?(s.st?esc(s.st.toUpperCase())+', ':'')+c.N:''}${P.has?` · <span id="lt">${local(pc,1)}</span> · ${cwxText(pc)}`:''}</div></div>
+  <div class="rk">${P.has?(s.st?esc(s.st.toUpperCase())+', ':'')+c.N:''}${P.has?` · <span id="lt">${local(pc,1)}</span>`:''}</div></div>
   <div class="mq"><span id="mq">${P.has?(s.nowT?'NOW PLAYING ▸ '+esc(s.nowT.toUpperCase()):'LIVE ▸ '+esc(((s.g||[]).join(' · ')||'RADIO').toUpperCase())+(s.st?' ▸ '+esc(s.st.toUpperCase()):'')):WORLD?'PICK A COUNTRY ON THE DIAL':(RLOAD||'TUNING THE WORLD…')}</span></div>
-  <div class="ctrl" style="margin:8px 0 6px"><b data-act="prev">⏮</b><b class="p" data-act="play">${live?'❚❚':'▶'}</b><b data-act="next">⏭</b></div>
+  <div class="ctrl" style="margin:8px 0 6px"><b data-act="prev">${CTLI.prev}</b><b class="p" data-act="play">${live?'❚❚':'▶'}</b><b data-act="next">${CTLI.next}</b></div>
   <div class="vol"><b data-act="mute">${VOLI()}</b><div class="vb" data-act="vol"><i id="vb" style="width:${UVOL*100}%"></i></div><span style="font:700 9px 'Space Mono';width:30px;text-align:right" id="vt">${Math.round(UVOL*100)}</span></div>`+bnNow();
  const cpl=PLS.find(p=>p.cc===c.cc&&!p.fav);
  F_COVER.style.background='var(--b)';F_COVER.innerHTML=TB('LIVE.FROM','#111','var(--y)')+`<div style="position:absolute;right:-40px;top:40px;width:190px;height:190px;border-radius:50%;opacity:.35;background:${c.art||'#000'}"></div>
@@ -1085,7 +1118,7 @@ function depthBox(){if(depthBox.b)return depthBox.b;const yaw=.5236,pit=.3665,C=
  const P=(px,py,pz)=>{py-=.45;pz-=D/2;const x1=px*cyw+pz*syw,z1=-px*syw+pz*cyw,y2=py*cp+z1*sp,z2=-py*sp+z1*cp,d=C+z2;return[760*x1/d,-760*y2/d]};
  const pts=[];for(const px of[-1.46,-1.12])for(const py of[-.12,1.3])for(const pz of[0,.28])pts.push(P(px,py,pz));for(const px of[-.94,.94])for(const pz of[.08,D*.62])for(const py of[0,1])pts.push(P(px,py,pz));
  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);return depthBox.b={x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)}}
-setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;if(app(CR,FACE.VISUALISER.n)[2]>-.25&&!mxEl)drawDepth(document.getElementById('vizd'),true);if(MXS)drawDepth(document.getElementById('mxviz'),true,true)},55);
+setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;if(app(CR,FACE.VISUALISER.n)[2]>-.25&&!mxEl)drawDepth(document.getElementById('vizd'),true,true);if(MXS)drawDepth(document.getElementById('mxviz'),true,true)},55);
 
 const _rfMX=renderFaces;renderFaces=function(){_rfMX();if(MODE==='radio')F_VIZ.classList.remove('dk3');if(mxEl&&MXS!==3)mxRender()};const _tfMX=tickFaces;tickFaces=function(){_tfMX();if(mxEl)mxTick()};
 // ===================== MAXIMIZE: the orange button unfolds the cube into one big window =====================
@@ -1120,7 +1153,7 @@ function mxBuild(){if(MXS!==1)return;
  const win=document.createElement('div');win.className='mxw';win.style.left=mxG.nl+'px';win.style.top=mxG.nt+'px';win.style.transform=`scale(${ws})`;win.style.width=MXW+'px';win.style.height=MXH+'px';
  const line=document.createElement('div');line.className='mxl';line.style.left=mxG.nl+'px';line.style.top=(mxG.nt-2)+'px';line.style.height=(900*ky+4)+'px';
  ov.append(sc,win,line);document.body.append(ov);mxEl=ov;mxRender();
- win.addEventListener('click',mxClick);win.addEventListener('pointerdown',e=>{const c=e.target.closest&&e.target.closest('#mxpong');if(c&&mxPg&&MXS===2){mxPg.joined=true;mxPg.ut=Date.now();const r=c.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100}});
+ win.addEventListener('click',mxClick);win.addEventListener('pointerdown',e=>{const c=e.target.closest&&e.target.closest('#mxpong');if(c&&mxPg&&MXS===2){if(mxPg.over){Object.assign(mxPg,{over:false,drawnOver:false,s1:0,s2:0,bx:144,by:50,vx:2.8,vy:1.1})}mxPg.joined=true;mxPg.ut=Date.now();const r=c.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100}});
  win.addEventListener('pointermove',e=>{const c=e.target.closest&&e.target.closest('#mxpong');if(c&&mxPg&&mxPg.joined){const r=c.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100;mxPg.ut=Date.now()}});
  // drag the blue title bar to put the window anywhere
  win.addEventListener('pointerdown',e=>{if(MXS!==2||mxG.full||!e.target.closest('.mxtb')||e.target.closest('[data-act]'))return;e.preventDefault();const r0={x:e.clientX,y:e.clientY,dx:mxG.dx,dy:mxG.dy},rg=mxEl.querySelector('.mxr');win.setPointerCapture(e.pointerId);rg.style.transition='none';window.mxDrag=true;
@@ -1164,7 +1197,7 @@ function mxClose(then){if(MXS!==2||!mxEl)return;MXS=3;const ov=mxEl,rig=ov.query
  mxLater(()=>{ov.remove();mxEl=null;MXS=0;mxPg=null;CR=upright('NOW PLAYING');snapT=null;s_rest=true;renderFaces();if(then)then()},1560)}
 function mxClick(e){if(window.mxNoClick)return;const t=e.target.closest('[data-act]');if(!t||MXS!==2)return;const a=t.dataset.act;
  if(a==='mxclose'){mxClose();return}if(a==='mxquit'){mxClose(()=>breakApart());return}
- if(a==='mxpong'){if(mxPg){mxPg.joined=true;mxPg.ut=Date.now();const r=t.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100}return}
+ if(a==='mxpong'){if(mxPg){if(mxPg.over)Object.assign(mxPg,{over:false,drawnOver:false,s1:0,s2:0,bx:144,by:50,vx:2.8,vy:1.1});mxPg.joined=true;mxPg.ut=Date.now();const r=t.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*100}return}
  if(/^mx[lgs]:/.test(a)){const [k,v]=a.split(':');mxScroll(k,+v);return}
  if(a.startsWith('gen:')){act(a);mxGSeek=false;setTimeout(mxRender,60);return}
  if(a==='mxseek'||a==='mxvol'){const r=t.getBoundingClientRect(),f=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));if(a==='mxvol')setVol(f>.96?1:f<.04?0:f);else if(MODE!=='radio'&&isFinite(AU.duration))AU.currentTime=f*AU.duration;mxRender();return}
@@ -1204,19 +1237,19 @@ function mxTick(){const pg=document.getElementById('mxpg');if(pg){const s=song()
 function mxPong(){const W2=288,H2=100,PH=22;mxPg={bx:144,by:50,vx:2.8,vy:1.1,p1:39,p2:39,s1:0,s2:0,e1:0,e2:0,uy:50,ut:0,joined:false};
  const serve=dir=>{const g=mxPg;g.bx=W2/2;g.by=20+Math.random()*(H2-40);g.vx=2.8*dir;g.vy=(Math.random()-.5)*3};
  const chase=(p,want,sp)=>Math.max(0,Math.min(H2-PH,p+Math.max(-sp,Math.min(sp,want-PH/2-p))));let last=performance.now(),acc=0;
- (function loop(now){if(!mxPg||!mxEl)return;acc+=Math.min(100,now-last);last=now;const g=mxPg;if(g.joined&&Date.now()-g.ut>4000)g.joined=false;const you=g.joined;   // yours from a click until the mouse rests for 4 s
+ (function loop(now){if(!mxPg||!mxEl)return;acc+=Math.min(100,now-last);last=now;const g=mxPg;if(g.over){acc=0;if(g.drawnOver){requestAnimationFrame(loop);return}g.drawnOver=true}if(g.joined&&Date.now()-g.ut>4000)g.joined=false;const you=g.joined;   // yours from a click until the mouse rests for 4 s
   while(acc>=16.7){acc-=16.7;g.bx+=g.vx*.55;g.by+=g.vy*.55;if(g.by<3){g.by=3;g.vy=-g.vy}if(g.by>H2-3){g.by=H2-3;g.vy=-g.vy}
    g.p1=you?Math.max(0,Math.min(H2-PH,g.uy-PH/2)):chase(g.p1,g.vx<0?g.by+g.e1:H2/2,1.1);g.p2=chase(g.p2,g.vx>0?g.by+g.e2:H2/2,1.1);
    if(g.vx<0&&g.bx<=11&&g.bx>=4&&g.by>=g.p1-2&&g.by<=g.p1+PH+2){g.bx=11;g.vx=Math.min(5.4,-g.vx*1.07);g.vy+=(g.by-(g.p1+PH/2))*.14;g.e2=(Math.random()-.5)*30}
    if(g.vx>0&&g.bx>=277&&g.bx<=285&&g.by>=g.p2-2&&g.by<=g.p2+PH+2){g.bx=277;g.vx=-Math.min(5.4,g.vx*1.07);g.vy+=(g.by-(g.p2+PH/2))*.14;g.e1=(Math.random()-.5)*30}
-   if(g.bx<-4){g.s2++;serve(1)}if(g.bx>W2+4){g.s1++;serve(-1)}}
+   if(g.bx<-4){g.s2++;serve(1)}if(g.bx>W2+4){g.s1++;serve(-1)}if(g.s1>=7||g.s2>=7){g.over=true;g.joined=false;break}}
   const cv=document.getElementById('mxpong');if(cv){const x=cv.getContext('2d'),k=cv.width/W2;x.setTransform(k,0,0,k,0,0);x.fillStyle='#111';x.fillRect(0,0,W2,H2);
    x.strokeStyle='#3a3f4d';x.lineWidth=2;x.setLineDash([4,5]);x.beginPath();x.moveTo(144,4);x.lineTo(144,96);x.stroke();x.setLineDash([]);
    x.font='24px Anton,sans-serif';x.textAlign='right';x.fillStyle='#ffc21a';x.fillText(g.s1,130,28);x.textAlign='left';x.fillStyle='#2f6be8';x.fillText(g.s2,158,28);
    x.font='700 6.5px "Space Mono",monospace';x.fillStyle='#ff7a1a';x.fillText('IDLE PONG',8,11);
    x.fillStyle='#ffc21a';x.fillRect(6,g.p1,5,PH);x.fillStyle='#2f6be8';x.fillRect(277,g.p2,5,PH);
    const kick=P.playing?Math.exp(-((performance.now()/1000)%.5)/.08):0,bs=5+2.5*kick;x.fillStyle='#fff';x.fillRect(g.bx-bs/2,g.by-bs/2,bs,bs);
-   x.font='700 6px "Space Mono",monospace';x.textAlign='center';x.fillStyle=you?'#ffc21a':'#6b7280';x.fillText(you?'YOU ARE YELLOW':'IDLE PONG · CLICK TO JOIN',144,95)}
+   x.font='700 6px "Space Mono",monospace';x.textAlign='center';x.fillStyle=you?'#ffc21a':'#6b7280';x.fillText(g.over?(g.s1>=7?'YELLOW WINS':'BLUE WINS')+' · '+(TOUCHUI?'TAP':'CLICK')+' TO PLAY AGAIN':you?'YOU ARE YELLOW':'IDLE PONG · '+(TOUCHUI?'TAP':'CLICK')+' TO JOIN',144,95)}
   requestAnimationFrame(loop)})(last)}
 addEventListener('keydown',e=>{if(e.key==='Escape'&&MXS===2){e.stopPropagation();mxClose()}},true);
 
@@ -1326,7 +1359,7 @@ function remRender(){const s=rcur(),up=s?(s.title||'').toUpperCase():'';F_NOW.cl
  else if(!s){F_NOW.style.background='var(--y)';F_NOW.innerHTML=TB('REMOTE // PLAYING ELSEWHERE','#1f8a5a')+`<div style="padding:14px"><div class="big" style="font-size:36px">NOTHING<br>PLAYING</div><div style="font:700 9px/1.7 'Space Mono';margin-top:8px">Start a song in Spotify, YouTube Music, a podcast app… and it turns up here. Lu Cube is the remote, the other app does the playing.</div></div>`}
  else{F_NOW.style.background='var(--y)';F_NOW.innerHTML=TB('REMOTE // PLAYING ELSEWHERE','#1f8a5a')+`<div style="padding:12px 12px 4px">${VIA(s)}<div class="big" style="font-size:${up.length>26?24:up.length>14?30:40}px;margin-top:8px;overflow-wrap:anywhere">${E(up)}</div><div class="mid" style="font-size:15px;margin-top:4px">${E(s.artist)}</div></div>
   <div class="prog"><i id="pg"></i></div><div style="display:flex;justify-content:space-between;margin:3px 10px;font:700 9px 'Space Mono'"><span id="tm"></span><span>${s.duration>0?fmt(s.duration/1000):'LIVE'}</span></div>
-  <div class="ctrl"><b data-act="rem:prev">⏮</b><b class="p" data-act="rem:play">${s.playing?'❚❚':'▶'}</b><b data-act="rem:next">⏭</b></div>
+  <div class="ctrl"><b data-act="rem:prev">${CTLI.prev}</b><b class="p" data-act="rem:play">${s.playing?'❚❚':'▶'}</b><b data-act="rem:next">${CTLI.next}</b></div>
   <div style="margin:8px 12px 0;font:700 8px 'Space Mono';letter-spacing:.06em;opacity:.7">${E(s.app.toUpperCase())} DOES THE PLAYING · THE CUBE IS THE REMOTE</div>`}
  const art=s&&s.art?`url('${s.art}') center/cover no-repeat,#111`:`radial-gradient(circle at 35% 30%,${s?RCOL(s.pkg):'#2f6be8'},#111 78%)`;
  F_COVER.style.background='#111';F_COVER.innerHTML=TB('COVER'+(s?' · '+E(s.app.toUpperCase()):''),'#111','var(--y)')+`<div style="position:absolute;left:0;right:0;top:20px;bottom:0;background:${art}"></div>${s?`<div style="position:absolute;left:0;right:0;bottom:0;padding:8px 10px;background:linear-gradient(transparent,rgba(0,0,0,.85));color:#fff"><div class="mid" style="font-size:16px">${E(short(up,34))}</div><div style="font:700 8px 'Space Mono';color:#ffc21a">${E(s.artist)}</div></div>`:''}`;

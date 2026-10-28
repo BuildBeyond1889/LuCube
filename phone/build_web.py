@@ -53,6 +53,8 @@ def base(pick_layout):
     # no Web Audio graph: a browser goes silent when it routes another site's radio stream through one,
     # so the visualiser dances on its own. No two-player handover either (iPhone plays one sound at a time).
     html = swap(html, "function audioGraph(){if(AC)return;", "function audioGraph(){AC=1;return;")
+    # iPhone / iPad: the player that makes the volume bar work (see web.js)
+    html = swap(html, "let AU=new Audio(),AU2=new Audio();", "let AU=window.luAudio(),AU2=window.luAudio();")
     html = swap(html, "function nextIsMovement(){", "function nextIsMovement(){return false;")
     # radio streams go straight to the player, no relay
     html = swap(html, "const src='/api/radio/play?u='+encodeURIComponent(x.u)+'&i='+encodeURIComponent(x.id||'');", "const src=x.u;")
@@ -89,7 +91,7 @@ iphone = html
 
 # ---------- iPad: the full PC cube ----------
 TO_PHONE = "if(Math.min(screen.width,screen.height)<700)location.replace('./'+location.search);"
-IPAD_CSS = """.f:before,.f:after{animation:none!important}.cube{will-change:transform}
+IPAD_CSS = """.cube{will-change:transform}
 .intro{top:calc(env(safe-area-inset-top) + 14px)!important}.intro h1,#h1{display:none!important}.intro p{margin:0!important}
 .find{top:calc(env(safe-area-inset-top) + 40px)!important}
 #swp{position:fixed;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);top:auto;margin:0;padding:10px 16px;font-size:11px;z-index:21}
