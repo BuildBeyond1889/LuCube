@@ -109,9 +109,10 @@ IPAD_JS = """<script>(function(){
  act=function(a){if(a==='lu:add'){window.luAddSongs();return}if(a==='lu:radio'){switchMode();return}return _ac.apply(this,arguments)};const pill=(id,t,f)=>{const b=document.createElement('div');b.id=id;b.className='lupill';b.textContent=t;b.onclick=f;document.body.append(b);return b};
  pill('luadd','＋ ADD SONGS',()=>window.luAddSongs());
  const cb=pill('lucube','▣ SHOW THE CUBE',()=>out(true));
- const k=document.querySelector('.keys');if(k)k.textContent='SWIPE the cube to turn it · TAP its buttons · DRAG a corner to resize · ORANGE square unfolds it · RED square puts it away';
+ const k=document.querySelector('.keys');if(k)k.textContent='SWIPE the cube to turn it · TAP its buttons · DRAG a corner to resize · ORANGE square unfolds it · RED square puts it away · the WHEEL in the corner: tap to open, drag round, tap the middle one for the cube';
  // a touchscreen has no mouse to find the wheel with: the cube comes out, big, in the middle
  function out(force){if(!PLS.length&&MODE!=='lu')return;csz=Math.max(csz,Math.min(1.6,Math.min(innerWidth,innerHeight)/470));toCube(innerWidth*.5,innerHeight*.5)}
+ window.luCubeOut=()=>out(true);
  let first=true,bounced=false;
  setInterval(()=>{if(!LUREADY)return;
   // no songs yet: the radio fills the cube instead of an empty one
