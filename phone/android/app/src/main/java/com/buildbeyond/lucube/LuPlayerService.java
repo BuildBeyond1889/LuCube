@@ -60,7 +60,16 @@ public class LuPlayerService extends MediaLibraryService {
         super.onCreate();
         instance = this;
         even = getSharedPreferences("lu", MODE_PRIVATE).getBoolean("even", false);
-        player = new ExoPlayer.Builder(this)
+        // the sound passes a tap on its way out (a copy for the visualiser; the music itself is untouched)
+        androidx.media3.exoplayer.DefaultRenderersFactory rf = new androidx.media3.exoplayer.DefaultRenderersFactory(this) {
+            @Override protected androidx.media3.exoplayer.audio.AudioSink buildAudioSink(android.content.Context ctx, boolean floatOut, boolean playbackParams) {
+                return new androidx.media3.exoplayer.audio.DefaultAudioSink.Builder(ctx)
+                        .setEnableFloatOutput(floatOut).setEnableAudioTrackPlaybackParams(playbackParams)
+                        .setAudioProcessors(new androidx.media3.common.audio.AudioProcessor[] { new androidx.media3.exoplayer.audio.TeeAudioProcessor(LuTap.INSTANCE) })
+                        .build();
+            }
+        };
+        player = new ExoPlayer.Builder(this, rf)
                 .setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
                 .setHandleAudioBecomingNoisy(true)
                 .setWakeMode(C.WAKE_MODE_NETWORK)

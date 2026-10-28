@@ -323,6 +323,15 @@ public class LuNativePlugin extends Plugin {
         }).start();
     }
 
+    // the visualiser: the newest frequency picture of what's playing (512 bytes, base64)
+    @PluginMethod
+    public void spectrum(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("sr", LuTap.INSTANCE.sampleRate());
+        r.put("b", Base64.encodeToString(LuTap.INSTANCE.spectrum(), Base64.NO_WRAP));
+        call.resolve(r);
+    }
+
     // the opening holds the screen upright while it plays (lock: true), then lets it turn freely again
     @PluginMethod
     public void lockPortrait(PluginCall call) {

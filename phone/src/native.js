@@ -57,6 +57,13 @@ if(LN){LN.addListener('state',onState);LN.addListener('icy',e=>{icyNow=e.title||
  LN.addListener('error',e=>{const a=A();if(!a)return;NS.playing=false;
   if((typeof MODE!=="undefined"?MODE:"lu")==='radio')a.fire('error');else if(PLS[P.pl])setTimeout(()=>{try{play(P.pl,nextIdx())}catch(x){}},600)})}
 setInterval(()=>{const a=A();if(a&&NS.playing)a.fire('timeupdate')},250);
+// the visualiser hears the real sound: the phone's player taps it and hands over the same frequency picture the PC's
+// browser makes, so the cube's visualiser runs exactly as it does on the PC
+if(LN&&LN.spectrum){let busy=false,FB=null;
+ setInterval(()=>{if(busy||!NS.playing||document.hidden)return;busy=true;
+  LN.spectrum().then(r=>{if(!r||!r.b)return;const s=atob(r.b);if(!FB||FB.length!==s.length)FB=new Uint8Array(s.length);for(let i=0;i<s.length;i++)FB[i]=s.charCodeAt(i);
+   try{if(typeof AN==='undefined')return;if(!AN||!AN.luTap){AN={luTap:true,frequencyBinCount:FB.length,context:{sampleRate:r.sr||44100},getByteFrequencyData:a=>a.set(FB.subarray(0,a.length))};FQ=new Uint8Array(FB.length)}else AN.context.sampleRate=r.sr||44100}catch(e){}})
+  .catch(()=>{}).finally(()=>{busy=false})},40)}
 
 // ---------- the /api the cube asks for ----------
 const J=o=>new Response(JSON.stringify(o),{headers:{'Content-Type':'application/json'}});
