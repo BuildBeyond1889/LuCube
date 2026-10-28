@@ -373,6 +373,9 @@ body.lintro-hide>*:not(#lintro){visibility:hidden}
 #lintro .lf-lid{left:-5px;top:-5px;transform-origin:50% 0;transform:translateY(84px)}
 .li-skip{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom,0px));text-align:center;font:700 9px "Space Mono",monospace;letter-spacing:.24em;color:rgba(140,148,160,.6);z-index:6}
 
+/* iPhone: the dots, the face's name and the globe / wheel sit a little lower, clear of the cube's corners as it spins */
+#pdots{transform:translateY(22px)}#pface{transform:translateY(22px)}#pbot{height:calc(63vh - 262px)!important}
+body.pland #pdots,body.pland #pface{transform:none}
 </style>
 <script>
 // ===================== LU CUBE · WEB APP (iPhone, iPad): the cube's /api answered inside the browser =====================

@@ -87,7 +87,10 @@ phone = swap(phone, "Lu Cube for Android ${E(VERS)}", "Lu Cube for iPhone &amp; 
 phone = swap(phone, "$('pupd').onclick=()=>{if(UPD.n>MYB)doUpdate();else checkUpdate(true)};$('pupd').textContent=UPD.n>MYB?'⬇ UPDATE TO BUILD '+UPD.n:'CHECK FOR AN UPDATE';",
              "$('pupd').onclick=()=>window.luWebUpdate();$('pupd').textContent='↻ GET THE LATEST VERSION';$('padd').onclick=()=>window.luAddSongs();"
              "$('pclr').onclick=()=>{const b=$('pclr');if(b.dataset.sure){window.luClearSongs()}else{b.dataset.sure=1;b.textContent='TAP AGAIN TO REMOVE THEM'}};", P)
-pcss = read(SRC, "phone.css") + "\n" + read(SRC, "intro.css")
+pcss = read(SRC, "phone.css") + "\n" + read(SRC, "intro.css") + """
+/* iPhone: the dots, the face's name and the globe / wheel sit a little lower, clear of the cube's corners as it spins */
+#pdots{transform:translateY(22px)}#pface{transform:translateY(22px)}#pbot{height:calc(63vh - 262px)!important}
+body.pland #pdots,body.pland #pface{transform:none}"""
 html = base(TO_IPAD).replace("__CSS__", pcss)
 k = html.rindex("</body>")
 html = html[:k] + "<script>\n" + phone + "\n</script>\n<script>\n" + read(SRC, "intro.js") + "\n</script>\n" + html[k:]
