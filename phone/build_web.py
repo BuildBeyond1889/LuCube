@@ -48,12 +48,13 @@ NOTE_CSS = """#lunote{position:fixed;left:50%;top:calc(env(safe-area-inset-top) 
  font:700 10px 'Space Mono',monospace;letter-spacing:.1em;padding:7px 14px;border:2px solid #ffc21a;white-space:nowrap}"""
 
 
-def base(pick_layout):
+def base(pick_layout, small_squares=True):
     html = read(WEB, "index.html")
-    # iPhone / iPad: the title bars keep the original small corner squares (the PC has the full-height ones)
-    html = swap(html, "\n/* the three squares stand the full height of the bar: from the top edge down to the black line under it */\n.tb i.tl{width:20px;height:20px;flex:none}.tb{gap:3px;padding-left:3px}.tb b{max-width:calc(100% - 82px)}\n.tb i.tl>s{width:20px;height:20px;margin:-10px 0 0 -10px}", "")
-    for col in ("#e0281a", "#ffc21a", "#ff7a1a"):
-        html = swap(html, f'<rect x="1" y="1" width="14" height="14" fill="{col}" stroke="#111" stroke-width="2"/>', f'<rect x="1.5" y="1.5" width="13" height="13" fill="{col}" stroke="#111" stroke-width="3"/>')
+    # iPhone: the title bars keep the original small corner squares (the PC and iPad have the full-height ones)
+    if small_squares:
+        html = swap(html, "\n/* the three squares stand the full height of the bar: from the top edge down to the black line under it */\n.tb i.tl{width:20px;height:20px;flex:none}.tb{gap:3px;padding-left:3px}.tb b{max-width:calc(100% - 82px)}\n.tb i.tl>s{width:20px;height:20px;margin:-10px 0 0 -10px}", "")
+        for col in ("#e0281a", "#ffc21a", "#ff7a1a"):
+            html = swap(html, f'<rect x="1" y="1" width="14" height="14" fill="{col}" stroke="#111" stroke-width="2"/>', f'<rect x="1.5" y="1.5" width="13" height="13" fill="{col}" stroke="#111" stroke-width="3"/>')
     # no Web Audio graph: a browser goes silent when it routes another site's radio stream through one,
     # so the visualiser dances on its own. No two-player handover either (iPhone plays one sound at a time).
     html = swap(html, "function audioGraph(){if(AC)return;", "function audioGraph(){AC=1;return;")
@@ -136,7 +137,7 @@ IPAD_JS = """<script>(function(){
  let lw=innerWidth,lh=innerHeight;setInterval(()=>{if(innerWidth===lw&&innerHeight===lh)return;lw=innerWidth;lh=innerHeight;if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(innerWidth,innerHeight)/330);cpos=[innerWidth*.5,innerHeight*.5]}},400);
  addEventListener('resize',()=>setTimeout(()=>{if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(innerWidth,innerHeight)/330);cpos=[innerWidth*.5,innerHeight*.5]}},120));
 })();</script>"""
-ipad = base(TO_PHONE).replace("__CSS__", IPAD_CSS)
+ipad = base(TO_PHONE, small_squares=False).replace("__CSS__", IPAD_CSS)
 ipad = swap(ipad, "songs. Hover the right edge to open the wheel; drag it out for the cube.`", "songs. Tap the wheel in the corner for your playlists.`")
 ipad = swap(ipad, "`Your Music folder is empty: ${L.music}. Run Get Classical Music.bat, or drop folders of songs in there.`", "`No songs yet: ${L.music}.`")
 k = ipad.rindex("</body>")
