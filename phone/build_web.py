@@ -50,6 +50,10 @@ NOTE_CSS = """#lunote{position:fixed;left:50%;top:calc(env(safe-area-inset-top) 
 
 def base(pick_layout):
     html = read(WEB, "index.html")
+    # iPhone / iPad: the title bars keep the original small corner squares (the PC has the full-height ones)
+    html = swap(html, "\n/* the three squares stand the full height of the bar: from the top edge down to the black line under it */\n.tb i.tl{width:20px;height:20px;flex:none}.tb{gap:3px;padding-left:3px}.tb b{max-width:calc(100% - 82px)}\n.tb i.tl>s{width:20px;height:20px;margin:-10px 0 0 -10px}", "")
+    for col in ("#e0281a", "#ffc21a", "#ff7a1a"):
+        html = swap(html, f'<rect x="1" y="1" width="14" height="14" fill="{col}" stroke="#111" stroke-width="2"/>', f'<rect x="1.5" y="1.5" width="13" height="13" fill="{col}" stroke="#111" stroke-width="3"/>')
     # no Web Audio graph: a browser goes silent when it routes another site's radio stream through one,
     # so the visualiser dances on its own. No two-player handover either (iPhone plays one sound at a time).
     html = swap(html, "function audioGraph(){if(AC)return;", "function audioGraph(){AC=1;return;")
