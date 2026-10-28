@@ -532,7 +532,7 @@ if(window.cubeDesk&&cubeDesk.onFront)cubeDesk.onFront(()=>{lastUse=performance.n
 qbtnEl.onclick=()=>{if(window.cubeDesk)cubeDesk.quit();else window.close()};
 // clicks pass through to your desktop everywhere except on the wheel, the cube and their buttons
 let deskHit=null;addEventListener('mousemove',e=>{if(!DESK||!window.cubeDesk)return;const el=document.elementFromPoint(e.clientX,e.clientY);
- const on=!!(cdrag||rs||moving||window.mxDrag||toks.some(d=>d._drag)||(el&&el.closest('.pad,.tok,.back,.dock,.hnd,.qbtn,.mxw'))||nearWheel(e.clientX,e.clientY)||overCube(e));if(on!==deskHit){deskHit=on;cubeDesk.hit(on)}});
+ const on=!!(cdrag||rs||moving||window.mxDrag||toks.some(d=>d._drag)||(el&&el.closest('.pad,.tok,.back,.dock,.hnd,.qbtn,.mxw,#vizfs'))||nearWheel(e.clientX,e.clientY)||overCube(e));if(on!==deskHit){deskHit=on;cubeDesk.hit(on)}});
 hold.style.display='none';
 // favourites: a ★ playlist at the top of the wheel and library; volume is remembered too (saved in state.json)
 let FAVS=[];const VOL={last:.8};
@@ -957,7 +957,7 @@ function mxShatter(){if(MXS!==2||!mxEl)return;MXS=3;mxT.forEach(clearTimeout);mx
   if(u<1.1){requestAnimationFrame(fall);return}
   box.remove();mxEl=null;MXS=0;cubeOn=false;shatter=0;CR=upright('NOW PLAYING');snapT=null;document.body.classList.remove('cubemode');fadeT=performance.now();renderFaces()})()}
 // iPad: the visualiser on its own, filling the screen (a tap anywhere goes back); the screen is kept awake meanwhile
-let vizWake=null;
+let vizWake=null;window.VIZTAP=true;   // PC and iPad alike
 function vizFS(on){let o=document.getElementById('vizfs');
  if(on&&!o){o=document.createElement('div');o.id='vizfs';o.innerHTML='<canvas id="vizfscv"></canvas><div id="vizfst"></div>';o.addEventListener('click',()=>vizFS(false));document.body.append(o);
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>{vizWake=w}).catch(()=>{})}catch(e){}}
