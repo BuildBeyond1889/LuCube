@@ -1157,7 +1157,7 @@ function drawDepth(cv,meter,fit){if(!cv||!cv.width)return;const W=cv.width,H=cv.
   x.globalAlpha=.94*Math.pow(1-f,1.6);x.fillStyle='#0c0e13';x.fill();x.globalAlpha=Math.pow(1-f,1.25);x.strokeStyle=dCol(f);x.lineWidth=(2.6-1.6*f)*1.25*s;x.stroke()}
  x.globalAlpha=1;
  // the level meter stands in the same room, a column of blocks at the front-left corner
- if(meter){const segs=22,lvl=DH[0].reduce((a,b)=>a+b,0)/DB*2.6,mx0=fit?-1.46:-1.34,mx1=fit?-1.12:-1.14,mz=fit?.28:.2,mH=1.15,st=mH/segs;
+ if(meter){const segs=22,lvl=DH[0].reduce((a,b)=>a+b,0)/DB*2.6,mx0=fit?-1.66:-1.52,mx1=fit?-1.32:-1.32,mz=fit?.28:.2,mH=1.15,st=mH/segs;
   const poly=(L,col)=>{x.fillStyle=col;x.beginPath();L.forEach((q,n)=>{const r=P3(q[0],q[1],q[2]);n?x.lineTo(r[0],r[1]):x.moveTo(r[0],r[1])});x.closePath();x.fill()};
   for(let i=0;i<segs;i++){const on=i/segs<lvl,f=i/(segs-1),y0=i*st+st*.12,y1=(i+1)*st-st*.12,c=on?(f>.8?'#e0281a':f>.55?'#ff7a1a':'#ffc21a'):'#232838';
    const side=[[mx1,y0,0],[mx1,y0,mz],[mx1,y1,mz],[mx1,y1,0]];poly(side,c);poly(side,on?'rgba(0,0,0,.4)':'rgba(0,0,0,.3)');poly([[mx0,y0,0],[mx1,y0,0],[mx1,y1,0],[mx0,y1,0]],c)}
@@ -1166,7 +1166,7 @@ function drawDepth(cv,meter,fit){if(!cv||!cv.width)return;const W=cv.width,H=cv.
 // the scene's own outline (floor, the tallest wave, the meter) at scale 1, so a box of any shape can be filled with it
 function depthBox(){if(depthBox.b)return depthBox.b;const yaw=.5236,pit=.3665,C=4.3,D=2.3,cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pit),sp=Math.sin(pit);
  const P=(px,py,pz)=>{py-=.45;pz-=D/2;const x1=px*cyw+pz*syw,z1=-px*syw+pz*cyw,y2=py*cp+z1*sp,z2=-py*sp+z1*cp,d=C+z2;return[760*x1/d,-760*y2/d]};
- const pts=[];for(const px of[-1.46,-1.12])for(const py of[-.12,1.3])for(const pz of[0,.28])pts.push(P(px,py,pz));for(const px of[-.94,.94])for(const pz of[.08,D*.62])for(const py of[0,1])pts.push(P(px,py,pz));
+ const pts=[];for(const px of[-1.66,-1.32])for(const py of[-.12,1.3])for(const pz of[0,.28])pts.push(P(px,py,pz));for(const px of[-.94,.94])for(const pz of[.08,D*.62])for(const py of[0,1])pts.push(P(px,py,pz));
  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);return depthBox.b={x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)}}
 setInterval(()=>{if(!cubeOn&&!MXS)return;DH.unshift(dSpectrum());DH.length=DN;if(app(CR,FACE.VISUALISER.n)[2]>-.25&&!mxEl)drawDepth(document.getElementById('vizd'),true,true);if(MXS){drawDepth(document.getElementById('mxviz'),true,true);const q=document.getElementById('mxmq');if(q){const W=q.parentNode.clientWidth,w=q.offsetWidth+W;q.style.transform=`translateX(${W-((performance.now()/1000*36)%w)}px)`}}},55);
 
