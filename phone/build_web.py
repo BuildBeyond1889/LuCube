@@ -89,14 +89,25 @@ iphone = html
 
 # ---------- iPad: the full PC cube ----------
 TO_PHONE = "if(Math.min(screen.width,screen.height)<700)location.replace('./'+location.search);"
-IPAD_CSS = """#luadd{position:fixed;left:calc(env(safe-area-inset-left) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:20;background:#111;color:#fff;border-radius:99px;
- padding:9px 16px;font:700 11px 'Space Mono',monospace;letter-spacing:.08em;cursor:pointer;-webkit-tap-highlight-color:transparent}#luadd:active{background:#ffc21a;color:#111}
-html .keys{padding-left:190px}
+IPAD_CSS = """#lucube{left:auto!important;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px)!important;background:#ffc21a!important;color:#111!important;display:none}
+.lupill{position:fixed;left:calc(env(safe-area-inset-left) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:20;background:#111;color:#fff;border-radius:99px;
+ padding:9px 16px;font:700 11px 'Space Mono',monospace;letter-spacing:.08em;cursor:pointer;-webkit-tap-highlight-color:transparent}.lupill:active{background:#ffc21a;color:#111}
+html .keys{padding-left:190px;padding-right:230px}
 html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}"""
-IPAD_JS = """<script>(function(){const b=document.createElement('div');b.id='luadd';b.textContent='＋ ADD SONGS';b.onclick=()=>window.luAddSongs();document.body.append(b);
- const k=document.querySelector('.keys');if(k)k.textContent='SWIPE the cube to turn it · TAP its buttons · DRAG a corner to resize · ORANGE square unfolds it · TAP the wheel in the corner for your playlists';
- // a touchscreen has no mouse to find the wheel with: the cube comes out, big, as soon as the opening has played
- const t=setInterval(()=>{if(!window.LUREADY&&typeof LUREADY!=='undefined'&&!LUREADY)return;clearInterval(t);if(!cubeOn){csz=Math.max(csz,Math.min(1.35,Math.min(innerWidth,innerHeight)/560));toCube(innerWidth*.46,innerHeight*.52)}},300)})();</script>"""
+IPAD_JS = """<script>(function(){const pill=(id,t,f)=>{const b=document.createElement('div');b.id=id;b.className='lupill';b.textContent=t;b.onclick=f;document.body.append(b);return b};
+ pill('luadd','＋ ADD SONGS',()=>window.luAddSongs());
+ const cb=pill('lucube','▣ SHOW THE CUBE',()=>out(true));
+ const k=document.querySelector('.keys');if(k)k.textContent='SWIPE the cube to turn it · TAP its buttons · DRAG a corner to resize · ORANGE square unfolds it · RED square puts it away';
+ // a touchscreen has no mouse to find the wheel with: the cube comes out, big, in the middle
+ function out(force){if(!PLS.length)return;csz=Math.max(csz,Math.min(1.35,Math.min(innerWidth,innerHeight)/560));toCube(innerWidth*.5,innerHeight*.52)}
+ let first=true,bounced=false;
+ setInterval(()=>{if(!LUREADY)return;
+  // no songs yet: the radio fills the cube instead of an empty one
+  if(MODE==='lu'&&!PLS.length){if(cubeOn){cubeOn=false;document.body.classList.remove('cubemode')}if(!bounced){bounced=true;switchMode(true)}
+   const li=document.getElementById('libinfo');if(li)li.textContent='No songs yet: tap ＋ ADD SONGS to bring songs in from Files. Until then, the radio.';}
+  if(MODE==='lu'&&PLS.length)bounced=false;
+  if(first&&PLS.length&&!cubeOn){first=false;out()}
+  cb.style.display=!cubeOn&&PLS.length&&!window.mxEl?'block':'none'},300)})();</script>"""
 ipad = base(TO_PHONE).replace("__CSS__", IPAD_CSS)
 ipad = swap(ipad, "songs. Hover the right edge to open the wheel; drag it out for the cube.`", "songs. Tap the wheel in the corner for your playlists.`")
 ipad = swap(ipad, "`Your Music folder is empty: ${L.music}. Run Get Classical Music.bat, or drop folders of songs in there.`", "`No songs yet: ${L.music}.`")
