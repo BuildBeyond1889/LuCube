@@ -1,0 +1,22 @@
+name: Tap tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  taps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Get the test browser
+        working-directory: tests
+        run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Tap through the PC, iPad and iPhone
+        run: tests/run.sh
+      - name: Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: tap-test-screens, path: tests/out, if-no-files-found: ignore }

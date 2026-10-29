@@ -2,12 +2,25 @@ name: Android app
 on:
   push:
     branches: [main]
-    paths: ['phone/**', 'web/**', '.github/workflows/android.yml']
+    paths: ['phone/**', 'web/**', 'tests/**', '.github/workflows/android.yml']
   workflow_dispatch:
 permissions:
   contents: write
 jobs:
+  # the APK only gets built (and offered to your phone) once the tap tests pass
+  taps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Get the test browser
+        working-directory: tests
+        run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Tap through the PC, iPad and iPhone
+        run: tests/run.sh
   apk:
+    needs: taps
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

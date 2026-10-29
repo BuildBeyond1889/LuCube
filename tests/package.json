@@ -1,0 +1,6 @@
+{
+  "name": "lucube-tap-tests",
+  "private": true,
+  "description": "Taps, clicks and drags through Lu Cube on the PC, iPad and iPhone. Run: tests/run.sh",
+  "dependencies": { "playwright": "1.63.0" }
+}

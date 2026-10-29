@@ -6,3 +6,6 @@ python/
 desktop/electron/
 __pycache__/
 *.pyc
+tests/out/
+tests/out-pc-server.log
+node_modules/

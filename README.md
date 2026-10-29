@@ -60,6 +60,14 @@ Open **https://buildbeyond1889.github.io/LuCube/app/** in Safari, then Share →
 
 To rebuild after changing `web/index.html`, run `python phone/build_web.py`. It writes `docs/app/`, which GitHub Pages serves. Apple puts some limits on web apps: music may pause when the screen locks, volume follows the side buttons, there are no station song titles, and the visualiser animates on its own instead of following the sound.
 
+## Tap tests
+
+Every push runs `tests/run.sh` on GitHub: it opens the PC, iPad and iPhone versions in a real browser and taps,
+clicks and drags through them (the wheel and cube, the unfolded window's countries, channels, genres, favourites,
+Pong and visualiser, the mode switches, turning the phone and iPad). The Android APK is only built when they pass.
+To run them yourself: `cd tests && npm install && npx playwright install chromium`, then `tests/run.sh`
+(or `tests/run.sh ipad` for one). Screenshots land in `tests/out`.
+
 ## Files
 | | |
 |---|---|
