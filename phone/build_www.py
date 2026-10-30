@@ -33,16 +33,34 @@ html = swap(html, "function audioGraph(){if(AC)return;", "function audioGraph(){
 html = swap(html, "function nextIsMovement(){", "function nextIsMovement(){return false;")
 # radio streams go straight to the phone's player, no relay
 html = swap(html, "const src='/api/radio/play?u='+encodeURIComponent(x.u)+'&i='+encodeURIComponent(x.id||'');", "const src=x.u;")
+# Lu Blocks: a button on the lyrics face, next to BACK TO PLAYER (Android only for now)
+html = swap(html, """<div style="position:absolute;left:10px;bottom:10px"><span class="pill" data-act="go:NOW PLAYING">${s.lines?'SYNCED':'NO .LRC'} · BACK TO PLAYER</span></div>""",
+            """<div style="position:absolute;left:10px;right:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center"><span class="pill" data-act="go:NOW PLAYING">${s.lines?'SYNCED':'NO .LRC'} · BACK TO PLAYER</span><span class="pill" data-act="blocks" style="background:var(--y);color:#111">▦ LU BLOCKS</span></div>""")
 # the wake-up alarm is the phone's own alarm (it rings with the app closed)
 html = swap(html, "setInterval(()=>{if(!AL.on||!AL.src||!WORLD)return;", "setInterval(()=>{if(window.LUNATIVE||!AL.on||!AL.src||!WORLD)return;")
 html = re.sub(r'<meta name="viewport"[^>]*>', '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">', html, count=1)
 html = swap(html, "</head>", "<style>\n" + read(SRC, "phone.css") + "\n" + read(SRC, "intro.css") + "\n</style>\n<script>\n" + read(SRC, "native.js") + "\n</script>\n</head>")
 i = html.rindex("</body>")
-html = html[:i] + "<script>\n" + read(SRC, "phone.js") + "\n</script>\n<script>\n" + read(SRC, "intro.js") + "\n</script>\n" + html[i:]
+html = html[:i] + "<script>\n" + read(SRC, "phone.js") + "\n</script>\n<script>\n" + read(SRC, "intro.js") + "\n</script>\n<script>\n" + read(SRC, "blocks-host.js") + "\n</script>\n" + html[i:]
 
 if os.path.isdir(WWW):
     shutil.rmtree(WWW)
 shutil.copytree(os.path.join(WEB, "fonts"), os.path.join(WWW, "fonts"))
 with open(os.path.join(WWW, "index.html"), "w", encoding="utf-8") as f:
     f.write(html)
+
+# the game itself, with the app's own fonts (no internet needed)
+import importlib.util
+spec = importlib.util.spec_from_file_location("blocks_make", os.path.join(HERE, "..", "blocks", "make.py"))
+bm = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(bm)
+game = re.sub(r'<link rel="(?:preconnect|stylesheet)"[^>]*>\n?', "", bm.build())
+fonts = "".join(re.findall(r"@font-face\{[^}]*\}", read(WEB, "index.html")))
+head = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">'
+        '<style>' + fonts + ':root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}'
+        'body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>')
+with open(os.path.join(WWW, "blocks.html"), "w", encoding="utf-8") as f:
+    f.write(head + game + "</body></html>")
+print("www/blocks.html", len(game) // 1024, "KB")
 print("www/index.html", len(html) // 1024, "KB")
