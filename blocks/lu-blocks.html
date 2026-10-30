@@ -182,7 +182,7 @@ body{background:radial-gradient(120% 80% at 50% 40%,var(--bg2),var(--bg));color:
 .rd{min-height:100%;background:radial-gradient(120% 80% at 50% 30%,var(--bg2),var(--bg));color:var(--text);font-family:var(--body);min-height:100%}
 .wrap{max-width:980px;margin:0 auto;padding-block:14px 28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
 .bar{display:flex;align-items:center;gap:8px;background:var(--b);border:3px solid var(--ink);padding:6px 10px;box-shadow:0 4px 0 var(--ink)}
-.sq{width:20px;height:20px;border:2px solid var(--ink);flex:none;padding:0}button.sq{cursor:pointer}.sq.r{background:var(--r)}.sq.y{background:var(--y)}.sq.o{background:var(--o)}
+.sq{width:20px;height:20px;border:2px solid var(--ink);flex:none;padding:0}button.sq{cursor:pointer;width:26px;height:26px;display:grid;place-items:center}.sq.r{background:var(--r)}.sq.y{background:var(--y)}.sq.o{background:var(--o)}
 .bar h1{margin:0 0 0 6px;font:700 12px var(--mono);letter-spacing:.16em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .bar h1 b{color:var(--y)}
 
@@ -252,7 +252,7 @@ body{background:radial-gradient(120% 80% at 50% 40%,var(--bg2),var(--bg));color:
 </style><div class="rd">
 
 <div class="wrap">
-  <div class="bar"><button class="sq r" id="rdClose" title="Close" aria-label="Close"></button><span class="sq y"></span><span class="sq o"></span><h1>LU.BLOCKS // <b>HOW RINGS WORK</b></h1></div>
+  <div class="bar"><button class="sq r" id="rdClose" title="Close" aria-label="Close"><svg viewBox="0 0 10 10" width="12" height="12" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6" stroke="#111" stroke-width="2"/></svg></button><h1>LU.BLOCKS // <b>HOW RINGS WORK</b></h1></div>
 
   <div class="scene">
     <div class="netbox"><div class="net" id="net"></div></div>

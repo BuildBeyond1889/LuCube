@@ -28,8 +28,10 @@ def rings_parts():
     # styles: the page root and body become the sealed layer itself
     css = must(css, ":root{", ":host{")
     css = must(css, "body{", ".rd{min-height:100%;")
-    css = must(css, ".sq{width:20px;height:20px;border:2px solid var(--ink);flex:none}", ".sq{width:20px;height:20px;border:2px solid var(--ink);flex:none;padding:0}button.sq{cursor:pointer}")
-    body = must(body, '<span class="sq r"></span>', '<button class="sq r" id="rdClose" title="Close" aria-label="Close"></button>')
+    css = must(css, ".sq{width:20px;height:20px;border:2px solid var(--ink);flex:none}", ".sq{width:20px;height:20px;border:2px solid var(--ink);flex:none;padding:0}button.sq{cursor:pointer;width:26px;height:26px;display:grid;place-items:center}")
+    # just the one square here, the red close (with its X), in the bar's corner
+    body = must(body, '<span class="sq r"></span><span class="sq y"></span><span class="sq o"></span>',
+                '<button class="sq r" id="rdClose" title="Close" aria-label="Close"><svg viewBox="0 0 10 10" width="12" height="12" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6" stroke="#111" stroke-width="2"/></svg></button>')
     # script: everything is looked up inside the layer, and it can be closed again
     js = js.strip()
     js = must(js, "(() => {\n'use strict';", "window.initRings = function (R, host, onDone) {\n'use strict';\nconst CLEAN = [];")
