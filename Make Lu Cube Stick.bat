@@ -46,9 +46,14 @@ echo Copying Lu Cube to %OUT% ...
 REM Electron's files come out of its zip dated 1 Jan 1980, which USB sticks reject ("ERROR 87"). Re-date them to today first.
 powershell -NoProfile -Command "Get-ChildItem -LiteralPath '%~dp0desktop' -Recurse -File | Where-Object { $_.LastWriteTime.Year -lt 1990 -or $_.CreationTime.Year -lt 1990 } | ForEach-Object { $n=Get-Date; $_.CreationTime=$n; $_.LastWriteTime=$n; $_.LastAccessTime=$n }"
 REM the program files always overwrite what's on the stick, so an older stick comes up to date
-robocopy "%~dp0." "%OUT%" *.py *.bat README.md LICENSE /COPY:D /DCOPY:D /R:0 /W:0 /NJH /NJS /NDL /NP /XF "Update Lu Cube*.bat" "Finish Lu Cube Rename.bat" "Install Lu Cube.bat"
-robocopy "%~dp0web" "%OUT%\web" /E /COPY:D /DCOPY:D /R:0 /W:0 /NJH /NJS /NDL /NP
-robocopy "%~dp0desktop" "%OUT%\desktop" /E /COPY:D /DCOPY:D /R:0 /W:0 /NJH /NJS /NDL /NP /XD electron
+REM code files go over with copy/xcopy: robocopy kept failing to set file attributes on USB sticks ("ERROR 87") even though the files copied fine
+for %%F in ("%~dp0*.py" "%~dp0*.bat" "%~dp0README.md" "%~dp0LICENSE") do copy /y "%%~F" "%OUT%\" >nul
+del "%OUT%\Update Lu Cube*.bat" "%OUT%\Finish Lu Cube Rename.bat" "%OUT%\Install Lu Cube.bat" >nul 2>nul
+xcopy "%~dp0web" "%OUT%\web\" /E /I /Y /Q >nul
+>"%TEMP%\lc-skip.txt" echo \electron\
+xcopy "%~dp0desktop" "%OUT%\desktop\" /E /I /Y /Q /EXCLUDE:%TEMP%\lc-skip.txt >nul
+del "%TEMP%\lc-skip.txt" >nul 2>nul
+echo Lu Cube files copied.
 if exist "%~dp0desktop\electron" robocopy "%~dp0desktop\electron" "%OUT%\desktop\electron" /E /COPY:D /DCOPY:D /XO /R:0 /W:0 /NJH /NJS /NDL /NP /NFL
 if defined G copy /y "%G%\Make Lu Cube Stick.bat" "%OUT%\" >nul
 if not exist "%OUT%\musiccube.py" (echo Copy failed. Is the stick full or read-only? & pause & exit /b)
