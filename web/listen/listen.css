@@ -132,3 +132,12 @@
 .delmode .lib>div{outline:3px solid var(--r);outline-offset:-3px}
 .ldelh{position:absolute;left:10px;bottom:13px;z-index:3;font:700 8px "Space Mono",monospace;letter-spacing:.08em;color:var(--r);background:var(--g);padding:2px 4px}
 #pdel .btn.go{background:var(--r);color:#fff}
+
+/* the downloads queue */
+#plink .foot{display:flex;align-items:center;gap:8px;min-height:24px}#plink .foot .ft{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#plink .foot .lkq{flex:none;min-height:22px;padding:0 9px;box-shadow:2px 2px 0 var(--k);background:var(--y);cursor:pointer}#plink .foot .lkq.on{background:var(--k);color:var(--y)}
+#plink .qr{display:flex;align-items:center;gap:6px;padding:8px 2px;border-bottom:1.5px solid #b9c1cc}#plink .qr span{flex:1;min-width:0}
+#plink .qr b{display:block;font:700 11px "Space Mono";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#plink .qr small{display:block;font:700 8px "Space Mono";letter-spacing:.05em;color:#4b5563;margin-top:2px}
+#plink .qr.on b{color:var(--b)}#plink .qr.bad small{color:var(--r)}
+#plink .qr .kb.sm{min-height:26px;padding:0 8px;font-size:9px;box-shadow:2px 2px 0 var(--k);cursor:pointer}
+#plink .qbar{height:9px;border:2px solid var(--k);background:#fff;margin:2px 2px 8px}#plink .qbar i{display:block;height:100%;background:var(--b);transition:width .3s}

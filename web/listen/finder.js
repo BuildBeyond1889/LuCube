@@ -73,7 +73,8 @@ async function openView(r){VIEW={r,items:[],busy:true,err:''};stopPreview(true);
  VIEW.busy=false;draw()}
 
 // ---------- the download queue (one job at a time; carries on with the panel closed) ----------
-const JOBS=[];let RUN=null,PROG='',CURF=null;
+const JOBS=[];let RUN=null,PROG='',CURF=null,QV=false;
+const DONE=[];   // the last downloads that finished (newest first): {job, got, n, ok}
 // the phone reports how far into the current file it is: the bar and the row's % move inside a file too
 if(LN)LN.addListener('dlprogress',e=>{if(!CURF||!RUN||e.dest!==CURF.dest||!(e.total>0))return;const f=(CURF.i+e.got/e.total)/CURF.n;AM.progress(f);st[RUN.k]=Math.round(f*100)+'%';paint()});
 const cover=id=>'https://archive.org/services/img/'+encodeURIComponent(id);
@@ -85,10 +86,12 @@ async function next(){const job=JOBS.shift();if(!job){RUN=null;PROG='';CURF=null
   if(!files)files=(await AM.itemFiles(job.id,job.kind==='book')).map((f,i,a)=>({u:f.u,dest:String(i+1).padStart(a.length>99?3:2,'0')+' - '+nice(f)}));
   if(!files.length)throw new Error('nothing');
   if(job.cover)try{await LN.downloadFile({url:job.cover,dest:pl+'/cover.jpg'})}catch(e){}
-  let got=0;for(let i=0;i<files.length;i++){CURF={dest:pl+'/'+files[i].dest,i,n:files.length};AM.progress(i/files.length);st[job.k]=Math.round(i/files.length*100)+'%';PROG=`${job.label.toUpperCase().slice(0,26)} · ${i+1} OF ${files.length}`+(JOBS.length?` · ${JOBS.length} WAITING`:'');AM.status(PROG);paint();
-   for(let t=0;t<3;t++){try{await LN.downloadFile({url:files[i].u,dest:pl+'/'+files[i].dest});got++;break}catch(e){await new Promise(r=>setTimeout(r,1500*(t+1)))}}}
-  st[job.k]=got===files.length?'done':got?'part':'fail'}
- catch(e){st[job.k]='fail'}
+  job.n=files.length;job.got=0;let got=0;for(let i=0;i<files.length;i++){if(job.cancel)break;CURF={dest:pl+'/'+files[i].dest,i,n:files.length};AM.progress(i/files.length);st[job.k]=Math.round(i/files.length*100)+'%';PROG=`${job.label.toUpperCase().slice(0,26)} · ${i+1} OF ${files.length}`+(JOBS.length?` · ${JOBS.length} WAITING`:'');AM.status(PROG);paint();
+   for(let t=0;t<3;t++){try{await LN.downloadFile({url:files[i].u,dest:pl+'/'+files[i].dest});got++;job.got=got;break}catch(e){if(job.cancel)break;await new Promise(r=>setTimeout(r,1500*(t+1)))}}}
+  st[job.k]=got===files.length?'done':got?'part':job.cancel?'':'fail';if(!st[job.k])delete st[job.k];
+  DONE.unshift({job,got,n:files.length,ok:got===files.length,stopped:!!job.cancel})}
+ catch(e){st[job.k]='fail';DONE.unshift({job,got:0,n:0,ok:false})}
+ DONE.length=Math.min(DONE.length,20);if(job.got)try{await window.luRelib()}catch(e){}
  paint();next()}
 // episode files are named the same way the background downloader names them, so nothing doubles up
 // a file's own title when the archive has one (keeping its extension), else its file name
@@ -151,9 +154,27 @@ function packCards(book){const busy=AM.packBusy();return `<div class="picks">${A
 function grid(){return `<div class="lkgrid">${BROWSE.map((g,i)=>`<b data-q="${E(g)}"><span>${E(g)}</span><i>${[5,9,6,12,8,4].map((h,k)=>`<u style="height:${h}px;background:${BARC[(i+k)%4]}"></u>`).join('')}</i></b>`).join('')}</div>`}
 function subsBox(){const L=SUBS();if(!L.length)return'';return `<div class="subs"><div class="sh"><b>★ YOUR SUBSCRIPTIONS</b><span class="kb sm" data-x="checkall">↻ CHECK ALL</span></div>${L.map((s,i)=>{const p=PST[s.feed]||{};
  return `<div class="sr" data-sub="${i}"><span><b>${E(s.name)}</b><small>${CHK===s.feed||CHK==='all'?'checking…':ago(p.checked)+(p.last?` · ${p.last} new`:'')}</small></span><i class="kb sm" data-subx="check">↻</i><i class="kb sm" data-subx="del">✕</i></div>`}).join('')}<p class="note">${window.LUPC?'New episodes download by themselves while Lu Cube is open (when it starts, then every 3 hours).':'New episodes download by themselves on Wi-Fi.'} The newest 10 of each show are kept.</p></div>`}
+function foot(){const n=qcount(),q=window.LUPC&&(n||DONE.length)?`<span class="kb sm lkq${QV?' on':''}" data-x="queue">≡ QUEUE${n?' · '+n:''}</span>`:'';return `<span class="ft">${E(RUN?PROG:MSG)}</span>${q}`}
 const btnText=r=>{const v=st[r.k];return v==='done'?'✓ GOT IT':v&&v!=='fail'&&v!=='part'?(v==='queued'?'WAITING…':v):r.kind==='book'?'GET THE WHOLE BOOK':'GET ALL'};
 
-function body(){const T=cur(),s=S[T];
+// ---------- the queue: what's downloading, what's waiting (✕ takes it out), what came in (▶ plays it) ----------
+function queue(){const pct=RUN&&st[RUN.k]&&/%$/.test(st[RUN.k])?st[RUN.k]:'0%';
+ const row=(lbl,sub,right,cls)=>`<div class="qr${cls?' '+cls:''}"><span><b>${E(lbl)}</b><small>${E(sub)}</small></span>${right}</div>`;
+ let h=`<div class="vh"><span class="kb" data-x="qback">‹ BACK</span><b>DOWNLOADS</b></div><div class="list" id="lkl">`;
+ h+=`<h5>NOW</h5>`+(RUN?row(RUN.label,`INTO ${String(RUN.playlist).toUpperCase()} · ${RUN.n?Math.min((RUN.got|0)+1,RUN.n)+' OF '+RUN.n:'STARTING…'}`,`<i class="kb sm" data-q="stop" title="stop this one">✕</i>`,'on')+`<div class="qbar"><i style="width:${pct}"></i></div>`:'<p class="note">Nothing downloading.</p>');
+ h+=`<h5>WAITING · ${JOBS.length}</h5>`+(JOBS.length?JOBS.map((j,i)=>row(j.label,'INTO '+String(j.playlist).toUpperCase(),`<i class="kb sm" data-q="up:${i}" title="sooner">▲</i><i class="kb sm" data-q="x:${i}" title="take it out">✕</i>`)).join(''):'<p class="note">Hit GET on more and they line up here, one at a time.</p>');
+ if(DONE.length)h+=`<h5>DONE</h5>`+DONE.map((d,i)=>row(d.job.label,d.ok?`✓ ${d.n} FILE${d.n===1?'':'S'} · ${String(d.job.playlist).toUpperCase()}`:d.stopped?`STOPPED · ${d.got} OF ${d.n}`:d.got?`${d.got} OF ${d.n} · SOME DIDN'T COME`:`DIDN'T COME · CHECK THE INTERNET`,(d.got?`<i class="kb sm" data-q="play:${i}">▶ PLAY</i>`:'')+(d.ok?'':`<i class="kb sm" data-q="again:${i}">RETRY</i>`),d.ok?'':'bad')).join('')+'<p class="note"><span class="kb sm" data-q="clear">CLEAR THE DONE LIST</span></p>';
+ return h+'</div>'}
+function qcmd(x){const [k,v]=x.split(':'),i=+v;
+ if(k==='stop'&&RUN){RUN.cancel=true;PROG='STOPPING…';}
+ else if(k==='x'&&JOBS[i]){delete st[JOBS[i].k];JOBS.splice(i,1)}
+ else if(k==='up'&&i>0){const j=JOBS.splice(i,1)[0];JOBS.splice(i-1,0,j)}
+ else if(k==='play'&&DONE[i]){close();AM.land(DONE[i].job.playlist)}
+ else if(k==='again'&&DONE[i]){const j=DONE.splice(i,1)[0].job;delete st[j.k];delete j.cancel;enqueue(j)}
+ else if(k==='clear')DONE.length=0;
+ vib(10);draw()}
+const qcount=()=>JOBS.length+(RUN?1:0);
+function body(){if(QV)return queue();const T=cur(),s=S[T];
  if(VIEW){const r=VIEW.r,show=r.kind==='show';return `<div class="vh"><span class="kb" data-x="back">‹ BACK</span><b>${E(r.t)}</b></div>
   <div class="va">${show?`<span class="kb ${isSub(r.feed)?'on':''}" data-x="star">★ ${isSub(r.feed)?'SUBSCRIBED':'SUBSCRIBE'}</span>${VIEW.items.length?'<span class="kb go" data-x="latest">GET THE LATEST 5</span>':''}`:`<span class="kb go" data-x="getall">${btnText(r)}</span>`}</div>
   ${show&&isSub(r.feed)?'<p class="note">Subscribed: new episodes download by themselves.</p>':''}
@@ -173,11 +194,11 @@ function bar(){if(!PV)return'';const r=PV.r,s=PV.state;return `<div class="lkpv 
 // where each list was scrolled to (kept as you scroll, so a redraw can always put you back, even if the old list had
 // already been swapped out or hadn't been laid out yet)
 const SCR={};let TOP=false;   // TOP: a new search starts at the top
-function draw(){if(!box.classList.contains('on'))return;const key=cur()+(VIEW?VIEW.r.k:''),old=$('lkl'),keep=box.dataset.k===key,sc=TOP?0:Math.max(old?old.scrollTop:0,keep?SCR[key]||0:0);TOP=false;
+function draw(){if(!box.classList.contains('on'))return;const key=QV?'queue':cur()+(VIEW?VIEW.r.k:''),old=$('lkl'),keep=box.dataset.k===key,sc=TOP?0:Math.max(old?old.scrollTop:0,keep?SCR[key]||0:0);TOP=false;
  const title=SHEET==='music'?'FREE MUSIC // SEARCH · BROWSE':'BOOKS &amp; PODCASTS';
  box.innerHTML=`<div class="lkw ${SHEET}"><div class="tbar">${SQ}<b>${title}</b></div>
   ${SHEET==='books'?`<div class="tabs"><b data-tab="books" class="${TAB==='books'?'on':''}">❡ AUDIOBOOKS</b><b data-tab="podcasts" class="${TAB==='podcasts'?'on':''}">◉ PODCASTS</b></div>`:''}
-  <div class="bd">${body()}</div><div id="lkbar">${bar()}</div><div class="foot" id="lkst">${E(RUN?PROG:MSG)}</div></div>`;
+  <div class="bd">${body()}</div><div id="lkbar">${bar()}</div><div class="foot" id="lkst">${foot()}</div></div>`;
  box.dataset.k=key;const l=$('lkl');if(l&&keep){l.scrollTop=sc;requestAnimationFrame(()=>{const m=$('lkl');if(m&&box.dataset.k===key&&Math.abs(m.scrollTop-sc)>2)m.scrollTop=sc})}else if(!keep)SCR[key]=0;wire()}
 // small changes (progress, which row is playing) without losing your place in the list
 function paint(){if(!box.classList.contains('on'))return;const T=cur();box.querySelectorAll('.lr').forEach(el=>{const L=el.dataset.l==='v'?(VIEW?VIEW.items:[]):S[T].items,r=L[+el.dataset.i];if(!r)return;
@@ -186,11 +207,13 @@ function paint(){if(!box.classList.contains('on'))return;const T=cur();box.query
   const sm=el.querySelector('small'),tx=BAD[r.k]?'✕ CAN\'T PLAY THIS ONE':sub(r);if(sm&&sm.textContent!==tx)sm.textContent=tx});
  const busy=AM.packBusy();box.querySelectorAll('[data-pack]').forEach(b=>{const i=+b.dataset.pack,p=AM.packs[i],em=b.querySelector('em'),on=busy&&busy.i===i,dn=AM.packDone(p.n);em.className=dn&&!on?'ok':on?'on':'';em.textContent=on?busy.pct+'%':dn?'▶ PLAY':'GET'});
  const ga=box.querySelector('[data-x="getall"]');if(ga&&VIEW)ga.textContent=btnText(VIEW.r);
- const f=$('lkst');if(f)f.textContent=RUN?PROG:MSG}
+ const f=$('lkst');if(f){const t=f.querySelector('.ft'),q=f.querySelector('.lkq'),n=qcount();if(t&&(!!q===!!(window.LUPC&&(n||DONE.length))))t.textContent=RUN?PROG:MSG;else{f.innerHTML=foot();f.querySelectorAll('[data-x]').forEach(b=>b.onclick=e=>{e.stopPropagation();cmd(b.dataset.x)})}if(q)q.textContent='≡ QUEUE'+(n?' · '+n:'')}
+ if(QV){const l=$('lkl'),sc=l?l.scrollTop:0;const bd=box.querySelector('.bd');if(bd){bd.innerHTML=queue();wireQ();const m=$('lkl');if(m)m.scrollTop=sc}}}
+function wireQ(){box.querySelectorAll('[data-q]').forEach(b=>b.onclick=e=>{e.stopPropagation();qcmd(b.dataset.q)});box.querySelectorAll('.bd [data-x]').forEach(b=>b.onclick=e=>{e.stopPropagation();cmd(b.dataset.x)})}
 function paintBar(){const b=$('lkbar');if(b){b.innerHTML=bar();b.querySelectorAll('[data-x]').forEach(x=>x.onclick=e=>{e.stopPropagation();cmd(x.dataset.x)})}paint()}
 
 function cmd(x){const T=cur(),s=S[T];
- if(x==='close')close();else if(x==='back'){VIEW=null;stopPreview(true);draw()}
+ if(x==='close')close();else if(x==='queue'){QV=!QV;draw()}else if(x==='qback'){QV=false;draw()}else if(x==='back'){VIEW=null;stopPreview(true);draw()}
  else if(x==='browse'){s.q='';s.items=[];s.more=false;VIEW=null;draw()}
  else if(x==='surprise'){s.q=BROWSE[Math.floor(Math.random()*BROWSE.length)];search(true)}
  else if(x==='getall'&&VIEW)get(VIEW.r);
@@ -200,8 +223,8 @@ function cmd(x){const T=cur(),s=S[T];
  else if(x==='pvplay'&&PV){if(PV.state==='error')return;if(AUP.paused)AUP.play().catch(()=>{});else AUP.pause()}
  else if(x==='pvget'&&PV)get(PV.r);
  else if(x==='pvclose')stopPreview()}
-function wire(){box.querySelectorAll('[data-x]').forEach(b=>b.onclick=e=>{e.stopPropagation();cmd(b.dataset.x)});
- box.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;LS.set('lu_find_tab',TAB);VIEW=null;MSG='';stopPreview();draw();if(TAB==='books'&&!S.books.items.length)search(true);if(TAB==='podcasts')loadStatus().then(draw)});
+function wire(){box.querySelectorAll('[data-x]').forEach(b=>b.onclick=e=>{e.stopPropagation();cmd(b.dataset.x)});if(QV)wireQ();
+ box.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{QV=false;TAB=b.dataset.tab;LS.set('lu_find_tab',TAB);VIEW=null;MSG='';stopPreview();draw();if(TAB==='books'&&!S.books.items.length)search(true);if(TAB==='podcasts')loadStatus().then(draw)});
  const f=box.querySelector('form');if(f)f.onsubmit=e=>{e.preventDefault();S[cur()].q=$('lkq').value;$('lkq').blur();search(true)};
  box.querySelectorAll('.lkc [data-q],.lkgrid [data-q]').forEach(b=>b.onclick=()=>{const s=S[cur()];s.q=s.q===b.dataset.q&&b.closest('.lkc')?'':b.dataset.q;search(true)});
  box.querySelectorAll('.lkc [data-g]').forEach(b=>b.onclick=()=>{const s=S.books;s.g=s.g===b.dataset.g?'':b.dataset.g;search(true)});
@@ -215,7 +238,7 @@ function wire(){box.querySelectorAll('[data-x]').forEach(b=>b.onclick=e=>{e.stop
  const l=$('lkl');if(l)l.onscroll=()=>{SCR[box.dataset.k]=l.scrollTop;const s=S[cur()];if(!VIEW&&s.more&&!s.busy&&l.scrollTop+l.clientHeight>l.scrollHeight-400)search(false)}}
 
 let opened=0;
-function open(which){opened=performance.now();if(which==='music')SHEET='music';else{SHEET='books';if(which==='podcasts'||which==='books')TAB=which}
+function open(which){opened=performance.now();QV=false;if(which==='music')SHEET='music';else{SHEET='books';if(which==='podcasts'||which==='books')TAB=which}
  VIEW=null;MSG=RUN?'':MSG;box.classList.add('on');draw();if(cur()==='books'&&!S.books.items.length)search(true);if(cur()==='podcasts')loadStatus().then(draw)}
 function close(){box.classList.remove('on');stopPreview()}
 // the tap that opened the panel also sends a click a moment later, landing on whatever is now under the finger
