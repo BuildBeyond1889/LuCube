@@ -90,7 +90,8 @@ function front() {
   checkStick();
 }
 app.on("second-instance", front); // opening Lu Cube again while it's running just brings it forward
-app.on("will-quit", () => globalShortcut.unregisterAll());
+// (a second copy started while Lu Cube is already open quits before it is ready: it has no shortcuts to let go of)
+app.on("will-quit", () => { if (app.isReady()) globalShortcut.unregisterAll(); });
 ipcMain.on("hit", (e, on) => { if (win) win.setIgnoreMouseEvents(!on, { forward: true }); });
 // taskbar: hovering Lu Cube's button shows the cube (or the sun) and the song, with ⏮ ⏯ ⏭ buttons under it
 const ico = (n) => nativeImage.createFromPath(path.join(__dirname, "icons", n + ".png"));
