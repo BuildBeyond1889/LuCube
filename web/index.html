@@ -969,6 +969,13 @@ function vizFS(on){let o=document.getElementById('vizfs');
  else if(!on&&o){o.remove();try{vizWake&&vizWake.release()}catch(e){}vizWake=null}}
 addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('vizfs'))vizFS(false)},true);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&document.getElementById('vizfs')&&!vizWake){try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>{vizWake=w}).catch(()=>{})}catch(e){}}});
+// the unfolded window's volume and progress bars: press and drag (not just click where you want it)
+addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.closest('.mxw [data-act="mxvol"],.mxw [data-act="mxseek"]');if(!t||MXS!==2||e.button>0)return;e.preventDefault();
+ const set=x=>{const r=t.getBoundingClientRect(),f=Math.max(0,Math.min(1,(x-r.left)/r.width));
+  if(t.dataset.act==='mxvol'){setVol(f>.96?1:f<.04?0:f);const v=(UVOL*100).toFixed(2);t.style.background=`linear-gradient(90deg,#2f6be8 ${v}%,#fff ${v}%)`}
+  else if(MODE!=='radio'&&isFinite(AU.duration)){AU.currentTime=f*AU.duration;mxTick()}};
+ set(e.clientX);window.mxDrag=true;const mv=ev=>set(ev.clientX),up=()=>{window.mxDrag=false;removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);setTimeout(mxRender,0)};   // (the click that ends a drag lands where you let go: same value)
+ addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up)},true);
 function mxClick(e){if(window.mxNoClick)return;const t=e.target.closest('[data-act]');if(!t||MXS!==2)return;const a=t.dataset.act;
  if(a==='mxclose'){mxClose();return}if(a==='mxmin'){cubeDesk.minimize();return}if(a==='mxquit'){mxShatter();return}
  if(a==='mxvizfs'){vizFS(true);return}if(a==='mxpong'){if(mxPg){if(mxPg.over)Object.assign(mxPg,{over:false,drawnOver:false,s1:0,s2:0,bx:144,by:50,vx:2.8,vy:1.1});mxPg.joined=true;mxPg.ut=Date.now();const r=t.getBoundingClientRect();mxPg.uy=(e.clientY-r.top)/r.height*(mxPg.H2||100)}return}

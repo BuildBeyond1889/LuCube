@@ -61,3 +61,8 @@
 #plink.mx .mxside{flex:1;min-width:0;overflow:auto;padding:6px 8px 10px;scrollbar-width:thin;background:#c4ccd6}
 #plink.mx .mxside .lkgrid{grid-template-columns:1fr 1fr}
 #plink.mx .mxside .picks{grid-template-columns:minmax(0,1fr)}#plink.mx .mxside .pick{min-width:0}#plink.mx .mxside .pick span{font-size:14px}
+
+/* the finder's title bar is a handle: drag the window anywhere */
+#plink:not(.mx) .tbar{cursor:grab}
+#plink .lkw.drag,#plink .lkw.drag .tbar{cursor:grabbing;user-select:none}
+#plink .lkw.drag{transition:none}

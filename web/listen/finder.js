@@ -51,7 +51,7 @@ async function pBooks(q,g,page){const gx=(BOOKG.find(x=>x[0]===g)||[])[1],qq=['c
 async function pPods(q){const j=await AM.getJSON(POD+new URLSearchParams({media:'podcast',entity:'podcast',limit:'200',term:q}));
  return(j.results||[]).filter(r=>r.feedUrl).map(r=>({k:'p:'+r.feedUrl,kind:'show',feed:r.feedUrl,t:r.collectionName||r.trackName,by:r.artistName||'',art:r.artworkUrl600||r.artworkUrl100||'',n:r.trackCount||0,genre:r.primaryGenreName||''}))}
 
-async function search(reset){const T=cur(),s=S[T];if(s.busy)return;if(reset){s.items=[];s.page=0;s.more=false;s.all=[];VIEW=null}
+async function search(reset){const T=cur(),s=S[T];if(s.busy)return;if(reset){s.items=[];s.page=0;s.more=false;s.all=[];VIEW=null;SCR[T]=0;TOP=true}
  if((T==='music'||T==='podcasts')&&!s.q.trim()){draw();return}
  s.busy=true;MSG='';draw();
  try{if(T==='podcasts'){if(!s.all.length)s.all=await pPods(s.q.trim());s.items=s.all.slice(0,s.items.length+25);s.more=s.items.length<s.all.length;if(!s.all.length)MSG='NOTHING FOUND · TRY OTHER WORDS'}
@@ -170,12 +170,15 @@ function body(){const T=cur(),s=S[T];
  return form+`<div class="lkc">${chips}</div><div class="list" id="lkl">${inner}</div>`}
 function bar(){if(!PV)return'';const r=PV.r,s=PV.state;return `<div class="lkpv ${s}"><i class="kb" data-x="pvplay">${s==='playing'?'❚❚':s==='error'?'✕':s==='loading'?'…':'▶'}</i><span><b>${E(r.t)}</b><small>${s==='error'?'✕ CAN\'T PLAY THIS ONE':s==='loading'?'LOADING…':'PREVIEW · NOT SAVED YET'}</small><u><i id="lkpg"></i></u></span>${s==='error'?'':'<i class="kb go" data-x="pvget">GET</i>'}<i class="kb" data-x="pvclose">✕</i></div>`}
 
-function draw(){if(!box.classList.contains('on'))return;const old=$('lkl'),sc=old?old.scrollTop:0,key=cur()+(VIEW?VIEW.r.k:''),keep=box.dataset.k===key;
+// where each list was scrolled to (kept as you scroll, so a redraw can always put you back, even if the old list had
+// already been swapped out or hadn't been laid out yet)
+const SCR={};let TOP=false;   // TOP: a new search starts at the top
+function draw(){if(!box.classList.contains('on'))return;const key=cur()+(VIEW?VIEW.r.k:''),old=$('lkl'),keep=box.dataset.k===key,sc=TOP?0:Math.max(old?old.scrollTop:0,keep?SCR[key]||0:0);TOP=false;
  const title=SHEET==='music'?'FREE MUSIC // SEARCH · BROWSE':'BOOKS &amp; PODCASTS';
  box.innerHTML=`<div class="lkw ${SHEET}"><div class="tbar">${SQ}<b>${title}</b></div>
   ${SHEET==='books'?`<div class="tabs"><b data-tab="books" class="${TAB==='books'?'on':''}">❡ AUDIOBOOKS</b><b data-tab="podcasts" class="${TAB==='podcasts'?'on':''}">◉ PODCASTS</b></div>`:''}
   <div class="bd">${body()}</div><div id="lkbar">${bar()}</div><div class="foot" id="lkst">${E(RUN?PROG:MSG)}</div></div>`;
- box.dataset.k=key;const l=$('lkl');if(l&&keep)l.scrollTop=sc;wire()}
+ box.dataset.k=key;const l=$('lkl');if(l&&keep){l.scrollTop=sc;requestAnimationFrame(()=>{const m=$('lkl');if(m&&box.dataset.k===key&&Math.abs(m.scrollTop-sc)>2)m.scrollTop=sc})}else if(!keep)SCR[key]=0;wire()}
 // small changes (progress, which row is playing) without losing your place in the list
 function paint(){if(!box.classList.contains('on'))return;const T=cur();box.querySelectorAll('.lr').forEach(el=>{const L=el.dataset.l==='v'?(VIEW?VIEW.items:[]):S[T].items,r=L[+el.dataset.i];if(!r)return;
   const em=el.querySelector('em'),t=document.createElement('div');t.innerHTML=btn(r);if(em&&t.firstChild&&em.outerHTML!==t.firstChild.outerHTML)em.replaceWith(t.firstChild);
@@ -209,7 +212,7 @@ function wire(){box.querySelectorAll('[data-x]').forEach(b=>b.onclick=e=>{e.stop
   if(r.kind==='book'||r.kind==='album')openView(r);else preview(r)});
  box.querySelectorAll('[data-sub]').forEach(el=>el.onclick=e=>{const s=SUBS()[+el.dataset.sub];if(!s)return;const x=e.target.closest('[data-subx]');
   if(x&&x.dataset.subx==='check')checkSubs(s.feed);else if(x&&x.dataset.subx==='del'){setSubs(SUBS().filter(y=>y.feed!==s.feed));draw()}else openView({k:'p:'+s.feed,kind:'show',feed:s.feed,t:s.name,art:s.art})});
- const l=$('lkl');if(l)l.onscroll=()=>{const s=S[cur()];if(!VIEW&&s.more&&!s.busy&&l.scrollTop+l.clientHeight>l.scrollHeight-400)search(false)}}
+ const l=$('lkl');if(l)l.onscroll=()=>{SCR[box.dataset.k]=l.scrollTop;const s=S[cur()];if(!VIEW&&s.more&&!s.busy&&l.scrollTop+l.clientHeight>l.scrollHeight-400)search(false)}}
 
 let opened=0;
 function open(which){opened=performance.now();if(which==='music')SHEET='music';else{SHEET='books';if(which==='podcasts'||which==='books')TAB=which}

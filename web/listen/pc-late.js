@@ -115,14 +115,25 @@ if(PL)new MutationObserver(()=>{if(PL.classList.contains('mx'))split();mark()}).
 // the little questions and the new-episode strip go on the screen you clicked on (else the cube's, else the wheel's).
 (function(){
 let PT=null;addEventListener('pointerdown',e=>{PT=[e.clientX,e.clientY]},true);
-function scr(){const L=DISPLAYS&&DISPLAYS.length?DISPLAYS:null;if(!L)return null;
- const i=PT?dispAt(PT[0],PT[1]):cubeOn?dispAt(cpos[0],cpos[1]):Math.min(dockD,L.length-1);return L[i]||L[0]}
+// (in a normal window, the window is the one screen)
+function scr(){const L=DISPLAYS&&DISPLAYS.length?DISPLAYS:[{x:0,y:0,w:innerWidth,h:innerHeight}];
+ const i=!DISPLAYS?0:SCR_I!=null?SCR_I:PT?dispAt(PT[0],PT[1]):cubeOn?dispAt(cpos[0],cpos[1]):Math.min(dockD,L.length-1);return L[i]||L[0]}
+// the finder window can be dragged by its title bar; it stays where you put it (on that screen) until Lu Cube closes
+let OFF={x:0,y:0},SCR_I=null,DRAG=null;
+addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.closest('#plink.on:not(.mx) .tbar');if(!t||e.target.closest('[data-x]')||e.button>0)return;
+ e.preventDefault();const lk=t.closest('.lkw'),r=lk.getBoundingClientRect();DRAG={x:e.clientX,y:e.clientY,ox:OFF.x,oy:OFF.y,w:r.width,h:r.height};lk.classList.add('drag');window.mxDrag=true},true);
+addEventListener('pointermove',e=>{if(!DRAG)return;OFF.x=DRAG.ox+e.clientX-DRAG.x;OFF.y=DRAG.oy+e.clientY-DRAG.y});
+addEventListener('pointerup',e=>{if(!DRAG)return;DRAG=null;window.mxDrag=false;const lk=document.querySelector('#plink .lkw');if(lk)lk.classList.remove('drag');
+ // dropped on another screen: it belongs to that one now
+ if(DISPLAYS&&DISPLAYS.length&&lk){const r=lk.getBoundingClientRect(),i=dispAt(r.left+r.width/2,r.top+20),L=DISPLAYS,d0=scr(),d1=L[i];if(d1&&d1!==d0){OFF.x+=(d0.x+d0.w/2)-(d1.x+d1.w/2);OFF.y+=(d0.y+d0.h/2)-(d1.y+d1.h/2);SCR_I=i}}});
 let key='';
-function place(){const d=scr();const k=d?[d.x,d.y,d.w,d.h].join(','):'';
+function place(){const d=scr();const k=[d.x,d.y,d.w,d.h].join(',');
  const lk=document.querySelector('#plink:not(.mx) .lkw'),ins=document.querySelectorAll('#pname .in,#pdel .in'),tb=document.getElementById('ptoast');
- if(!d){if(key){key='';if(lk)lk.removeAttribute('style');ins.forEach(x=>x.removeAttribute('style'));if(tb)tb.removeAttribute('style')}return}
  key=k;const cx=d.x+d.w/2,cy=d.y+d.h/2;
- if(lk)Object.assign(lk.style,{left:cx+'px',top:cy+'px',width:Math.min(880,d.w*.94)+'px',height:Math.min(700,d.h*.9)+'px'});
+ if(lk){const w=Math.min(880,d.w*.94),h=Math.min(700,d.h*.9);
+  // keep its title bar on the screen
+  OFF.x=Math.max(d.x-cx+w/2-w+120,Math.min(d.x+d.w-cx-w/2+w-120,OFF.x));OFF.y=Math.max(d.y-cy+h/2,Math.min(d.y+d.h-cy+h/2-40,OFF.y));
+  Object.assign(lk.style,{left:cx+OFF.x+'px',top:cy+OFF.y+'px',width:w+'px',height:h+'px'})}
  ins.forEach(x=>Object.assign(x.style,{left:cx+'px',top:cy+'px'}));
  if(tb)Object.assign(tb.style,{left:(d.x+d.w-358)+'px',right:'auto',top:(d.y+18)+'px'})}
 (function loop(){try{place()}catch(e){}requestAnimationFrame(loop)})();
