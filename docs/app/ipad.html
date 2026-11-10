@@ -1398,7 +1398,7 @@ window.LU_INTRO_LAND=()=>{const dx=innerWidth/2-37.75;return{lu:{x:16+dx,y:52,w:
 // One of six openings plays at random on every launch (never the same one twice in a row), lands the new LU/CUBE
 // logo, then its letters sink and its cube glides to where intro.js's cube sits at 2.9 s, and intro.js takes over
 // from there (LISTEN TO THE UNIVERSE → LU → into the header). intro.js only uses this file if it's loaded, and only
-// phone/build_www.py (Android) and the iPad page in phone/build_web.py load it; the iPhone keeps the original opening.
+// phone/build_www.py (Android) and phone/build_web.py (iPhone and iPad) load it.
 // Every frame is a pure function of time: draw(ctx, t, width, height). Letters are Anton's real outlines (font units).
 // The design mocks: claude.ai/artifact/WejHjSdiRi5zyh2ZE2WFtX
 (function(){
@@ -1750,7 +1750,7 @@ window.LuShuffle={ids:ROTATION.map(r=>r.id),
 </script>
 <script>
 // ===================== LU CUBE · PHONE: the opening (9 s, plays through every time) =====================
-// On Android and iPad it starts with one of six shuffled openings (intro-shuffle.js) and runs from 2.9 s of this one.
+// On Android, iPhone and iPad it starts with one of six shuffled openings (intro-shuffle.js) and runs from 2.9 s of this one.
 // The unfolded cube folds up like origami (the white square swings up twice into the lid), pulses and floods the
 // screen yellow, glides to the corner of the E, LISTEN TO THE UNIVERSE rises out of an invisible line and sinks
 // back, leaving L, U and the cube to come together in the middle, and the logo flies into the app's header.
@@ -1841,7 +1841,7 @@ window.luIntroRender=t=>render(t);
 // wait for the real Anton font before measuring anything (up to 3 s, behind the dark start), then run the clock
 const fontReady=()=>Promise.race([document.fonts.load('400 30px Anton').then(()=>document.fonts.ready),new Promise(r=>setTimeout(r,3000))]).catch(()=>{});
 if(window.LU_INTRO_MANUAL){fontReady().then(()=>{build();render(window.LU_INTRO_T||0)});return}   // the design mock drives the clock itself
-// ---- the shuffled opening (Android and iPad: their builds load intro-shuffle.js before this file) ----
+// ---- the shuffled opening (Android, iPhone and iPad: their builds load intro-shuffle.js before this file) ----
 // One of six openings plays on a canvas, lands the new logo, and hands over to this file's own clock at 2.9 s, with the
 // cube exactly where this file puts it. From there the cube is the flat isometric logo cube, following #liMover.
 const SHF=window.LuShuffle||null,FROM=2.9;   // present only where the build includes intro-shuffle.js
