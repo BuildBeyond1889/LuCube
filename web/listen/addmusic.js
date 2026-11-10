@@ -113,6 +113,8 @@ function draw(quick){if(typeof MODE==='undefined'||MODE!=='lu')return;const st=$
 
 const _lrf=luRenderFaces;
 luRenderFaces=function(){_lrf.apply(this,arguments);F_LYR.style.background='var(--g)';F_LYR.innerHTML=face()};
+// the faces may already have been drawn before this file loaded (the library can arrive first): draw them again so this face shows
+try{draw()}catch(e){}
 
 const _act=act;act=function(a){const p=String(a).split(':');
  if(p[0]!=='am')return _act.apply(this,arguments);

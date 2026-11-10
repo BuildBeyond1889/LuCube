@@ -1489,8 +1489,8 @@ function squiggle(x,x0,x1,y,amp,wl,phase,lw,col,p0,p1){x.save();x.strokeStyle=co
  const a=x0+(x1-x0)*(p0||0),b=x0+(x1-x0)*(p1==null?1:p1);let first=true;for(let X=a;X<=b;X+=2){const yy=y+amp*Math.sin((X-x0)/wl*Math.PI*2+phase);first?x.moveTo(X,yy):x.lineTo(X,yy);first=false}x.stroke();x.restore()}
 
 /* ============ NOISE TILES (for Tune In) ============ */
-const NT=[];for(let i=0;i<4;i++){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),d=x.createImageData(128,128),r=rng(100+i);
- for(let j=0;j<d.data.length;j+=4){const v=r()*255|0;d.data[j]=d.data[j+1]=d.data[j+2]=v;d.data[j+3]=255}x.putImageData(d,0,0);NT.push(c)}
+const NT=[];function noiseTiles(){if(NT.length)return NT;for(let i=0;i<4;i++){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),d=x.createImageData(128,128),r=rng(100+i);
+ for(let j=0;j<d.data.length;j+=4){const v=r()*255|0;d.data[j]=d.data[j+1]=d.data[j+2]=v;d.data[j+3]=255}x.putImageData(d,0,0);NT.push(c)}return NT}   // made the first time Tune In plays
 
 /* ============ INTROS ============ */
 // each draw(x,t,W,H,env) is a pure function of t
@@ -1615,7 +1615,7 @@ INTROS.push({id:'tune',name:'C · Tune In',dur:2.0,hold:.9,themes:0,forceTheme:'
   // static
   const sa=t<1.5?.2*(1-.5*seg(t,.9,1.5)):0;if(sa>0){x.save();x.globalAlpha=sa;x.imageSmoothingEnabled=false;x.globalCompositeOperation='lighter';
    const f=Math.abs(Math.floor(t*30))%4,sc=Math.max(2,Math.round(Math.min(Wd,H)/220));const ox=(Math.floor(t*30)*37)%128;
-   for(let yy=-ox;yy<H;yy+=128*sc)for(let xx=-ox;xx<Wd;xx+=128*sc)x.drawImage(NT[f],xx,yy,128*sc,128*sc);x.restore()}
+   for(let yy=-ox;yy<H;yy+=128*sc)for(let xx=-ox;xx<Wd;xx+=128*sc)x.drawImage(noiseTiles()[f],xx,yy,128*sc,128*sc);x.restore()}
   const m=Math.min(Wd,H),cy=H/2;
   // dial
   const da=1-seg(t,.7,.95);if(da>0){x.save();x.globalAlpha=da;const x0=Wd*.14,x1=Wd*.86,n=60;x.strokeStyle=Y;x.lineWidth=Math.max(1,m*.004);
@@ -1721,7 +1721,8 @@ const ROTATION=[
  {id:'unfold',theme:'yellow',cube:'colour', weight:1},
  {id:'tune',  theme:'dark',  cube:'outline',weight:1.6},   // the owner's favourite: comes up a bit more often
  {id:'blocks',theme:'yellow',cube:'colour', weight:1},
- {id:'wheel', theme:'dark',  cube:'colour', weight:1}];
+ {id:'wheel', theme:'dark',  cube:'colour', weight:1},
+ {id:'original',theme:'yellow',cube:'colour',weight:1}];   // the original 9-second opening, whole (intro.js), with the flat logo cube once it has folded
 const KEY='lu_intro_last';
 const SPEEDK=.85;   // the openings play at 85% speed (the owner: "just a hair" slower); intro.js's ending is unchanged
 function pickNext(lastId){const pool=ROTATION.filter(r=>r.id!==lastId&&(r.weight||0)>0);const tot=pool.reduce((a,r)=>a+r.weight,0);let u=Math.random()*tot;for(const r of pool){u-=r.weight;if(u<0)return r}return pool[pool.length-1]}
@@ -1742,6 +1743,7 @@ function drawPlan(x,t,Wd,H,P,hand,dpr){t*=SPEEDK;const {I,env:pe,D}=P,H0=P.H0i;c
 window.LuShuffle={ids:ROTATION.map(r=>r.id),
  plan(force){let last=null;try{last=localStorage.getItem(KEY)}catch(e){}
   const r=(force&&ROTATION.find(q=>q.id===force))||pickNext(last);try{localStorage.setItem(KEY,r.id)}catch(e){}
+  if(r.id==='original')return{id:'original',original:true};
   const I=INTROS.find(J=>J.id===r.id),D=I.dur;return{id:r.id,I,env:{theme:I.forceTheme||r.theme,cube:r.cube},D,H0i:D+.95,H0:(D+.95)/SPEEDK}},
  draw:drawPlan,
  lw:LW/SLOT.r};   // the cube's outline as a share of its corner radius
@@ -1775,7 +1777,7 @@ ov.innerHTML=`<div id="liFlood"><i></i></div><div id="liTxt"></div>
 document.body.append(ov);document.body.classList.add('lintro-on','lintro-hide');window.LU_INTRO_ON=true;
 const q=s=>ov.querySelector(s),txt=$('liTxt'),meas=$('liMeas'),icons=[...ov.querySelectorAll('.lf>i')];
 const baseI=q('.lf-base>i');baseI.style.transform='translateZ(-.6px)';
-const fL=q('.lf-left'),fR=q('.lf-right'),fT=q('.lf-top'),fF=q('.lf-front'),fLid=q('.lf-lid'),cube=$('liCube'),mover=$('liMover');
+const scene=q('.li-scene'),fL=q('.lf-left'),fR=q('.lf-right'),fT=q('.lf-top'),fF=q('.lf-front'),fLid=q('.lf-lid'),cube=$('liCube'),mover=$('liMover');
 let PW=innerWidth,PH=innerHeight,FS=30,L=[],SL=[],TX=0,TY=0,TH=0,PAD=0,FIN=null,ready=false;
 // the words, measured once in the real font: every letter's place on the line.
 // Each letter sits in its own little window whose bottom edge IS the invisible line, and slides up and down inside
@@ -1793,6 +1795,7 @@ function header(){const t=$('ptitle');if(!t)return null;const sp=t.querySelector
  return{lu:{x:a.left,y:a.top,w:a.width,h:a.height},cube:{x:b.left+b.width/2,y:b.top+b.height/2,w:b.width}}}
 // iPhone (Safari stretches magnified type): the letters are re-set at each size; Android magnifies them as designed
 const SHARP=!!window.LUWEB;
+let ISO=false;   // the shuffle is on: the folded cube becomes the flat isometric logo cube
 // a letter's window and type at a given size (sharp at any size: nothing is magnified)
 function size(s,l,k){const key=k.toFixed(4);if(s.k===key)return;s.k=key;s.slot.style.width=(l.w+4)*k+'px';s.slot.style.height=(TH+PAD)*k+'px';s.sp.style.fontSize=FS*k+'px';s.sp.style.top=PAD*k+'px'}
 function render(t){if(!ready)return;
@@ -1802,7 +1805,8 @@ function render(t){if(!ready)return;
  fL.style.transform=`translateX(-84px) rotateY(${90*f(.6)}deg)`;fR.style.transform=`translateX(84px) rotateY(${-90*f(.8)}deg)`;
  fT.style.transform=`translateY(-84px) rotateX(${-90*f(1.0)}deg)`;fF.style.transform=`translateY(84px) rotateX(${90*f(1.2)}deg)`;
  fLid.style.transform=`translateY(84px) rotateX(${90*f(1.75,.65)}deg)`;
- const c=io(P(t,.6,1.8));cube.style.transform=`rotateX(${-30*c}deg) rotateY(${45*c}deg) rotateX(${90*c}deg)`;
+ const c=io(P(t,.6,1.8));cube.style.transform=`rotateX(${-(ISO?35.264:30)*c}deg) rotateY(${45*c}deg) rotateX(${90*c}deg)`;
+ if(ISO)scene.style.perspective=lerp(900,60000,io(P(t,1.5,.9)))+'px';   // the shuffle: the folded cube ends up exactly the flat isometric logo cube
  const io2=1-P(t,2.34,.08);icons.forEach(i=>i.style.opacity=io2);   // the symbols go the moment the lid shuts
  // the bottom's target ends up inside the box: it fades as the sides rise round it (Safari drew it on top of them)
  baseI.style.opacity=Math.min(io2,1-P(t,.75,.3));
@@ -1846,22 +1850,25 @@ if(window.LU_INTRO_MANUAL){fontReady().then(()=>{build();render(window.LU_INTRO_
 // cube exactly where this file puts it. From there the cube is the flat isometric logo cube, following #liMover.
 const SHF=window.LuShuffle||null,FROM=2.9;   // present only where the build includes intro-shuffle.js
 let PLAN=null,HAND=null,OFF=null,cvs=null,cctx=null,iso=null,DPR=1,TT=T;
-if(SHF){try{PLAN=SHF.plan(window.LU_INTRO_FORCE);TT=PLAN.H0+(T-FROM);window.LU_INTRO_PICK=PLAN.id;
-  cvs=document.createElement('canvas');cvs.id='liShuf';ov.append(cvs);
+if(SHF){try{PLAN=SHF.plan(window.LU_INTRO_FORCE);window.LU_INTRO_PICK=PLAN.id;ISO=true;
+  if(PLAN.original)TT=T;   // the original opening, whole: only the cube's look changes once it has folded (SWAP)
+  else{TT=PLAN.H0+(T-FROM);cvs=document.createElement('canvas');cvs.id='liShuf';ov.append(cvs)}
   const NS='http://www.w3.org/2000/svg';iso=document.createElementNS(NS,'svg');iso.id='liIso';iso.setAttribute('viewBox','-1.25 -1.25 2.5 2.5');
   [[[0,-1],[.866,-.5],[0,0],[-.866,-.5],'#fff'],[[-.866,-.5],[0,0],[0,1],[-.866,.5],'#2f6be8'],[[0,0],[.866,-.5],[.866,.5],[0,1],'#e0281a']].forEach(f=>{const g=document.createElementNS(NS,'polygon');
    g.setAttribute('points',f.slice(0,4).map(v=>v.join(',')).join(' '));g.setAttribute('fill',f[4]);g.setAttribute('stroke','#111');g.setAttribute('stroke-width',String(SHF.lw));g.setAttribute('stroke-linejoin','round');iso.append(g)});ov.append(iso)}
- catch(e){PLAN=null;TT=T}}   // anything goes wrong: the original opening plays
+ catch(e){PLAN=null;ISO=false;TT=T}}   // anything goes wrong: the original opening plays
 const moverAt=()=>{const m=/translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*scale\(([-\d.e]+)\)/.exec(mover.style.transform||'');return m?{x:+m[1],y:+m[2],s:+m[3]}:null};
 // size the canvas and measure where this file's cube is at 2.9 s (the hand-off)
-function sizeShuf(){DPR=Math.min(2,window.devicePixelRatio||1);cvs.width=Math.round(PW*DPR);cvs.height=Math.round(PH*DPR);cvs.style.width=PW+'px';cvs.style.height=PH+'px';cctx=cvs.getContext('2d');
+const SWAP=2.42;   // the original opening: the fold is done and its symbols are gone
+function sizeShuf(){DPR=Math.min(2,window.devicePixelRatio||1);if(cvs){cvs.width=Math.round(PW*DPR);cvs.height=Math.round(PH*DPR);cvs.style.width=PW+'px';cvs.style.height=PH+'px';cctx=cvs.getContext('2d')}
  render(FROM);mover.style.visibility='visible';let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;ov.querySelectorAll('.lf').forEach(f=>{const r=f.getBoundingClientRect();if(!r.width)return;x0=Math.min(x0,r.left);y0=Math.min(y0,r.top);x1=Math.max(x1,r.right);y1=Math.max(y1,r.bottom)});
- mover.style.visibility='hidden';const m=moverAt()||{x:PW/2,y:PH*.4,s:1},cx=(x0+x1)/2,cy=(y0+y1)/2,r=(x1-x0)/1.732/1.02;HAND={cx,cy,r};OFF={dx:(cx-m.x)/m.s,dy:(cy-m.y)/m.s,r:r/m.s}}
+ mover.style.visibility=PLAN.original?'':'hidden';const m=moverAt()||{x:PW/2,y:PH*.4,s:1},cx=(x0+x1)/2,cy=(y0+y1)/2,r=(x1-x0)/(1.732+SHF.lw);HAND={cx,cy,r};OFF={dx:(cx-m.x)/m.s,dy:(cy-m.y)/m.s,r:r/m.s}}
 function placeIso(){const m=moverAt();if(!m||!OFF)return;const r=OFF.r*m.s;iso.style.width=iso.style.height=(2.5*r)+'px';iso.style.transform=`translate(${m.x+OFF.dx*m.s-1.25*r}px,${m.y+OFF.dy*m.s-1.25*r}px)`}
 let t0=0,skip=0,gone=false,clock=0,lastN=0;
 function frame(n){if(gone)return;if(!t0){t0=n;lastN=n}clock+=Math.min(1/30,(n-lastN)/1000);lastN=n;let t=clock+skip;
  if(t>=TT){gone=true;render(T);document.body.classList.remove('lintro-hide');ov.animate([{opacity:1},{opacity:0}],{duration:160,fill:'forwards'}).onfinish=()=>{ov.remove();document.body.classList.remove('lintro-on');window.LU_INTRO_ON=false;window.dispatchEvent(new Event('luintroend'))};return}
- if(PLAN&&t<PLAN.H0){cctx.setTransform(DPR,0,0,DPR,0,0);SHF.draw(cctx,t,PW,PH,PLAN,HAND,DPR)}
+ if(PLAN&&PLAN.original){const on=t>=SWAP;mover.style.visibility=on?'hidden':'';iso.style.visibility=on?'visible':'hidden';render(t);if(on)placeIso()}
+ else if(PLAN&&t<PLAN.H0){cctx.setTransform(DPR,0,0,DPR,0,0);SHF.draw(cctx,t,PW,PH,PLAN,HAND,DPR)}
  else if(PLAN){if(cvs.style.display!=='none'){cvs.style.display='none';iso.style.visibility='visible'}render(FROM+t-PLAN.H0);placeIso()}
  else render(t);
  requestAnimationFrame(frame)}
@@ -1870,7 +1877,7 @@ window.luIntroSkip=()=>{skip=99};
 const hold=on=>{try{const N=window.LUNATIVE;if(N&&N.lockPortrait)N.lockPortrait({lock:on}).catch(()=>{})}catch(e){}};
 hold(true);addEventListener('luintroend',()=>hold(false),{once:true});setTimeout(()=>hold(false),15000);   // (safety: never stays locked)
 addEventListener('resize',()=>{if(gone||!ready)return;build();FIN=null;if(PLAN)sizeShuf()});
-fontReady().then(()=>{build();if(PLAN){try{sizeShuf()}catch(e){PLAN=null;TT=T;cvs&&cvs.remove();iso&&iso.remove();mover.style.visibility=''}}requestAnimationFrame(frame)});
+fontReady().then(()=>{build();if(PLAN){try{sizeShuf()}catch(e){PLAN=null;ISO=false;TT=T;cvs&&cvs.remove();iso&&iso.remove();mover.style.visibility='';scene.style.perspective=''}}requestAnimationFrame(frame)});
 })();
 
 </script>
