@@ -137,4 +137,16 @@ function place(){const d=scr();const k=[d.x,d.y,d.w,d.h].join(',');
  ins.forEach(x=>Object.assign(x.style,{left:cx+'px',top:cy+'px'}));
  if(tb)Object.assign(tb.style,{left:(d.x+d.w-358)+'px',right:'auto',top:(d.y+18)+'px'})}
 (function loop(){try{place()}catch(e){}requestAnimationFrame(loop)})();
+
+// ---------- an empty Music folder (a fresh install) ----------
+// The wheel would be empty, so there'd be no disc to pull the cube out with: open on the radio (the world is on the
+// wheel), and in Lu mode a ＋ ADD MUSIC pill brings the cube out on its Add Music face.
+{const pill=document.createElement('span');pill.className='swp';pill.id='luaddpc';pill.textContent='＋ ADD MUSIC';pill.style.cssText='display:none;margin-left:6px;background:#ff7a1a';
+ const sw=document.getElementById('swp');if(sw)sw.after(pill);let first=true;
+ const empty=()=>!PLS.some(p=>!p.fav&&p.songs&&p.songs.length);
+ pill.onclick=()=>{if(MODE!=='lu')return;if(!cubeOn)toCube(innerWidth*.5,innerHeight*.5);setTimeout(()=>goFace('LYRICS'),350)};
+ setInterval(()=>{if(typeof LUREADY==='undefined'||!LUREADY)return;
+  if(first){first=false;if(empty()&&MODE==='lu'){try{switchMode(true)}catch(e){}}}
+  pill.style.display=MODE==='lu'&&empty()&&!cubeOn?'':'none';
+  const li=document.getElementById('libinfo');if(li&&MODE==='lu'&&empty()&&!/^No songs yet/.test(li.textContent))li.textContent='No songs yet: tap ＋ ADD MUSIC for your own songs, free music and audiobooks.'},400)}
 })();

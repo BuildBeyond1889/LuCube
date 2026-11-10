@@ -111,6 +111,15 @@ function draw(quick){if(typeof MODE==='undefined'||MODE!=='lu')return;const st=$
  if(quick&&st&&pg&&BUSY){st.textContent=STATUS;pg.style.width=(BUSY.total?BUSY.done/BUSY.total*100:0)+'%';window.luFinder&&luFinder.refresh();return}
  try{renderFaces()}catch(e){}}
 
+// the PC with no music yet (a fresh install): friendly faces instead of the cube failing to draw (the phone has its
+// own in phone.js). This face, ADD MUSIC, is still drawn below, so the cube can always reach it.
+if(window.LUPC){const _e=luRenderFaces,_t=luTickFaces,has=()=>PLS.length>0;
+ luRenderFaces=function(){if(has())return _e.apply(this,arguments);
+  F_NOW.style.background='var(--y)';F_NOW.innerHTML=TB('LU CUBE // YOUR MUSIC')+`<div style="padding:16px 14px"><div class="big" style="font-size:40px">NO SONGS<br>YET</div>
+   <div style="font:700 9px/1.7 'Space Mono';margin-top:10px">Add songs from this PC or a USB stick, or grab free classical music and audiobooks. Each playlist turns up on the wheel and the cube.</div>
+   <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap"><span class="pill" style="background:var(--o);color:#111" data-act="go:LYRICS">＋ ADD MUSIC</span><span class="pill" style="background:var(--b);color:#fff" data-act="am:free">⬇ FREE MUSIC</span><span class="pill" style="background:#fff;color:#111" data-act="mode">📻 THE RADIO</span></div></div>`;
+  [F_COVER,F_PL,F_LIB,F_LYR,F_VIZ].forEach((f,k)=>{f.style.background=k%2?'var(--g)':'var(--b)';f.innerHTML=TB(['COVER','PLAYLIST','LIBRARY','ADD MUSIC','VISUALISER'][k])+`<div style="position:absolute;inset:20px 0 0;display:grid;place-items:center;font:400 34px Anton;color:${k%2?'#111':'#fff'}">♫</div>`})};
+ luTickFaces=function(){if(has())return _t.apply(this,arguments)}}
 const _lrf=luRenderFaces;
 luRenderFaces=function(){_lrf.apply(this,arguments);F_LYR.style.background='var(--g)';F_LYR.innerHTML=face()};
 // the faces may already have been drawn before this file loaded (the library can arrive first): draw them again so this face shows

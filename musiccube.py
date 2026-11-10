@@ -88,6 +88,8 @@ def pretty(s):
 def parse_name(stem):
     """Musopen-style names: Composer-Work-NN-Movement, Composer-NN-Work-Movement, or Composer-Work."""
     p = stem.split("-")
+    if p[0].strip().isdigit():   # "01 - Chapter One": a track number, not a composer
+        return None
     if len(p) >= 3 and p[2].isdigit():
         return pretty(p[0]), pretty(p[1]), int(p[2]), " – ".join(pretty(x) for x in p[3:])
     if len(p) >= 3 and p[1].isdigit():
@@ -138,12 +140,14 @@ def library():
         # only a big mixed-composer collection (like Musopen) gets split; any other folder stays one playlist, however long
         named = [parse_name(os.path.splitext(urllib.parse.unquote(t["src"]).rsplit("/", 1)[-1])[0]) for t in tr]
         comps = {n[0] for n in named if n and n[0]}
-        mixed = len(tr) > 25 and len(comps) >= 2 and sum(1 for n in named if n and n[0]) >= len(tr) * 0.6
+        songs = [f for f in os.listdir(p) if f.lower().endswith(AUDIO)]
+        book = is_book(p, songs) or (jload(LISTEN, {}).get("lu_kinds") or {}).get(d.lower()) in ("book", "pod")
+        mixed = not book and len(tr) > 25 and len(comps) >= 2 and sum(1 for n in named if n and n[0]) >= len(tr) * 0.6
         parts = split_collection(d, p, d + "/", tr, cover) if mixed else None
         if parts and len(parts) > 1:
             out.extend(parts)
         else:
-            out.append({"name": d, "cover": cover, "tracks": tr, **({"kind": "book"} if is_book(p, [f for f in os.listdir(p) if f.lower().endswith(AUDIO)]) else {})})
+            out.append({"name": d, "cover": cover, "tracks": tr, **({"kind": "book"} if is_book(p, songs) else {})})
     loose = tracks_in(MUSIC, "")
     if loose:
         out.append({"name": "Loose songs", "cover": "", "tracks": loose})
