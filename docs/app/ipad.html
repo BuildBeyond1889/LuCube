@@ -282,6 +282,37 @@ body.wx-snow .f:after{background-image:radial-gradient(circle,rgba(255,255,255,.
  padding:9px 16px;font:700 11px 'Space Mono',monospace;letter-spacing:.08em;cursor:pointer;-webkit-tap-highlight-color:transparent}.lupill:active{background:#ffc21a;color:#111}
 html .keys{padding-left:190px;padding-right:230px}.keys{pointer-events:none}
 html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* ===== the opening: origami cube → yellow → LISTEN TO THE UNIVERSE → LU ===== */
+#lintro{position:fixed;inset:0;z-index:200;background:#0b0c10;overflow:hidden;touch-action:none}
+body.lintro-on #ptitle{visibility:hidden}
+#liFlood{position:absolute;inset:0;overflow:hidden}#liFlood i{position:absolute;display:block;border-radius:50%;background:#ffc21a;transform:scale(0);will-change:transform}
+#liMover{will-change:transform}
+/* while the opening plays, the app underneath isn't drawn at all (it's revealed just before the hand-off) */
+body.lintro-hide>*:not(#lintro){visibility:hidden}
+#liVeil{position:absolute;inset:0;background:#0b0c10;z-index:5;pointer-events:none}
+#liTxt{position:absolute;inset:0;z-index:2}
+.li-slot{position:absolute;left:0;top:0;overflow:hidden;visibility:hidden;transform-origin:0 0}
+.li-slot span{position:absolute;left:0;font:400 30px/0.86 Anton,sans-serif;color:#111;white-space:pre}
+#liMeas{position:absolute;visibility:hidden;white-space:nowrap;font:400 30px/0.86 Anton,sans-serif}#liMeas span{display:inline-block}
+#liMover{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;z-index:3}
+.li-scene{position:absolute;left:-42px;top:-42px;width:84px;height:84px;perspective:900px}
+.li-cube{position:absolute;left:42px;top:42px;width:0;height:0;transform-style:preserve-3d;transform-origin:0 0 42px}
+/* crisp black outlines: each face's colour stops inside its border; symbols are painted as part of their face */
+#lintro .lf{position:absolute;left:-42px;top:-42px;width:84px;height:84px;box-sizing:border-box;border:5px solid #111;background-clip:padding-box !important;outline:1px solid transparent;transform-style:flat}
+#lintro .lf-front{transform-style:preserve-3d}
+#lintro .lf>i{position:absolute;inset:16%;display:block;backface-visibility:hidden}#lintro .lf>i svg{width:100%;height:100%;display:block}
+#lintro .lf-front>i{transform:translateZ(.6px)}#lintro .lf-front>i.bk{transform:translateZ(-.6px) rotateY(180deg)}
+#lintro .lf-left{transform-origin:100% 50%;transform:translateX(-84px)}
+#lintro .lf-right{transform-origin:0 50%;transform:translateX(84px)}
+#lintro .lf-top{transform-origin:50% 100%;transform:translateY(-84px)}
+#lintro .lf-front{transform-origin:50% 0;transform:translateY(84px)}
+#lintro .lf-lid{left:-5px;top:-5px;transform-origin:50% 0;transform:translateY(84px)}
+.li-skip{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom,0px));text-align:center;font:700 9px "Space Mono",monospace;letter-spacing:.24em;color:rgba(140,148,160,.6);z-index:6}
+
+/* the shuffled opening (Android): its canvas covers everything until the hand-off; then the flat logo cube follows #liMover */
+#liShuf{position:absolute;left:0;top:0;z-index:20}
+#liIso{position:absolute;left:0;top:0;width:10px;height:10px;z-index:4;pointer-events:none;overflow:visible;visibility:hidden}
+
 </style>
 <script>
 // ===================== LU CUBE · WEB APP (iPhone, iPad): the cube's /api answered inside the browser =====================
@@ -1358,4 +1389,489 @@ let ST={};fetch('/api/state').then(r=>r.json()).catch(()=>({})).then(st=>{ST=st|
  let lw=innerWidth,lh=innerHeight;setInterval(()=>{if(innerWidth===lw&&innerHeight===lh)return;lw=innerWidth;lh=innerHeight;if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(innerWidth,innerHeight)/330);cpos=[innerWidth*.5,innerHeight*.5]}},400);
  addEventListener('resize',()=>setTimeout(()=>{if(cubeOn&&!window.mxEl){csz=Math.min(csz,Math.min(innerWidth,innerHeight)/330);cpos=[innerWidth*.5,innerHeight*.5]}},120));
 })();</script>
+<script>
+// no header on the iPad: the logo lands top-centre (top-left has the station search) and fades
+window.LU_INTRO_LAND=()=>{const dx=innerWidth/2-37.75;return{lu:{x:16+dx,y:52,w:24,h:22},cube:{x:51+dx,y:58,w:17}}};
+</script>
+<script>
+// ===================== LU CUBE · PHONE: the shuffled opening (Android) =====================
+// One of six openings plays at random on every launch (never the same one twice in a row), lands the new LU/CUBE
+// logo, then its letters sink and its cube glides to where intro.js's cube sits at 2.9 s, and intro.js takes over
+// from there (LISTEN TO THE UNIVERSE → LU → into the header). intro.js only uses this file if it's loaded, and only
+// phone/build_www.py (Android) and the iPad page in phone/build_web.py load it; the iPhone keeps the original opening.
+// Every frame is a pure function of time: draw(ctx, t, width, height). Letters are Anton's real outlines (font units).
+// The design mocks: claude.ai/artifact/WejHjSdiRi5zyh2ZE2WFtX
+(function(){
+"use strict";
+/* ============ BRAND ============ */
+const Y='#ffc21a',O='#ff7a1a',R='#e0281a',B='#2f6be8',K='#111111',GR='#cfd6df',W='#ffffff',DK='#0b0d12';
+const THEMES={yellow:{bg:Y,ink:K,line:K},dark:{bg:K,ink:Y,line:W}};
+/* ============ GLYPHS (Anton outlines, font units, y down, baseline 0) ============ */
+const GD={"L": {"d": "M78 0V-1760H430V-300H792V0Z", "adv": 814}, "U": {"d": "M485 16Q265 16 161.0 -107.5Q57 -231 57 -471V-1760H399V-485Q399 -441 404.0 -400.5Q409 -360 427.0 -334.0Q445 -308 485 -308Q526 -308 544.0 -333.5Q562 -359 566.5 -400.0Q571 -441 571 -485V-1760H913V-471Q913 -231 809.0 -107.5Q705 16 485 16Z", "adv": 970}, "C": {"d": "M488 16Q297 16 180.5 -103.0Q64 -222 64 -436V-1248Q64 -1504 165.5 -1640.0Q267 -1776 496 -1776Q621 -1776 718.5 -1730.0Q816 -1684 872.0 -1592.5Q928 -1501 928 -1362V-1058H578V-1318Q578 -1397 558.0 -1424.5Q538 -1452 496 -1452Q447 -1452 430.0 -1416.5Q413 -1381 413 -1322V-441Q413 -368 434.5 -338.0Q456 -308 496 -308Q541 -308 559.5 -345.0Q578 -382 578 -441V-758H932V-425Q932 -193 815.0 -88.5Q698 16 488 16Z", "adv": 971}, "B": {"d": "M78 0V-1760H555Q747 -1760 834.5 -1666.5Q922 -1573 922 -1358V-1281Q922 -1157 877.5 -1080.0Q833 -1003 742 -979Q861 -949 901.5 -838.5Q942 -728 942 -569Q942 -398 910.0 -270.0Q878 -142 794.0 -71.0Q710 0 555 0ZM422 -1097H494Q543 -1097 557.0 -1135.0Q571 -1173 571 -1226V-1403Q571 -1488 496 -1488H422ZM457 -310Q594 -310 594 -440V-660Q594 -735 571.5 -778.5Q549 -822 487 -822H422V-312Q444 -310 457 -310Z", "adv": 980}, "E": {"d": "M78 0V-1760H782V-1420H436V-1077H768V-746H436V-343H805V0Z", "adv": 843}};
+const GP={};for(const k in GD)GP[k]=new Path2D(GD[k].d);
+const CAP=1760,STEM=352,LW=72,CURVE=.42;
+const LCache={};
+function Lpath(k){k=k==null?CURVE:k;if(LCache[k])return LCache[k];const r=STEM*k,p=new Path2D();
+ p.moveTo(78,-1760);p.lineTo(430,-1760);p.lineTo(430,-300);p.lineTo(792,-300);p.lineTo(792,0);
+ if(r>0){p.lineTo(78+r,0);p.arcTo(78,0,78,-r,r)}else p.lineTo(78,0);p.closePath();return LCache[k]=p}
+const gpath=(ch,k)=>ch==='L'?Lpath(k):GP[ch];
+const BBOX={C:[64,-1776,932,16],U:[57,-1760,913,16],B:[78,-1760,942,0],E:[78,-1760,805,0],L:[78,-1760,792,0]};
+const LUBASE=-CAP*(1-.015);
+const LINES={
+ cube:{base:0,g:[['C',0],['U',971],['B',1941],['E',2921]],ax:(64+3726)/2},
+ lu:{base:LUBASE,g:[['L',-14],['U',800]],ax:(64+1713)/2}};
+const INK={x0:64,x1:3726,y0:LUBASE-CAP,y1:16};INK.w=INK.x1-INK.x0;INK.h=INK.y1-INK.y0;INK.cx=(INK.x0+INK.x1)/2;INK.cy=(INK.y0+INK.y1)/2;
+const SLOT={x:(1713+3726)/2,y:LUBASE-CAP/2,r:.41*CAP};
+// list of all six letters with absolute bbox
+const LETTERS=[];for(const ln of ['lu','cube'])for(const [ch,x] of LINES[ln].g){const b=BBOX[ch];LETTERS.push({ln,ch,x,base:LINES[ln].base,bb:[x+b[0],LINES[ln].base+b[1],x+b[2],LINES[ln].base+b[3]]})}
+/* ============ MATH ============ */
+const cl=t=>t<0?0:t>1?1:t, seg=(t,a,b)=>cl((t-a)/(b-a)), lerp=(a,b,t)=>a+(b-a)*t;
+const eOut3=t=>1-Math.pow(1-cl(t),3), eIn2=t=>cl(t)*cl(t), eIn3=t=>Math.pow(cl(t),3);
+const eIO=t=>{t=cl(t);return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2};
+const eOutBack=(t,c)=>{t=cl(t);c=c==null?1.7:c;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2)};
+// damped spring 0→1, t in seconds
+function spring(t,w,z){if(t<=0)return 0;w=w||20;z=z==null?.5:z;const wd=w*Math.sqrt(1-z*z);return 1-Math.exp(-z*w*t)*(Math.cos(wd*t)+(z*w/wd)*Math.sin(wd*t))}
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const hex2=c=>{c=c.replace('#','');return[parseInt(c.slice(0,2),16),parseInt(c.slice(2,4),16),parseInt(c.slice(4,6),16)]};
+const mix=(a,b,t)=>{const A=hex2(a),Bc=hex2(b);t=cl(t);return`rgb(${A.map((v,i)=>Math.round(v+(Bc[i]-v)*t)).join(',')})`};
+/* quaternions [w,x,y,z] */
+const qmul=(a,b)=>[a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];
+const qax=(x,y,z,a)=>{const l=Math.hypot(x,y,z)||1,s=Math.sin(a/2);return[Math.cos(a/2),x/l*s,y/l*s,z/l*s]};
+const qinv=q=>[q[0],-q[1],-q[2],-q[3]];
+const qrot=(q,v)=>{const p=qmul(qmul(q,[0,v[0],v[1],v[2]]),qinv(q));return[p[1],p[2],p[3]]};
+function slerp(a,b,t){let d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3];if(d<0){b=b.map(v=>-v);d=-d}
+ if(d>.9995){const r=a.map((v,i)=>v+(b[i]-v)*t),l=Math.hypot(...r);return r.map(v=>v/l)}
+ const th=Math.acos(d),s=Math.sin(th);return a.map((v,i)=>(Math.sin((1-t)*th)*v+Math.sin(t*th)*b[i])/s)}
+const QI=[1,0,0,0];
+const QISO=qmul(qax(1,0,0,Math.atan(1/Math.SQRT2)),qax(0,1,0,Math.PI/4));
+/* ============ CUBE ============ */
+const FACES=[];{const keys={'1,1':'top','0,-1':'left','2,1':'right','1,-1':'bottom','0,1':'back1','2,-1':'back2'};
+ for(let a=0;a<3;a++)for(const s of[1,-1]){const n=[0,0,0];n[a]=s;const u=(a+1)%3,v=(a+2)%3;
+  const c=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([p,q])=>{const r=[0,0,0];r[a]=s;r[u]=p;r[v]=q;return r});FACES.push({n,c,key:keys[a+','+s]})}}
+const R0=(()=>{let m=0;for(const f of FACES)for(const v of f.c){const p=qrot(QISO,v);m=Math.max(m,Math.hypot(p[0],p[1]))}return m})();
+function cubeStyle(mode,th){
+ if(mode==='solid')return{faces:null,fill:th.ink,line:th.bg};
+ if(mode==='outline')return{faces:null,fill:th.bg,line:th.ink};
+ return{faces:{top:W,left:B,right:R,bottom:GR,back1:O,back2:Y},line:th.line}}
+function poly(x,pts){x.beginPath();pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));x.closePath()}
+// qt = total rotation (QISO = rest)
+function drawCube(x,cx,cy,r,qt,st,lw){const k=r/R0;x.save();x.lineJoin='round';x.lineWidth=lw;x.strokeStyle=st.line;
+ for(const f of FACES){const n=qrot(qt,f.n);if(n[2]<=.002)continue;const pts=f.c.map(v=>{const p=qrot(qt,v);return[cx+k*p[0],cy-k*p[1]]});
+  poly(x,pts);x.fillStyle=st.faces?st.faces[f.key]:st.fill;x.fill();x.stroke()}x.restore()}
+function restFaces(cx,cy,r){const k=r/R0,o={};for(const f of FACES){const n=qrot(QISO,f.n);if(n[2]<=.002)continue;o[f.key]=f.c.map(v=>{const p=qrot(QISO,v);return[cx+k*p[0],cy-k*p[1]]})}return o}
+const faceOnSide=r=>2*r/R0;
+/* ============ MARK ============ */
+// the logo never gets bigger than on a big phone, so on tablets it matches intro.js's ending (built at phone scale)
+const MARKMAX=260;
+function markT(W,H,fw,fh){const s=Math.min(W*(fw||.56)/INK.w,H*(fh||.5)/INK.h,MARKMAX/INK.w);return{s,ox:W/2-s*INK.cx,oy:H/2-s*INK.cy}}
+const toPx=(T,u,v)=>[T.ox+T.s*u,T.oy+T.s*v];
+function drawLine(x,ln,st,col,curve){const L=LINES[ln];st=st||{};if(st.a===0)return;x.save();if(st.a!=null)x.globalAlpha*=st.a;
+ x.translate(L.ax+(st.dx||0),L.base+(st.dy||0));if(st.rot)x.rotate(st.rot);x.scale(st.sx||1,st.sy||1);x.translate(-L.ax,-L.base);x.fillStyle=col;
+ for(const [ch,gx] of L.g){x.save();x.translate(gx,L.base);x.fill(gpath(ch,curve));x.restore()}x.restore()}
+// full mark in mark units (caller applies T). o: {ink,bg,line,mode,cube,lu,cb,noCube,curve}
+function markU(x,o){const th={bg:o.bg,ink:o.ink,line:o.line};
+ drawLine(x,'cube',o.cube,o.ink,o.curve);drawLine(x,'lu',o.lu,o.ink,o.curve);
+ if(!o.noCube){const c=o.cb||{};if(c.a!==0){x.save();if(c.a!=null)x.globalAlpha*=c.a;
+  drawCube(x,SLOT.x+(c.dx||0),SLOT.y+(c.dy||0),SLOT.r*(c.s==null?1:c.s),c.q||QISO,cubeStyle(o.mode,th),LW);x.restore()}}}
+function withT(x,T,fn){x.save();x.translate(T.ox,T.oy);x.scale(T.s,T.s);fn();x.restore()}
+function fullMark(x,cx,cy,w,th,mode,extra){const s=w/INK.w;const T={s,ox:cx-s*INK.cx,oy:cy-s*INK.cy};withT(x,T,()=>markU(x,Object.assign({ink:th.ink,bg:th.bg,line:th.line,mode},extra||{})));return T}
+/* joint flash: redraw both lines in white inside a band around the joint */
+function jointFlash(x,stLU,stC,a,band){if(a<=0)return;x.save();x.globalAlpha*=a;const b=band||70;const yj=LUBASE+((stLU&&stLU.dy)||0);
+ x.beginPath();x.rect(INK.x0-50,yj-b,1713-INK.x0+100,2*b);x.clip();drawLine(x,'lu',stLU,W);drawLine(x,'cube',stC,W);x.restore()}
+function impactLines(x,t,t0,col,yj){const u=seg(t,t0,t0+.2);if(u<=0||u>=1)return;const a=eOut3(u),b=eOut3(seg(t,t0+.06,t0+.22));
+ x.save();x.strokeStyle=col;x.lineCap='round';x.lineWidth=58;
+ const ends=[[INK.x0-80,-1,-.55],[INK.x0-90,-1,.2],[1713+80,1,-.55],[1713+90,1,.2]];
+ for(const [ex,sx,dy] of ends){const dx=sx,dyy=dy,l=Math.hypot(dx,dyy),ux=dx/l,uy=dyy/l;const r1=lerp(0,520,b),r2=lerp(120,620,a);if(r2-r1<4)continue;
+  x.beginPath();x.moveTo(ex+ux*r1,yj+uy*r1);x.lineTo(ex+ux*r2,yj+uy*r2);x.stroke()}x.restore()}
+function label(x,txt,X,Yy,size,col,align,track){x.save();x.font=`700 ${size}px "Space Mono"`;x.fillStyle=col;x.textAlign=align||'left';x.textBaseline='alphabetic';
+ if(track){x.letterSpacing=(size*track)+'px'}x.fillText(txt,X,Yy);x.restore()}
+function squiggle(x,x0,x1,y,amp,wl,phase,lw,col,p0,p1){x.save();x.strokeStyle=col;x.lineWidth=lw;x.lineCap='round';x.lineJoin='round';x.beginPath();
+ const a=x0+(x1-x0)*(p0||0),b=x0+(x1-x0)*(p1==null?1:p1);let first=true;for(let X=a;X<=b;X+=2){const yy=y+amp*Math.sin((X-x0)/wl*Math.PI*2+phase);first?x.moveTo(X,yy):x.lineTo(X,yy);first=false}x.stroke();x.restore()}
+
+/* ============ NOISE TILES (for Tune In) ============ */
+const NT=[];for(let i=0;i<4;i++){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),d=x.createImageData(128,128),r=rng(100+i);
+ for(let j=0;j<d.data.length;j+=4){const v=r()*255|0;d.data[j]=d.data[j+1]=d.data[j+2]=v;d.data[j+3]=255}x.putImageData(d,0,0);NT.push(c)}
+
+/* ============ INTROS ============ */
+// each draw(x,t,W,H,env) is a pure function of t
+const INTROS=[];
+function themeOf(env){return THEMES[env.theme]}
+function stackStates(t,{tc,tl,ti,offC,offL}){
+ // CUBE punch from below (spring), LU fall (gravity), impact squash at ti
+ const pc=spring(t-tc,19,.52),cubeDy=(t<tc)?offC:offC*(1-pc);
+ const stretchC=t<tc?1.12:1+.12*Math.max(0,1-seg(t,tc,tc+.22));
+ const fall=eIn2(seg(t,tl,ti)),luDy=t<tl?-offL:-offL*(1-fall);
+ const stretchL=t<ti?1+.09*fall:1;
+ let sq=0;if(t>=ti){const u=t-ti;sq=.12*Math.exp(-u*11)*Math.cos(u*26)}
+ const cube={dy:cubeDy,sy:stretchC*(1-sq),sx:1/Math.sqrt(stretchC)*(1+sq*.45),a:t<tc?0:1};
+ const sqL=sq*.85;
+ const lu={dy:luDy+CAP*(1-cube.sy)*(t>=ti?1:0),sy:stretchL*(1-sqL),sx:(1/Math.sqrt(stretchL))*(1+sqL*.45),a:t<tl?0:1};
+ return{cube,lu}}
+
+/* ---- ★ COUNT-IN (new) ---- */
+INTROS.push({id:'count',name:'Count-In',dur:1.6,hold:.8,isNew:1,themes:1,
+ sub:'4 beats @ 150 bpm · app opening',
+ text:'This is my take on The Stack, timed to music. Three small squares, the red, yellow and orange from every app window, tick in on the eighth notes like a drummer\'s count-in. On the downbeat CUBE punches up and LU slams onto it. Then the three squares fold into the three faces of the cube, and that fold is an exact geometric transform. Every hit lands on a beat at 150 bpm.',
+ why:'Why: it starts with the window motif, so it\'s Lu Cube before a single letter appears. It\'s 1.6 s and rhythmic, so it\'s pleasant to see every day, and the sound plays as music rather than effects.',
+ cues:[[0,'tick','Square 1 · red'],[.2,'tick','Square 2 · yellow'],[.4,'tick','Square 3 · orange'],[.6,'punch','Beat 1 · CUBE punches up'],[.8,'fuse','Beat 2 · LU lands · joint flashes'],[1.0,'click','Beat 3 · squares fold into the cube'],[1.05,'chime','Light chord, then hold']],
+ keys:[[.05,'0.05 · tick'],[.42,'0.42 · count of three'],[.7,'0.70 · punch'],[.81,'0.81 · fuse'],[.93,'0.93 · fold'],[1.6,'1.60 · hold']],
+ draw(x,t,Wd,H,env){const th=themeOf(env),T=markT(Wd,H);x.fillStyle=th.bg;x.fillRect(0,0,Wd,H);
+  const offC=(H/T.s)*.75,offL=(H/T.s)*.8;const st=stackStates(t,{tc:.6,tl:.6,ti:.8,offC,offL});
+  withT(x,T,()=>{
+   drawLine(x,'cube',st.cube,th.ink);drawLine(x,'lu',st.lu,th.ink);
+   jointFlash(x,st.lu,st.cube,t>=.8&&t<.85?1:0);
+   impactLines(x,t,.8,th.ink,LUBASE);
+   // squares
+   const rf=restFaces(SLOT.x,SLOT.y,SLOT.r),keys=['left','top','right'],cols=[R,Y,O],fin=[B,W,R];
+   const cs=cubeStyle(env.cube,th);
+   if(t<1.0){
+    const a0=680,gap=210;
+    for(let i=0;i<3;i++){const tp=i*.2;if(t<tp)continue;
+     const pop=spring(t-tp,30,.42);
+     // row position (centre of ink box)
+     const rx=INK.cx+(i-1)*(a0+gap),ry=INK.cy;
+     // exploded target near slot
+     const fp=rf[keys[i]],fc=fp.reduce((s,p)=>[s[0]+p[0]/4,s[1]+p[1]/4],[0,0]);
+     const ex=SLOT.x+(fc[0]-SLOT.x)*1.4,ey=SLOT.y+(fc[1]-SLOT.y)*1.4;
+     const area=Math.abs((fp[1][0]-fp[0][0])*(fp[3][1]-fp[0][1])-(fp[1][1]-fp[0][1])*(fp[3][0]-fp[0][0]));
+     const tv=eIO(seg(t,.6,.86)),cx=lerp(rx,ex,tv),cy=lerp(ry,ey,tv)-Math.sin(Math.PI*tv)*260*(i===1?1.2:.8);
+     const side=lerp(a0,Math.sqrt(area)*.92,tv)*pop;
+     let sq=[[cx-side/2,cy-side/2],[cx+side/2,cy-side/2],[cx+side/2,cy+side/2],[cx-side/2,cy+side/2]];
+     const fu=seg(t,.86,1.0),fe=eOutBack(fu,1.25);
+     let pts=sq;if(fu>0){const m=matchQuad(sq,fp);pts=sq.map((p,j)=>[lerp(p[0],m[j][0],fe),lerp(p[1],m[j][1],fe)])}
+     const shadow=(1-tv)*90;
+     x.save();x.lineJoin='round';x.lineWidth=LW;
+     if(shadow>1){poly(x,pts.map(p=>[p[0]+shadow,p[1]+shadow]));x.fillStyle='#000';x.fill()}
+     poly(x,pts);
+     const target=cs.faces?fin[i]:cs.fill;x.fillStyle=mix(cols[i],target,seg(fu,.55,.72));x.fill();
+     x.strokeStyle=fu>0?cs.line:(th.bg===K?'#000':K);x.stroke();x.restore()}
+   }else{
+    const s=1+.05*Math.exp(-(t-1)*12)*Math.cos((t-1)*32);
+    drawCube(x,SLOT.x,SLOT.y,SLOT.r*s,QISO,cs,LW)}
+  })}});
+function matchQuad(a,b){const area=p=>p.reduce((s,q,i)=>{const n=p[(i+1)%4];return s+q[0]*n[1]-n[0]*q[1]},0);
+ if(Math.sign(area(a))!==Math.sign(area(b)))b=b.slice().reverse();
+ const ca=a.reduce((s,p)=>[s[0]+p[0]/4,s[1]+p[1]/4],[0,0]),cb=b.reduce((s,p)=>[s[0]+p[0]/4,s[1]+p[1]/4],[0,0]);
+ let best=0,bd=1e18;for(let o=0;o<4;o++){let d=0;for(let i=0;i<4;i++){const p=a[i],q=b[(i+o)%4];d+=Math.pow(p[0]-ca[0]-(q[0]-cb[0]),2)+Math.pow(p[1]-ca[1]-(q[1]-cb[1]),2)}if(d<bd){bd=d;best=o}}
+ return a.map((_,i)=>b[(i+best)%4])}
+
+/* ---- A · THE STACK ---- */
+INTROS.push({id:'stack',name:'A · The Stack',dur:1.6,hold:.8,themes:1,
+ sub:'App opening',
+ text:'CUBE punches up with a spring overshoot and stretches while it moves. LU falls under gravity (ease-in) and lands at 0.70. Both lines squash 12% from their bottom edges, and LU rides down with CUBE so they stay fused. The joint flashes white for 3 frames, clipped to the letter shapes. The cube spins in on a real 3D axis, slows to an 18° remainder, then snaps the last 18° with a click.',
+ why:'This is the brief\'s direction A, built exactly as storyboarded. Compare it with Count-In, which is the same idea timed to music.',
+ cues:[[0,'punch','CUBE punches up'],[.45,'swish','LU falls'],[.7,'thud','Impact · squash · flash'],[1.1,'whoosh','Cube flips in'],[1.56,'click','Snaps upright']],
+ keys:[[.12,'0.12 · punch'],[.55,'0.55 · falls'],[.71,'0.71 · impact'],[1.25,'1.25 · flips in'],[1.53,'1.53 · snap'],[1.9,'1.90 · hold']],
+ draw(x,t,Wd,H,env){const th=themeOf(env),T=markT(Wd,H);x.fillStyle=th.bg;x.fillRect(0,0,Wd,H);
+  const offC=(H/T.s)*.7,offL=(H/T.s)*.62;const st=stackStates(t,{tc:0,tl:.45,ti:.7,offC,offL});
+  withT(x,T,()=>{drawLine(x,'cube',st.cube,th.ink);drawLine(x,'lu',st.lu,th.ink);jointFlash(x,st.lu,st.cube,t>=.7&&t<.75?1:0);impactLines(x,t,.7,th.ink,LUBASE);
+   if(t>=1.1){const u=seg(t,1.1,1.5),e=eOut3(u),rest=18*Math.PI/180,tot=Math.PI*2.25;
+    let ang=t<1.5?rest+(tot-rest)*(1-e):rest*(1-eOutBack(seg(t,1.5,1.58),2.2));
+    const q=qmul(QISO,qax(.35,1,.25,-ang));const fx=(Wd/T.s)*.42,fy=-(H/T.s)*.42;
+    const px=lerp(SLOT.x+fx,SLOT.x,e),py=lerp(SLOT.y+fy,SLOT.y,e)-Math.sin(Math.PI*e)*300;
+    const sc=lerp(.35,1,e)*(t>1.5?1+.04*Math.sin(Math.PI*seg(t,1.5,1.66)):1);
+    drawCube(x,px,py,SLOT.r*sc,q,cubeStyle(env.cube,th),LW)}})}});
+
+/* ---- B · UNFOLD ---- */
+INTROS.push({id:'unfold',name:'B · Unfold',dur:2.2,hold:.9,themes:1,
+ sub:'Store video · website',
+ text:'The cube spins on dark and settles face-on. Its five hidden faces unfold on hinges into the cross net, so each face\'s width is S·sin φ, which is a correct orthographic fold. The row of four becomes C-U-B-E. The white top face becomes the U of LU, directly above, and the grey bottom face becomes the L. A slanted wipe turns the scene yellow. Then a red square appears in the corner and rotates face-on to isometric, becoming the cube.',
+ why:'This tells the product\'s own trick: the app\'s cube unfolds into one big window.',
+ cues:[[0,'whoosh','Cube spins'],[.6,'swish','Unfolds into the net'],[1.0,'tick','Faces become letters'],[1.12,'tick',''],[1.24,'tick',''],[1.5,'whoosh','Diagonal wipe to yellow'],[1.82,'pop','Last face appears'],[2.16,'click','Folds into the cube']],
+ keys:[[.3,'0.30 · spin'],[.85,'0.85 · unfold'],[1.2,'1.20 · letters'],[1.66,'1.66 · wipe'],[1.98,'1.98 · fold up'],[2.4,'2.40 · hold']],
+ draw(x,t,Wd,H,env){const th=themeOf(env),T=markT(Wd,H);
+  const C0={x:INK.cx,y:INK.cy},RB=1250,S=faceOnSide(RB);
+  const scene=(final)=>{x.fillStyle=final?th.bg:DK;x.fillRect(0,0,Wd,H);withT(x,T,()=>{
+   if(t<.6){const u=seg(t,0,.58);const q=qmul(slerp(QISO,QI,eIO(seg(u,.35,1))),qax(0,1,0,Math.PI*2*(1-eOut3(u))));
+    drawCube(x,C0.x,C0.y,RB*(.85+.15*eOut3(u)),q,{faces:{top:W,left:B,right:R,bottom:GR,back1:O,back2:Y},line:DK},34);return}
+   // net rects
+   const u1=seg(t,.6,.92),u2=seg(t,.74,1.0),sh=-.5*S*eIO(seg(t,.62,1.0));
+   const h1=Math.sin(Math.PI/2*eOut3(u1)),h2=Math.sin(Math.PI/2*eOut3(u2));
+   const fx=C0.x+sh,fy=C0.y,hs=S/2;
+   const rects={U:[fx-hs,fy-hs,fx+hs,fy+hs],C:[fx-hs-S*h1,fy-hs,fx-hs,fy+hs],B:[fx+hs,fy-hs,fx+hs+S*h1,fy+hs],E:[fx+hs+S*h1,fy-hs,fx+hs+S*h1+S*h2,fy+hs],
+    LU_U:[fx-hs,fy-hs-S*h1,fx+hs,fy-hs],LU_L:[fx-hs,fy+hs,fx+hs,fy+hs+S*h1]};
+   const map=[['C','cube',0,B],['U','cube',1,R],['B','cube',2,O],['E','cube',3,Y],['LU_L','lu',0,GR],['LU_U','lu',1,W]];
+   map.forEach(([k,ln,gi,col],i)=>{const r=rects[k];const L=LINES[ln],[ch,gx]=L.g[gi],bb=BBOX[ch];
+    const tb=[gx+bb[0],L.base+bb[1],gx+bb[2],L.base+bb[3]];const st=1.0+i*.045,m=eIO(seg(t,st,st+.32)),rv=seg(t,st+.2,st+.36);
+    const rr=r.map((v,j)=>lerp(v,tb[j],m));const colr=final?th.ink:col;
+    x.save();x.globalAlpha=1-rv;x.fillStyle=colr;x.fillRect(rr[0],rr[1],rr[2]-rr[0],rr[3]-rr[1]);
+    if(!final&&rv<1&&m<1){x.strokeStyle=DK;x.lineWidth=30;x.strokeRect(rr[0],rr[1],rr[2]-rr[0],rr[3]-rr[1])}x.restore();
+    if(rv>0){x.save();x.globalAlpha=rv;x.translate(gx,L.base);x.fillStyle=colr;x.fill(gpath(ch));x.restore()}});
+  })};
+  scene(false);
+  const wu=eIO(seg(t,1.5,1.86));if(wu>0){const sl=H*.32,p=lerp(-sl,Wd+sl,wu);x.save();x.beginPath();x.moveTo(-10,-10);x.lineTo(p+sl,-10);x.lineTo(p-sl,H+10);x.lineTo(-10,H+10);x.closePath();x.clip();scene(true);x.restore()}
+  if(t>=1.8){withT(x,T,()=>{const pop=spring(t-1.8,30,.5),fo=eOutBack(seg(t,1.92,2.2),1.4);const q=slerp(QI,QISO,cl(fo));
+   let qq=q;if(fo>1){qq=qmul(QISO,qax(0,1,0,-(fo-1)*.6))}drawCube(x,SLOT.x,SLOT.y,SLOT.r*pop,qq,cubeStyle(env.cube,th),LW)})}}});
+
+/* ---- C · TUNE IN ---- */
+const FLAPCH='ABCDEFGHJKMNPRSTVWXYZ0123456789';
+INTROS.push({id:'tune',name:'C · Tune In',dur:2.0,hold:.9,themes:0,forceTheme:'dark',defCube:'outline',
+ sub:'Radio · best on dark',
+ text:'Static and a tuning dial. The needle sweeps, overshoots and settles on a station. The red squiggle from the wheel draws itself like a signal and then runs out the right side. Split-flap tiles sit exactly over the six letters, flipping through characters with a real top-half flap, and lock left to right with a tick each. When E locks, the static cuts to silence and the cube pops.',
+ why:'This is the radio story. It fits Press R, the radio splash, or a website hero over the station map.',
+ cues:[[0,'staticOn','Static + dial'],[.35,'tune','Signal draws'],[.85,'tick','L locks'],[.96,'tick','U locks'],[1.07,'tick','C locks'],[1.18,'tick','U locks'],[1.29,'tick','B locks'],[1.4,'tick','E locks'],[1.5,'staticCut','Static cuts to silence'],[1.6,'pop','Cube pops']],
+ keys:[[.2,'0.20 · static + dial'],[.6,'0.60 · signal'],[.98,'0.98 · flaps'],[1.36,'1.36 · locking'],[1.7,'1.70 · cube pops'],[2.2,'2.20 · hold']],
+ draw(x,t,Wd,H,env){const th=THEMES.dark,T=markT(Wd,H);x.fillStyle=th.bg;x.fillRect(0,0,Wd,H);
+  // static
+  const sa=t<1.5?.2*(1-.5*seg(t,.9,1.5)):0;if(sa>0){x.save();x.globalAlpha=sa;x.imageSmoothingEnabled=false;x.globalCompositeOperation='lighter';
+   const f=Math.abs(Math.floor(t*30))%4,sc=Math.max(2,Math.round(Math.min(Wd,H)/220));const ox=(Math.floor(t*30)*37)%128;
+   for(let yy=-ox;yy<H;yy+=128*sc)for(let xx=-ox;xx<Wd;xx+=128*sc)x.drawImage(NT[f],xx,yy,128*sc,128*sc);x.restore()}
+  const m=Math.min(Wd,H),cy=H/2;
+  // dial
+  const da=1-seg(t,.7,.95);if(da>0){x.save();x.globalAlpha=da;const x0=Wd*.14,x1=Wd*.86,n=60;x.strokeStyle=Y;x.lineWidth=Math.max(1,m*.004);
+   for(let i=0;i<=n;i++){const X=lerp(x0,x1,i/n),h=i%5===0?m*.05:m*.025;x.beginPath();x.moveTo(X,cy+m*.06);x.lineTo(X,cy+m*.06-h);x.stroke()}
+   const nu=spring(t,9,.42),nx=lerp(x0,lerp(x0,x1,.62),nu);x.strokeStyle=R;x.lineWidth=Math.max(2,m*.009);x.beginPath();x.moveTo(nx,cy+m*.075);x.lineTo(nx,cy-m*.03);x.stroke();
+   label(x,'88   92   96   100   104   108',Wd/2,cy+m*.11,Math.max(8,m*.022),'rgba(255,194,26,.7)','center',.2);x.restore()}
+  // signal squiggle
+  const p1=eIO(seg(t,.35,.9)),p0=eIO(seg(t,.95,1.42));if(p1>p0){const amp=m*.045*(.6+.4*Math.sin(t*9));squiggle(x,Wd*.1,Wd*.9,cy-m*.02,amp,m*.16,-t*16,Math.max(2,m*.014),R,p0,p1)}
+  // flaps
+  withT(x,T,()=>{LETTERS.forEach((L,i)=>{const tin=.55+i*.04,tl=.85+i*.11;if(t<tin)return;const a=seg(t,tin,tin+.12),bb=L.bb,pad=36;
+   const fade=1-seg(t,tl+.06,tl+.3);const r=[bb[0]-pad,L.base-CAP-pad,bb[2]+pad,L.base+pad];const mid=(r[1]+r[3])/2;
+   if(fade>0){x.save();x.globalAlpha=a*fade;x.fillStyle='#1d2129';x.fillRect(r[0],r[1],r[2]-r[0],r[3]-r[1]);x.restore()}
+   if(t>=tl){x.save();x.translate(L.x,L.base);x.fillStyle=Y;x.fill(gpath(L.ch));x.restore()}
+   else{const per=.055,k=Math.floor((t-tin)/per),ph=((t-tin)/per)%1,rr=rng(i*977+k),rp=rng(i*977+k-1);
+    const ch=FLAPCH[Math.floor(rr()*FLAPCH.length)],pch=FLAPCH[Math.floor(rp()*FLAPCH.length)],cx=(r[0]+r[2])/2;
+    x.save();x.globalAlpha=a;x.beginPath();x.rect(r[0],r[1],r[2]-r[0],r[3]-r[1]);x.clip();x.font='2048px Anton';x.textAlign='center';x.fillStyle=Y;x.fillText(ch,cx,L.base);
+    if(ph<.5&&k>0){const s=1-ph*2;x.save();x.beginPath();x.rect(r[0],r[1],r[2]-r[0],mid-r[1]);x.clip();x.fillStyle='#262b35';x.fillRect(r[0],mid-(mid-r[1])*s,r[2]-r[0],(mid-r[1])*s);
+     x.translate(0,mid);x.scale(1,s);x.translate(0,-mid);x.fillStyle='#d9a414';x.fillText(pch,cx,L.base);x.restore()}x.restore()}
+   if(fade>0){x.save();x.globalAlpha=a*fade;x.fillStyle='#07080b';x.fillRect(r[0],mid-8,r[2]-r[0],16);x.restore()}});
+   if(t>=1.6){const p=spring(t-1.6,26,.38),q=qmul(QISO,qax(0,1,0,(1-eOut3(seg(t,1.6,1.9)))*Math.PI*.5));drawCube(x,SLOT.x,SLOT.y,SLOT.r*Math.max(0,p),q,cubeStyle(env.cube,th),LW)}})}});
+
+/* ---- D · BLOCKS ---- */
+const CELL=176,XTRA=.8;let GRIDC=null;   // blocks less than 80% inside a real letter break away with the fusion row
+function blockGrid(){if(GRIDC)return GRIDC;const cols=Math.ceil(INK.w/CELL),rows=Math.ceil(-INK.y0/CELL),ss=8;const c=document.createElement('canvas');c.width=cols*ss;c.height=rows*ss;const x=c.getContext('2d');
+ x.scale(ss/CELL,ss/CELL);x.translate(-INK.x0,rows*CELL);drawLine(x,'cube',null,'#000');drawLine(x,'lu',null,'#000');const d=x.getImageData(0,0,c.width,c.height).data;
+ const cells=[];const r=rng(42);for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){let s=0;for(let yy=0;yy<ss;yy++)for(let xx=0;xx<ss;xx++)s+=d[((j*ss+yy)*c.width+i*ss+xx)*4+3];
+  const cov=s/(ss*ss*255);if(cov>.42){const row=rows-1-j;cells.push({x:INK.x0+i*CELL,y:-(row+1)*CELL,row,extra:cov<XTRA,col:[R,B,O,Y][Math.floor(r()*4)],tl:.22+row*.05+r()*.14})}}
+ return GRIDC={cells,rows,cols}}
+INTROS.push({id:'blocks',name:'D · Blocks',dur:2.4,hold:.8,themes:1,
+ sub:'The game · Lu Blocks',
+ text:'The letters are rasterised onto a real grid of half-stem cells (176u). Blocks fall in row order under gravity and fill the shapes. The ring blast hits row 9, which is exactly the fusion row where LU meets CUBE, and the ring reveals the yellow world. The blocks then melt: the gaps close, the colours turn to ink, and the solid outlines take over. The last red block drops into the corner and turns from face-on to isometric, becoming the cube.',
+ why:'This one is playful and hints that there\'s a game inside. It\'s best for the Lu Blocks launch or a store video, and too long for every cold start.',
+ cues:[[.3,'blip',''],[.46,'blip','Blocks rain in'],[.62,'blip',''],[.78,'blip',''],[.94,'blip',''],[1.1,'blip',''],[1.26,'blip',''],[1.5,'blast','Ring blast on the fusion row'],[1.75,'swish','Blocks melt to solid'],[2.06,'thud','Last block lands'],[2.36,'click','Block turns into the cube']],
+ keys:[[.5,'0.50 · rain'],[1.1,'1.10 · filling'],[1.56,'1.56 · ring blast'],[1.85,'1.85 · melt'],[2.2,'2.20 · last block'],[2.6,'2.60 · hold']],
+ draw(x,t,Wd,H,env){const th=themeOf(env),T=markT(Wd,H),G=blockGrid();x.fillStyle=DK;x.fillRect(0,0,Wd,H);
+  const [bx,by]=toPx(T,INK.x0+INK.w/2,-9.5*CELL),rad=eOut3(seg(t,1.5,1.95))*Math.hypot(Wd,H);
+  const blocks=(inside)=>withT(x,T,()=>{const melt=eIO(seg(t,1.72,1.96)),under=seg(t,1.7,1.9),solid=seg(t,1.96,2.06),fall=(H/T.s)*1.1;
+   if(under>0){x.save();x.globalAlpha=under;drawLine(x,'cube',null,inside?th.ink:Y);drawLine(x,'lu',null,inside?th.ink:Y);x.restore()}
+   if(solid<1)for(const c of G.cells){if(t<c.tl-.34)continue;const u=seg(t,c.tl-.34,c.tl),dy=-(1-eIn2(u))*fall;
+    let s=1,a=1;if((c.row===9||c.extra)&&t>=1.5){const bu=seg(t,1.53,1.8);s=1+bu*.9;a=1-bu}
+    const land=t>c.tl?Math.exp(-(t-c.tl)*30)*.18:0;const ins=lerp(16,0,melt),sz=CELL-ins*2;
+    x.save();x.globalAlpha=a*(1-solid);const cxm=c.x+CELL/2,cym=c.y+CELL/2+dy;x.translate(cxm,cym+sz/2);x.scale(s*(1+land*.5),s*(1-land));x.translate(0,-sz);
+    const flash=t>=1.5&&t<1.56&&(c.row===9||c.extra);x.fillStyle=flash?W:(inside?mix(c.col,th.ink,melt):c.col);x.fillRect(-sz/2,0,sz,sz);
+    if(!melt&&!flash){x.fillStyle='rgba(255,255,255,.28)';x.fillRect(-sz/2,0,sz,sz*.16)}if(inside&&melt<1&&!flash){x.strokeStyle=K;x.globalAlpha*=1-melt;x.lineWidth=16;x.strokeRect(-sz/2+8,8,sz-16,sz-16)}x.restore()}
+   
+   // particles at blast
+   if(t>1.5&&t<1.95){const r=rng(5),u=seg(t,1.5,1.95),gone=G.cells.filter(c=>c.row===9||c.extra);x.save();x.fillStyle=inside?th.ink:W;for(let i=0;i<Math.min(60,gone.length*2);i++){const g=gone[Math.floor(r()*gone.length)],ang=r()*Math.PI*2,sp=500+r()*1800,px=g.x+CELL/2,py=g.y+CELL/2;
+     const d=eOut3(u)*sp;const sz=lerp(90,0,u);x.fillRect(px+Math.cos(ang)*d-sz/2,py+Math.sin(ang)*d*.6-sz/2,sz,sz)}x.restore()}
+   // last block → cube
+   if(t>=1.94){const u=seg(t,1.94,2.06),dy=-(1-eIn2(u))*(H/T.s)*.7,f=eOutBack(seg(t,2.1,2.38),1.5);const land=t>2.06?Math.exp(-(t-2.06)*22)*.1:0;
+    const q=f<=1?slerp(QI,QISO,cl(f)):qmul(QISO,qax(0,1,0,-(f-1)*.5));drawCube(x,SLOT.x,SLOT.y+dy+land*SLOT.r,SLOT.r*(1-land*.5),q,inside?cubeStyle(env.cube,th):{faces:{top:W,left:B,right:R,bottom:GR,back1:O,back2:Y},line:DK},LW)}});
+  blocks(false);
+  if(rad>0){x.save();x.beginPath();x.arc(bx,by,rad,0,Math.PI*2);x.clip();x.fillStyle=th.bg;x.fillRect(0,0,Wd,H);blocks(true);x.restore();
+   if(t<1.98){x.save();x.strokeStyle=W;x.lineWidth=Math.max(2,Math.min(Wd,H)*.025*(1-seg(t,1.5,1.98)));x.beginPath();x.arc(bx,by,rad,0,Math.PI*2);x.stroke();x.restore()}}}});
+
+/* ---- ★ OFF THE WHEEL (new) ---- */
+function hexR(th,Rr){const a=((th-Math.PI/2)%(Math.PI/3)+Math.PI/3)%(Math.PI/3)-Math.PI/6;return Rr*Math.cos(Math.PI/6)/Math.cos(a)}
+function disc(x,cx,cy,r,kind,lw){x.save();x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.clip();
+ if(kind===0){x.fillStyle=O;x.fillRect(cx-r,cy-r,2*r,2*r);x.fillStyle=B;x.translate(cx,cy);x.rotate(-.7);for(let i=-4;i<5;i+=2)x.fillRect(i*r*.28,-r*1.5,r*.28,r*3)}
+ else if(kind===1){x.fillStyle=W;x.fillRect(cx-r,cy-r,2*r,2*r);x.fillStyle=B;x.fillRect(cx,cy-r,r,r);x.fillRect(cx-r,cy,r,r);x.fillStyle=K;x.fillRect(cx-r,cy-r,r,r)}
+ else if(kind===2){x.fillStyle=R;x.fillRect(cx-r,cy-r,2*r,2*r);x.fillStyle=Y;x.fillRect(cx-r,cy-r*.15,2*r,r*.3)}
+ else{x.fillStyle=GR;x.fillRect(cx-r,cy-r,2*r,2*r);x.fillStyle=B;x.fillRect(cx-r,cy-r,2*r,r*.9);x.fillStyle=Y;x.fillRect(cx-r,cy+r*.35,2*r,r*.3)}
+ x.restore();x.save();x.strokeStyle='#000';x.lineWidth=lw;x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.stroke();x.restore()}
+INTROS.push({id:'wheel',name:'Off the Wheel',dur:2.2,hold:.9,isNew:1,themes:1,defTheme:'dark',
+ sub:'The app\'s own gesture · store video, first launch',
+ text:'This is the move you make in the app. The wheel of playlists turns in at the bottom, the centre disc dips (anticipation) and is pulled up. On the way its round outline morphs exactly into the cube\'s hexagon silhouette (polar radius r(θ) blends from circle to hexagon). The three faces paint in and the cube does one full turn, then it shrinks into its corner while CUBE punches up and LU lands. The wheel sinks out of frame.',
+ why:'Why: the intro is also a tutorial, since it shows the one gesture people need to learn. It\'s also the clearest 2-second story for the Play Store video.',
+ cues:[[0,'whoosh','Wheel turns in'],[.42,'tick','Centre disc dips'],[.55,'swish','Pulled off the wheel'],[.92,'pop','Disc becomes a cube'],[1.08,'whoosh','Full turn'],[1.5,'punch','CUBE punches up'],[1.72,'fuse','LU lands'],[1.74,'click','Cube clicks into its corner']],
+ keys:[[.3,'0.30 · wheel'],[.62,'0.62 · pulled off'],[.88,'0.88 · disc → hex'],[1.25,'1.25 · spin'],[1.62,'1.62 · stack'],[2.4,'2.40 · hold']],
+ draw(x,t,Wd,H,env){const th=themeOf(env),T=markT(Wd,H),m=Math.min(Wd,H);x.fillStyle=th.bg;x.fillRect(0,0,Wd,H);
+  // wheel
+  const sink=eIn2(seg(t,1.0,1.45))*H*.5;const WR=Math.max(Wd,H)*.95,wcx=Wd/2,wcy=H*.86+WR+sink-(0)+(-WR*.0);const wcy2=H*.72+WR+sink;
+  const rot=(1-eOut3(seg(t,0,.45)))*.55,dr=m*.062,step=.135;
+  x.save();x.globalAlpha=1-seg(t,1.2,1.45);x.strokeStyle=th.ink;x.globalAlpha*=.45;x.lineWidth=Math.max(1.5,m*.004);x.beginPath();x.arc(wcx,wcy2,WR,Math.PI*1.1,Math.PI*1.9);x.stroke();x.restore();
+  for(let i=-3;i<=3;i++){if(i===0&&t>.55)continue;const ang=-Math.PI/2+i*step+rot;const px=wcx+WR*Math.cos(ang),py=wcy2+WR*Math.sin(ang);
+   x.save();x.globalAlpha=seg(t,Math.abs(i)*.04,Math.abs(i)*.04+.2)*(1-seg(t,1.2,1.45));disc(x,px,py,i===0?dr*1.3:dr,((i+7)%4),Math.max(2,m*.006));x.restore()}
+  // label
+  const la=seg(t,.05,.3)*(1-seg(t,.5,.7));if(la>0){x.save();x.globalAlpha=la;label(x,'DRAG A DISC OFF THE WHEEL',Wd/2,H*.93,Math.max(8,m*.022),th.ink,'center',.22);x.restore()}
+  // the centre disc journey
+  const cs=cubeStyle(env.cube,th),[sx,sy]=toPx(T,SLOT.x,SLOT.y),lw=LW*T.s;const bigR=m*.2;
+  const homeX=wcx,homeY=wcy2-WR;
+  if(t<=1.86||true){
+   let cx,cy,r;
+   if(t<.55){const dip=Math.sin(Math.PI*seg(t,.4,.55))*m*.02;cx=homeX;cy=homeY+dip;r=dr*1.3*(1+.12*seg(t,.4,.55))}
+   else if(t<1.4){const u=eIO(seg(t,.55,.95));cx=lerp(homeX,Wd/2,u);cy=lerp(homeY,H/2,u)-Math.sin(Math.PI*u)*m*.04;r=lerp(dr*1.45,bigR,u)}
+   else{const u=eIO(seg(t,1.4,1.74));cx=lerp(Wd/2,sx,u);cy=lerp(H/2,sy,u);r=lerp(bigR,SLOT.r*T.s,u)}
+   const morph=eIO(seg(t,.6,.92)),faces=seg(t,.9,1.02);
+   if(t<1.02){ // silhouette
+    x.save();const N=120,hp=new Path2D();for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,rr=lerp(r,hexR(a,r),morph);const X=cx+rr*Math.cos(a),Yy=cy-rr*Math.sin(a);i?hp.lineTo(X,Yy):hp.moveTo(X,Yy)}hp.closePath();
+    x.save();x.clip(hp);if(morph<1){x.globalAlpha=1-morph;disc(x,cx,cy,r,0,0);x.globalAlpha=1}x.fillStyle=mix(O,K,morph);x.globalAlpha=morph;x.fillRect(cx-r*1.2,cy-r*1.2,r*2.4,r*2.4);x.restore();
+    x.strokeStyle=th.bg===K?W:K;x.lineWidth=lerp(Math.max(2,m*.006),lw*(r/(SLOT.r*T.s)),morph);x.lineJoin='round';x.stroke(hp);x.restore()}
+   if(faces>0){let q=QISO;if(t>1.02){const sp=eIO(seg(t,1.04,1.4));q=qmul(QISO,qax(0,1,0,Math.PI*2*sp))}
+    const lwp=lw*(r/(SLOT.r*T.s));x.save();x.globalAlpha=faces;const pk=t>1.74?1+.05*Math.exp(-(t-1.74)*14)*Math.cos((t-1.74)*34):1;drawCube(x,cx,cy,r*pk,q,cs,lwp);x.restore()}
+  }
+  withT(x,T,()=>{const offC=(H/T.s)*.7,offL=(H/T.s)*.85;const st=stackStates(t,{tc:1.5,tl:1.55,ti:1.72,offC,offL});
+   drawLine(x,'cube',st.cube,th.ink);drawLine(x,'lu',st.lu,th.ink);jointFlash(x,st.lu,st.cube,t>=1.72&&t<1.77?1:0);impactLines(x,t,1.72,th.ink,LUBASE)})}});
+
+
+/* ===== THE ROTATION: edit per opening (theme: yellow|dark, cube: colour|solid|outline, weight: relative chance) ===== */
+const ROTATION=[
+ {id:'count', theme:'yellow',cube:'colour', weight:1},
+ {id:'stack', theme:'yellow',cube:'colour', weight:1},
+ {id:'unfold',theme:'yellow',cube:'colour', weight:1},
+ {id:'tune',  theme:'dark',  cube:'outline',weight:1.6},   // the owner's favourite: comes up a bit more often
+ {id:'blocks',theme:'yellow',cube:'colour', weight:1},
+ {id:'wheel', theme:'dark',  cube:'colour', weight:1}];
+const KEY='lu_intro_last';
+const SPEEDK=.85;   // the openings play at 85% speed (the owner: "just a hair" slower); intro.js's ending is unchanged
+function pickNext(lastId){const pool=ROTATION.filter(r=>r.id!==lastId&&(r.weight||0)>0);const tot=pool.reduce((a,r)=>a+r.weight,0);let u=Math.random()*tot;for(const r of pool){u-=r.weight;if(u<0)return r}return pool[pool.length-1]}
+function drawPlan(x,t,Wd,H,P,hand,dpr){t*=SPEEDK;const {I,env:pe,D}=P,H0=P.H0i;const env={dpr};
+  if(t<D){I.draw(x,t,Wd,H,Object.assign({},pe,{dpr}));return}
+  const T=markT(Wd,H);hand=hand||{cx:Wd/2,cy:H*.4,r:72};
+  const sinkAt=D+.3,glide=eIO(seg(t,D+.32,H0-.05));
+  const draw=(themeKey,withCube)=>{const th=THEMES[themeKey];x.fillStyle=th.bg;x.fillRect(0,0,Wd,H);
+   withT(x,T,()=>{for(const L of LETTERS){const i=LETTERS.indexOf(L),dn=eIn3(seg(t,sinkAt+i*.035,sinkAt+.34+i*.035));if(dn>=1)continue;
+     x.save();x.beginPath();x.rect(L.bb[0]-300,L.base-CAP-600,L.bb[2]-L.bb[0]+600,CAP+600+(L.ln==='cube'?16:0));x.clip();x.translate(L.x,L.base+dn*CAP*1.25);x.fillStyle=th.ink;x.fill(gpath(L.ch));x.restore()}});
+   if(withCube){const [sx,sy]=toPx(T,SLOT.x,SLOT.y),r0=SLOT.r*T.s,r1=hand.r;const cx=lerp(sx,hand.cx,glide),cy=lerp(sy,hand.cy,glide)-Math.sin(Math.PI*glide)*Math.min(Wd,H)*.05,r=lerp(r0,r1,glide);
+    const lw=r*LW/SLOT.r;const sty=cubeStyle(pe.cube,THEMES[themeKey]);
+    drawCube(x,cx,cy,r,QISO,cubeStyle('colour',THEMES.yellow),lw);if(pe.cube!=='colour'){x.save();x.globalAlpha=1-glide;drawCube(x,cx,cy,r,QISO,sty,lw);x.restore()}}};
+  if(pe.theme==='dark'){const [cx,cy]=toPx(T,SLOT.x,SLOT.y),rad=eOut3(seg(t,D+.1,D+.6))*Math.hypot(Wd,H)*1.05;draw('dark',rad<=0);
+   if(rad>0){x.save();x.beginPath();x.arc(cx,cy,rad,0,Math.PI*2);x.clip();draw('yellow',true);x.restore()}}
+  else draw('yellow',true)}
+// one launch: pick, remember, and hand back what intro.js needs
+window.LuShuffle={ids:ROTATION.map(r=>r.id),
+ plan(force){let last=null;try{last=localStorage.getItem(KEY)}catch(e){}
+  const r=(force&&ROTATION.find(q=>q.id===force))||pickNext(last);try{localStorage.setItem(KEY,r.id)}catch(e){}
+  const I=INTROS.find(J=>J.id===r.id),D=I.dur;return{id:r.id,I,env:{theme:I.forceTheme||r.theme,cube:r.cube},D,H0i:D+.95,H0:(D+.95)/SPEEDK}},
+ draw:drawPlan,
+ lw:LW/SLOT.r};   // the cube's outline as a share of its corner radius
+})();
+
+</script>
+<script>
+// ===================== LU CUBE · PHONE: the opening (9 s, plays through every time) =====================
+// On Android and iPad it starts with one of six shuffled openings (intro-shuffle.js) and runs from 2.9 s of this one.
+// The unfolded cube folds up like origami (the white square swings up twice into the lid), pulses and floods the
+// screen yellow, glides to the corner of the E, LISTEN TO THE UNIVERSE rises out of an invisible line and sinks
+// back, leaving L, U and the cube to come together in the middle, and the logo flies into the app's header.
+// Everything is drawn from one clock (render(t)), so every phone shows the same frame at the same moment, and the
+// design mock runs this very file.
+(function(){
+const S=84,T=9,EXIT=8.4,WORDS='LISTEN TO THE UNIVERSE',UI=WORDS.indexOf('UNIVERSE');
+const $=id=>document.getElementById(id);
+const cl=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),P=(t,s,d)=>cl((t-s)/d),lerp=(a,b,u)=>a+(b-a)*u;
+const io=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,out=u=>1-Math.pow(1-u,3),inn=u=>u*u*u;
+const LINES='<svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.6" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="17" x2="19" y2="17"/></svg>';
+const ov=document.createElement('div');ov.id='lintro';
+ov.innerHTML=`<div id="liFlood"><i></i></div><div id="liTxt"></div>
+<div id="liVeil"></div><div id="liMover"><div class="li-scene"><div class="li-cube" id="liCube">
+<div class="lf lf-base" style="background:#ff7a1a"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.8" fill="#fff"/></svg></i></div>
+<div class="lf lf-top" style="background:#ffc21a"><i><svg viewBox="0 0 24 24"><polygon points="7,4 7,20 20,12" fill="#111"/></svg></i></div>
+<div class="lf lf-left" style="background:#2f6be8"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></i></div>
+<div class="lf lf-right" style="background:#cfd6df"><i><svg viewBox="0 0 24 24" fill="#111"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg></i></div>
+<div class="lf lf-front" style="background:#e0281a"><i>${LINES}</i><i class="bk">${LINES}</i>
+<div class="lf lf-lid" style="background:#fff"><i><svg viewBox="0 0 24 24" fill="#111"><rect x="4" y="15" width="3" height="5"/><rect x="9" y="11" width="3" height="9"/><rect x="14" y="7" width="3" height="13"/><rect x="19" y="3" width="3" height="17"/></svg></i></div></div>
+</div></div></div><div id="liMeas"></div>`;
+document.body.append(ov);document.body.classList.add('lintro-on','lintro-hide');window.LU_INTRO_ON=true;
+const q=s=>ov.querySelector(s),txt=$('liTxt'),meas=$('liMeas'),icons=[...ov.querySelectorAll('.lf>i')];
+const baseI=q('.lf-base>i');baseI.style.transform='translateZ(-.6px)';
+const fL=q('.lf-left'),fR=q('.lf-right'),fT=q('.lf-top'),fF=q('.lf-front'),fLid=q('.lf-lid'),cube=$('liCube'),mover=$('liMover');
+let PW=innerWidth,PH=innerHeight,FS=30,L=[],SL=[],TX=0,TY=0,TH=0,PAD=0,FIN=null,ready=false;
+// the words, measured once in the real font: every letter's place on the line.
+// Each letter sits in its own little window whose bottom edge IS the invisible line, and slides up and down inside
+// it: plain cropping, which every phone draws the same way.
+function build(){PW=innerWidth;PH=innerHeight;meas.innerHTML=[...WORDS].map(c=>`<span>${c===' '?'&nbsp;':c}</span>`).join('');
+ meas.style.fontSize='30px';const w=meas.getBoundingClientRect().width;FS=Math.min(34,30*(PW-40-58)/w);meas.style.fontSize=FS+'px';
+ const r=meas.getBoundingClientRect();TH=r.height;PAD=Math.ceil(TH*.3);TX=(PW-r.width)/2-26;TY=PH*.5-TH/2;let x=TX;
+ L=[...meas.children].map((s,i)=>{const b=s.getBoundingClientRect(),o={c:WORDS[i],x,w:b.width};x+=b.width;return o});
+ txt.innerHTML='';SL=L.map(l=>{if(l.c===' ')return null;const slot=document.createElement('b');slot.className='li-slot';
+  slot.style.width=(l.w+4)+'px';slot.style.height=(TH+PAD)+'px';const sp=document.createElement('span');sp.textContent=l.c;sp.style.fontSize=FS+'px';sp.style.top=PAD+'px';
+  slot.append(sp);txt.append(slot);return{slot,sp}});ready=true}
+// where the logo lands: the app's own header
+function header(){const t=$('ptitle');if(!t)return null;const sp=t.querySelector('span'),sv=t.querySelector('svg');if(!sp||!sv)return null;
+ const a=sp.getBoundingClientRect(),b=sv.getBoundingClientRect();if(!a.width)return null;
+ return{lu:{x:a.left,y:a.top,w:a.width,h:a.height},cube:{x:b.left+b.width/2,y:b.top+b.height/2,w:b.width}}}
+// iPhone (Safari stretches magnified type): the letters are re-set at each size; Android magnifies them as designed
+const SHARP=!!window.LUWEB;
+// a letter's window and type at a given size (sharp at any size: nothing is magnified)
+function size(s,l,k){const key=k.toFixed(4);if(s.k===key)return;s.k=key;s.slot.style.width=(l.w+4)*k+'px';s.slot.style.height=(TH+PAD)*k+'px';s.sp.style.fontSize=FS*k+'px';s.sp.style.top=PAD*k+'px'}
+function render(t){if(!ready)return;
+ // 1. fade in behind a veil (never by fading the 3D cube), fold like origami, camera turns to the logo angle
+ const ap=out(P(t,0,.6));$('liVeil').style.opacity=1-ap;
+ const f=(s,d)=>io(P(t,s,d||.75));
+ fL.style.transform=`translateX(-84px) rotateY(${90*f(.6)}deg)`;fR.style.transform=`translateX(84px) rotateY(${-90*f(.8)}deg)`;
+ fT.style.transform=`translateY(-84px) rotateX(${-90*f(1.0)}deg)`;fF.style.transform=`translateY(84px) rotateX(${90*f(1.2)}deg)`;
+ fLid.style.transform=`translateY(84px) rotateX(${90*f(1.75,.65)}deg)`;
+ const c=io(P(t,.6,1.8));cube.style.transform=`rotateX(${-30*c}deg) rotateY(${45*c}deg) rotateX(${90*c}deg)`;
+ const io2=1-P(t,2.34,.08);icons.forEach(i=>i.style.opacity=io2);   // the symbols go the moment the lid shuts
+ // the bottom's target ends up inside the box: it fades as the sides rise round it (Safari drew it on top of them)
+ baseI.style.opacity=Math.min(io2,1-P(t,.75,.3));
+ const pul=s=>{const u=P(t,s,.3);return u>0&&u<1?1+.2*Math.sin(u*Math.PI):1};
+ let cx=PW/2,cy=PH*.4,cs=(.85+.15*ap)*pul(2.4);
+ // 2. the pulse at 2.4 floods the screen yellow
+ // (a circle that only scales: the graphics chip does it, no repainting the whole screen each frame)
+ const fd=$('liFlood').firstChild,FR=Math.hypot(PW,PH)*1.1;fd.style.cssText=`left:${PW/2-FR}px;top:${PH*.4-FR}px;width:${FR*2}px;height:${FR*2}px;transform:scale(${Math.max(.0001,out(P(t,2.42,.6)))})`;
+ // 3. the cube glides to the top corner of the last E, at its true size beside the words
+ const E=L[L.length-1],cw=FS*.46,ex0=E.x+E.w+cw*.75+4,ey0=TY+cw*.12;
+ const g=io(P(t,2.9,.9));cx=lerp(PW/2,ex0,g);cy=lerp(PH*.4,ey0,g)-Math.sin(Math.PI*g)*30;cs=lerp(cs,cw/(S*1.42),g);
+ // 4. the words rise together through the line; 5. a tiny pulse sends all but L and U back down together.
+ // Before 3.8 s (and once sunk) the words are switched off entirely, so nothing can show while the cube folds.
+ const up=out(P(t,3.8,.7)),dn=inn(P(t,5.45,.5)),on=t>=3.8;
+ L.forEach((l,i)=>{const s=SL[i];if(!s)return;const keep=i===0||i===UI,d=keep?0:dn;
+  s.slot.style.visibility=on&&d<1?'visible':'hidden';s.slot.style.overflow='hidden';s.sp.style.color='#111';if(SHARP)size(s,l,1);
+  s.slot.style.transform=`translate(${l.x}px,${TY-PAD}px)`;s.sp.style.transform=`translateY(${TH*1.2*(1-up)+TH*1.2*d}px)`});
+ if(t>=5.3&&t<5.6)cs*=1+.12*Math.sin(Math.PI*P(t,5.3,.3));
+ // 6. from 6.3 the L, U and cube come together straight into the centre, growing into the logo (and then hold still)
+ const fs=Math.min(PW*.34,140),k=fs/FS,gr=io(P(t,6.3,1.3)),K=lerp(1,k,gr),Lc=L[0],Uc=L[UI];
+ const fcw=fs*.46,Wl=(Lc.w+Uc.w)*k+fcw*1.17,LxT=(PW-Wl)/2,LyT=PH*.42-TH*k/2,fcx=LxT+(Lc.w+Uc.w)*k+fcw*.62,fcy=LyT+fcw*.42;
+ const place=(i,x,y,sc,col)=>{const s=SL[i];s.slot.style.overflow='visible';s.slot.style.visibility='visible';s.sp.style.transform='none';
+  if(SHARP){size(s,L[i],sc);s.slot.style.transform=`translate(${x}px,${y-PAD*sc}px)`}else s.slot.style.transform=`translate(${x}px,${y-PAD*sc}px) scale(${sc})`;if(col)s.sp.style.color=col};
+ if(t>=6.3){place(0,lerp(Lc.x,LxT,gr),lerp(TY,LyT,gr),K);place(UI,lerp(Uc.x,LxT+Lc.w*k,gr),lerp(TY,LyT,gr),K);
+  cx=lerp(ex0,fcx,gr);cy=lerp(ey0,fcy,gr);cs=lerp(cw,fcw,gr)/(S*1.42)}
+ // 7. into the app: the yellow fades and the logo flies to the header, turning white
+ const xe=io(P(t,EXIT,.55));
+ if(t>=EXIT){FIN=FIN||header()||(window.LU_INTRO_LAND&&window.LU_INTRO_LAND())||{lu:{x:16,y:20,w:24,h:22},cube:{x:51,y:26,w:17}};const hk=FIN.lu.h/TH,col=xe>.5?'#f2f4f7':'#111';
+  place(0,lerp(LxT,FIN.lu.x,xe),lerp(LyT,FIN.lu.y,xe),lerp(k,hk,xe),col);place(UI,lerp(LxT+Lc.w*k,FIN.lu.x+FIN.lu.w*.5,xe),lerp(LyT,FIN.lu.y,xe),lerp(k,hk,xe),col);
+  cx=lerp(fcx,FIN.cube.x,xe);cy=lerp(fcy,FIN.cube.y,xe);cs=lerp(fcw/(S*1.42),FIN.cube.w/(S*1.42),xe)}
+ $('liFlood').style.opacity=1-xe;
+ // the app is drawn once behind the solid yellow just before the reveal, so the fade itself has nothing new to paint
+ if(t>=7.9&&document.body.classList.contains('lintro-hide')){document.body.classList.remove('lintro-hide');window.dispatchEvent(new Event('luintroreveal'))}ov.style.background=t>=EXIT?'transparent':'';
+ mover.style.transform=`translate(${cx}px,${cy}px) scale(${cs})`}
+window.luIntroRender=t=>render(t);
+// wait for the real Anton font before measuring anything (up to 3 s, behind the dark start), then run the clock
+const fontReady=()=>Promise.race([document.fonts.load('400 30px Anton').then(()=>document.fonts.ready),new Promise(r=>setTimeout(r,3000))]).catch(()=>{});
+if(window.LU_INTRO_MANUAL){fontReady().then(()=>{build();render(window.LU_INTRO_T||0)});return}   // the design mock drives the clock itself
+// ---- the shuffled opening (Android and iPad: their builds load intro-shuffle.js before this file) ----
+// One of six openings plays on a canvas, lands the new logo, and hands over to this file's own clock at 2.9 s, with the
+// cube exactly where this file puts it. From there the cube is the flat isometric logo cube, following #liMover.
+const SHF=window.LuShuffle||null,FROM=2.9;   // present only where the build includes intro-shuffle.js
+let PLAN=null,HAND=null,OFF=null,cvs=null,cctx=null,iso=null,DPR=1,TT=T;
+if(SHF){try{PLAN=SHF.plan(window.LU_INTRO_FORCE);TT=PLAN.H0+(T-FROM);window.LU_INTRO_PICK=PLAN.id;
+  cvs=document.createElement('canvas');cvs.id='liShuf';ov.append(cvs);
+  const NS='http://www.w3.org/2000/svg';iso=document.createElementNS(NS,'svg');iso.id='liIso';iso.setAttribute('viewBox','-1.25 -1.25 2.5 2.5');
+  [[[0,-1],[.866,-.5],[0,0],[-.866,-.5],'#fff'],[[-.866,-.5],[0,0],[0,1],[-.866,.5],'#2f6be8'],[[0,0],[.866,-.5],[.866,.5],[0,1],'#e0281a']].forEach(f=>{const g=document.createElementNS(NS,'polygon');
+   g.setAttribute('points',f.slice(0,4).map(v=>v.join(',')).join(' '));g.setAttribute('fill',f[4]);g.setAttribute('stroke','#111');g.setAttribute('stroke-width',String(SHF.lw));g.setAttribute('stroke-linejoin','round');iso.append(g)});ov.append(iso)}
+ catch(e){PLAN=null;TT=T}}   // anything goes wrong: the original opening plays
+const moverAt=()=>{const m=/translate\(([-\d.e]+)px,\s*([-\d.e]+)px\)\s*scale\(([-\d.e]+)\)/.exec(mover.style.transform||'');return m?{x:+m[1],y:+m[2],s:+m[3]}:null};
+// size the canvas and measure where this file's cube is at 2.9 s (the hand-off)
+function sizeShuf(){DPR=Math.min(2,window.devicePixelRatio||1);cvs.width=Math.round(PW*DPR);cvs.height=Math.round(PH*DPR);cvs.style.width=PW+'px';cvs.style.height=PH+'px';cctx=cvs.getContext('2d');
+ render(FROM);mover.style.visibility='visible';let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;ov.querySelectorAll('.lf').forEach(f=>{const r=f.getBoundingClientRect();if(!r.width)return;x0=Math.min(x0,r.left);y0=Math.min(y0,r.top);x1=Math.max(x1,r.right);y1=Math.max(y1,r.bottom)});
+ mover.style.visibility='hidden';const m=moverAt()||{x:PW/2,y:PH*.4,s:1},cx=(x0+x1)/2,cy=(y0+y1)/2,r=(x1-x0)/1.732/1.02;HAND={cx,cy,r};OFF={dx:(cx-m.x)/m.s,dy:(cy-m.y)/m.s,r:r/m.s}}
+function placeIso(){const m=moverAt();if(!m||!OFF)return;const r=OFF.r*m.s;iso.style.width=iso.style.height=(2.5*r)+'px';iso.style.transform=`translate(${m.x+OFF.dx*m.s-1.25*r}px,${m.y+OFF.dy*m.s-1.25*r}px)`}
+let t0=0,skip=0,gone=false,clock=0,lastN=0;
+function frame(n){if(gone)return;if(!t0){t0=n;lastN=n}clock+=Math.min(1/30,(n-lastN)/1000);lastN=n;let t=clock+skip;
+ if(t>=TT){gone=true;render(T);document.body.classList.remove('lintro-hide');ov.animate([{opacity:1},{opacity:0}],{duration:160,fill:'forwards'}).onfinish=()=>{ov.remove();document.body.classList.remove('lintro-on');window.LU_INTRO_ON=false;window.dispatchEvent(new Event('luintroend'))};return}
+ if(PLAN&&t<PLAN.H0){cctx.setTransform(DPR,0,0,DPR,0,0);SHF.draw(cctx,t,PW,PH,PLAN,HAND,DPR)}
+ else if(PLAN){if(cvs.style.display!=='none'){cvs.style.display='none';iso.style.visibility='visible'}render(FROM+t-PLAN.H0);placeIso()}
+ else render(t);
+ requestAnimationFrame(frame)}
+// no skipping: jumping ahead dropped you into the app while it was still starting up, and it stuttered
+window.luIntroSkip=()=>{skip=99};
+const hold=on=>{try{const N=window.LUNATIVE;if(N&&N.lockPortrait)N.lockPortrait({lock:on}).catch(()=>{})}catch(e){}};
+hold(true);addEventListener('luintroend',()=>hold(false),{once:true});setTimeout(()=>hold(false),15000);   // (safety: never stays locked)
+addEventListener('resize',()=>{if(gone||!ready)return;build();FIN=null;if(PLAN)sizeShuf()});
+fontReady().then(()=>{build();if(PLAN){try{sizeShuf()}catch(e){PLAN=null;TT=T;cvs&&cvs.remove();iso&&iso.remove();mover.style.visibility=''}}requestAnimationFrame(frame)});
+})();
+
+</script>
 </body></html>
