@@ -62,7 +62,10 @@ def tracks_in(folder, rel):
         pn = parse_name(stem) if not t.get("title") else None
         pc = pn or parse_name(stem)
         tt, ta = tidy(t.get("title") or (pn[3] or pn[1] if pn else nice(stem)), t.get("artist") or (pc[0] if pc else ""))
-        out.append({"t": tt, "a": ta, "d": t.get("length") or 0,
+        dm = re.match(r"^(\d{4}-\d{2}-\d{2}) - (.+)$", stem)
+        if dm and not dm.group(1).startswith("0000") and not t.get("title"):
+            tt, ta = dm.group(2), ""
+        out.append({"t": tt, "a": ta, "d": t.get("length") or 0, **({"dt": dm.group(1)} if dm and not dm.group(1).startswith("0000") else {}),
                     "src": "/media/" + urllib.parse.quote(rel + f), "lrc": "/media/" + urllib.parse.quote(rel + lrc) if os.path.exists(os.path.join(folder, lrc)) else ""})
     return out
 
@@ -139,11 +142,305 @@ def library():
         if parts and len(parts) > 1:
             out.extend(parts)
         else:
-            out.append({"name": d, "cover": cover, "tracks": tr})
+            out.append({"name": d, "cover": cover, "tracks": tr, **({"kind": "book"} if is_book(p, [f for f in os.listdir(p) if f.lower().endswith(AUDIO)]) else {})})
     loose = tracks_in(MUSIC, "")
     if loose:
         out.append({"name": "Loose songs", "cover": "", "tracks": loose})
     return out
+
+
+# ---------------- listening: Add Music, the finders, audiobooks and podcasts (the same as the Android app) ----------------
+# The page's Add Music face and its two finders (web/listen/) talk to these:
+#   /api/listen        the page's own notes (where you are in each book, what kind each playlist is, hidden ones, ...)
+#   /api/fetch?u=      reads a page from the internet for the finders (the Internet Archive, Openverse, podcast feeds)
+#   /api/dl            downloads one file into Music\<playlist>\ ; /api/dlprog says how far along it is
+#   /api/import        a song you picked on this PC, copied into Music\<playlist>\
+#   /api/added, /api/removeAdded   the playlists Lu Cube made itself (only those are ever deleted)
+#   /api/pods/...      podcast subscriptions: new episodes download by themselves while Lu Cube is open
+DATA = os.path.join(ROOT, "data")
+LISTEN = os.path.join(DATA, "listen.json")
+ADDED = os.path.join(DATA, "added.json")
+PODS = os.path.join(DATA, "pods.json")
+LLOCK, PLOCK = threading.Lock(), threading.Lock()
+DLP = {}   # dest -> [got, total] while a download runs
+EPISODE = re.compile(r"^\d{4}-\d{2}-\d{2} - .+\.(mp3|m4a|aac|ogg|opus)$", re.I)
+UA = {"User-Agent": "LuCube/1.0 (PC)"}
+
+
+def jload(f, d):
+    try:
+        with open(f, encoding="utf-8") as r:
+            return json.load(r)
+    except (OSError, ValueError):
+        return d
+
+
+def jsave(f, obj):
+    os.makedirs(os.path.dirname(f), exist_ok=True)
+    with open(f + ".tmp", "w", encoding="utf-8") as w:
+        json.dump(obj, w)
+    os.replace(f + ".tmp", f)
+
+
+def fclean(s, n=90):
+    """the same file-name rule as the page and the phone: no path characters, single spaces"""
+    s = re.sub(r"\s+", " ", re.sub(r'[\\/:*?"<>|\r\n\t]+', " ", str(s or ""))).strip()[:n].strip(" .")
+    return s or "track"
+
+
+def music_path(dest):
+    """'Playlist/01 - Song.mp3' -> a path inside Music, or None. Every part is cleaned, so nothing can climb out."""
+    parts = [fclean(x) for x in str(dest or "").replace("\\", "/").split("/") if x.strip() and x.strip() not in (".", "..")]
+    if len(parts) < 2:
+        return None, None
+    f = os.path.realpath(os.path.join(MUSIC, *parts))
+    if not f.startswith(os.path.realpath(MUSIC) + os.sep):
+        return None, None
+    return f, parts[0]
+
+
+def mark_added(name):
+    with LLOCK:
+        L = jload(ADDED, [])
+        if not any(x.lower() == name.lower() for x in L):
+            L.append(name)
+            jsave(ADDED, L)
+
+
+def net_open(url, timeout=30):
+    if not re.match(r"^https?://", url or ""):
+        raise ValueError("not a web address")
+    ctx = ssl.create_default_context()
+    return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout, context=ctx)
+
+
+def download(url, out, prog=None):
+    tmp = out + ".part"
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    try:
+        with net_open(url, 60) as r, open(tmp, "wb") as w:
+            total = int(r.headers.get("Content-Length") or 0)
+            got = 0
+            if prog is not None:
+                prog[:] = [0, total]
+            while True:
+                b = r.read(1 << 16)
+                if not b:
+                    break
+                w.write(b)
+                got += len(b)
+                if prog is not None:
+                    prog[0] = got
+        os.replace(tmp, out)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
+# ---------- podcasts ----------
+def pod_date(s):
+    import email.utils
+    s = (s or "").strip()
+    try:
+        return email.utils.parsedate_to_datetime(s)
+    except (TypeError, ValueError, IndexError):
+        pass
+    try:
+        import datetime
+        return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def pod_feed(url, mx=30):
+    import xml.etree.ElementTree as ET
+    with net_open(url, 30) as r:
+        root = ET.fromstring(r.read(20 << 20))
+    out = []
+    for it in root.iter("item"):
+        en = it.find("enclosure")
+        u = en.get("url", "") if en is not None else ""
+        ty = (en.get("type", "") if en is not None else "").lower()
+        if not u or not ("audio" in ty or re.search(r"\.(mp3|m4a|aac|ogg|opus)$", u.split("?")[0].split("#")[0], re.I)):
+            continue
+        g = lambda t: (it.findtext(t) or "").strip()
+        out.append({"title": g("title") or "Episode", "guid": g("guid") or u, "url": u, "date": pod_date(g("pubDate"))})
+        if len(out) >= mx:
+            break
+    return out
+
+
+def pod_ext(u):
+    u = u.split("?")[0].split("#")[0].lower()
+    return next((e for e in (".mp3", ".m4a", ".aac", ".ogg", ".opus") if u.endswith(e)), ".mp3")
+
+
+def pod_check(only=None):
+    """new episodes of every starred show (or one): the newest 10 kept, the first check takes just the newest"""
+    with PLOCK:
+        P = jload(PODS, {})
+        shows, total = [], 0
+        for s in P.get("subs", []):
+            feed, name = s.get("feed", ""), fclean(s.get("name") or "Podcast", 60)
+            if not feed or (only and only != feed):
+                continue
+            row, got = {"feed": feed, "name": name}, 0
+            try:
+                eps = pod_feed(feed)
+                seen = P.setdefault("seen", {}).get(feed)
+                first = seen is None
+                seen = list(seen or [])
+                want = []
+                for e in eps:
+                    if e["guid"] in seen:
+                        continue
+                    if first and len(want) >= 1 or len(want) >= 5:
+                        seen.append(e["guid"])
+                        continue
+                    want.append(e)
+                d = os.path.join(MUSIC, name)
+                if want:
+                    mark_added(name)
+                    cov = os.path.join(d, "cover.jpg")
+                    if s.get("art") and not os.path.exists(cov):
+                        try:
+                            download(s["art"], cov)
+                        except (OSError, ValueError):
+                            pass
+                for e in want:
+                    out = os.path.join(d, (e["date"].strftime("%Y-%m-%d") if e["date"] else "0000-00-00") + " - " + fclean(e["title"]) + pod_ext(e["url"]))
+                    if not os.path.exists(out):
+                        download(e["url"], out)
+                        got += 1
+                    seen.append(e["guid"])
+                if first:
+                    seen += [e["guid"] for e in eps if e["guid"] not in seen]
+                P["seen"][feed] = seen[-400:]
+                if os.path.isdir(d):  # a show keeps its 10 newest episodes (other files in the folder are left alone)
+                    for f in sorted((f for f in os.listdir(d) if EPISODE.match(f)), key=str.lower, reverse=True)[10:]:
+                        try:
+                            os.remove(os.path.join(d, f))
+                        except OSError:
+                            pass
+                P.setdefault("checked", {})[feed] = int(time.time() * 1000)
+                P.setdefault("last", {})[feed] = got
+            except Exception as ex:  # one show that can't be reached doesn't stop the others
+                row["error"] = str(ex)[:120]
+            row["new"] = got
+            total += got
+            shows.append(row)
+            if got:
+                P.setdefault("news", []).append({"show": name, "n": got, "at": int(time.time() * 1000)})
+        jsave(PODS, P)
+        return {"shows": shows, "total": total}
+
+
+def pod_loop():
+    """while Lu Cube is open: a check soon after it starts, then every 3 hours"""
+    time.sleep(30)
+    while True:
+        if jload(PODS, {}).get("subs"):
+            try:
+                pod_check()
+            except Exception:
+                pass
+        time.sleep(3 * 3600)
+
+
+def listen_get(h, path, q):
+    arg = lambda k: (q.get(k) or [""])[0]
+    if path == "/api/listen":
+        return h.send_json(jload(LISTEN, {}))
+    if path == "/api/fetch":
+        try:
+            with net_open(arg("u"), 30) as r:
+                b = r.read(12 << 20)
+            h.send_response(200)
+            h.send_header("Content-Type", "text/plain; charset=utf-8")
+            h.send_header("Content-Length", str(len(b)))
+            h.end_headers()
+            return h.wfile.write(b)
+        except Exception as e:
+            return h.send_error(502, str(e)[:100])
+    if path == "/api/dlprog":
+        g = DLP.get(arg("dest"))
+        return h.send_json({"got": g[0], "total": g[1]} if g else {})
+    if path == "/api/added":
+        return h.send_json({"playlists": [x for x in jload(ADDED, []) if os.path.isdir(os.path.join(MUSIC, x))]})
+    if path == "/api/pods/status":
+        P = jload(PODS, {})
+        return h.send_json({s["feed"]: {"checked": P.get("checked", {}).get(s["feed"], 0), "last": P.get("last", {}).get(s["feed"], 0)} for s in P.get("subs", []) if s.get("feed")})
+    if path == "/api/pods/news":
+        with PLOCK:
+            P = jload(PODS, {})
+            news = P.pop("news", [])
+            jsave(PODS, P)
+        return h.send_json({"news": news})
+    h.send_error(404)
+
+
+def listen_post(h, path, q, body):
+    arg = lambda k: (q.get(k) or [""])[0]
+    if path == "/api/import":  # one picked song, the bytes are the body
+        f, pl = music_path(arg("dest"))
+        if not f:
+            return h.send_error(400)
+        os.makedirs(os.path.dirname(f), exist_ok=True)
+        with open(f + ".part", "wb") as w:
+            w.write(body)
+        os.replace(f + ".part", f)
+        mark_added(pl)
+        return h.send_json({"ok": True})
+    try:
+        d = json.loads(body or b"{}")
+    except ValueError:
+        return h.send_error(400)
+    if path == "/api/listen":  # the page's notes, a few keys at a time
+        with LLOCK:
+            L = jload(LISTEN, {})
+            for k, v in (d or {}).items():
+                if isinstance(k, str) and k.startswith("lu_"):
+                    if v is None:
+                        L.pop(k, None)
+                    else:
+                        L[k] = v
+            jsave(LISTEN, L)
+        return h.send_json({"ok": True})
+    if path == "/api/dl":
+        f, pl = music_path(d.get("dest"))
+        if not f:
+            return h.send_error(400)
+        key = d.get("dest")
+        DLP[key] = [0, 0]
+        try:
+            download(d.get("url", ""), f, DLP[key])
+            mark_added(pl)
+            return h.send_json({"ok": True})
+        except Exception as e:
+            return h.send_error(502, str(e)[:100])
+        finally:
+            DLP.pop(key, None)
+    if path == "/api/removeAdded":  # only a playlist Lu Cube downloaded itself is deleted
+        import shutil
+        name = str(d.get("playlist") or "")
+        with LLOCK:
+            L = jload(ADDED, [])
+            hit = next((x for x in L if x.lower() == name.lower()), None)
+            if hit:
+                p = os.path.realpath(os.path.join(MUSIC, hit))
+                if p.startswith(os.path.realpath(MUSIC) + os.sep) and os.path.isdir(p):
+                    shutil.rmtree(p, ignore_errors=True)
+                jsave(ADDED, [x for x in L if x != hit])
+        return h.send_json({"ok": bool(hit)})
+    if path == "/api/pods/subs":
+        with PLOCK:
+            P = jload(PODS, {})
+            P["subs"] = [{"feed": str(s.get("feed")), "name": str(s.get("name") or "Podcast"), "art": str(s.get("art") or "")} for s in d.get("subs", []) if isinstance(s, dict) and s.get("feed")][:200]
+            jsave(PODS, P)
+        return h.send_json({"ok": True})
+    if path == "/api/pods/check":
+        return h.send_json(pod_check(d.get("feed") or None))
+    h.send_error(404)
 
 
 # ---------------- radio: live stations from radio-browser.info, played through this server ----------------
@@ -411,7 +708,7 @@ class H(BaseHTTPRequestHandler):
             return self.send_error(403)
         path = urllib.parse.unquote(self.path.split("?", 1)[0])
         if path in ("/", "/index.html"):
-            return self.file(os.path.join(WEB, "index.html"))
+            return self.page()
         if path.startswith("/fonts/") and re.fullmatch(r"/fonts/[\w.-]+\.woff2", path):
             return self.file(os.path.join(WEB, path.lstrip("/")))
         if path == "/favicon.ico":
@@ -440,6 +737,10 @@ class H(BaseHTTPRequestHandler):
             return self.wfile.write(b)
         if path.startswith("/api/radio/"):
             return self.radio(path, urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else ""))
+        if path.startswith("/listen/") and re.fullmatch(r"/listen/[\w.-]+\.(js|css)", path):
+            return self.file(os.path.join(WEB, path.lstrip("/")))
+        if path in ("/api/listen", "/api/fetch", "/api/dlprog", "/api/added") or path.startswith("/api/pods/"):
+            return listen_get(self, path, urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else ""))
         if path == "/api/library":
             return self.send_json({"playlists": library(), "music": MUSIC})
         if path.startswith("/media/"):
@@ -451,7 +752,16 @@ class H(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Saves favourites and volume (state.json next to this script)."""
-        if self.headers.get("Host", "").split(":")[0] not in ("127.0.0.1", "localhost") or self.path != "/api/state":
+        if self.headers.get("Host", "").split(":")[0] not in ("127.0.0.1", "localhost"):
+            return self.send_error(403)
+        lp = urllib.parse.unquote(self.path.split("?", 1)[0])
+        if lp in ("/api/listen", "/api/import", "/api/dl", "/api/removeAdded") or lp.startswith("/api/pods/"):
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > (2 << 30):
+                return self.send_error(413)
+            body = self.rfile.read(n) if n else b""
+            return listen_post(self, lp, urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else ""), body)
+        if self.path != "/api/state":
             return self.send_error(403)
         try:
             n = min(int(self.headers.get("Content-Length", 0)), 1 << 20)
@@ -538,6 +848,22 @@ class H(BaseHTTPRequestHandler):
             pass  # you changed station (or the station dropped): hang up
         finally:
             conn.close()
+
+    def page(self):
+        """the cube's page, with the PC's listening layer (Add Music, the finders, audiobooks and podcasts) added in"""
+        html = open(os.path.join(WEB, "index.html"), encoding="utf-8").read()
+        L = os.path.join(WEB, "listen")
+        if os.path.isdir(L):
+            html = html.replace("</head>", '<link rel="stylesheet" href="/listen/listen.css"><link rel="stylesheet" href="/listen/pc.css"><script src="/listen/pc.js"></script>\n</head>', 1)
+            i = html.rindex("</body>")
+            html = html[:i] + "".join(f'<script src="/listen/{n}"></script>' for n in ("addmusic.js", "finder.js", "spoken.js", "pc-late.js")) + "\n" + html[i:]
+        b = html.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(b)))
+        self.end_headers()
+        self.wfile.write(b)
 
     def file(self, f):
         """Serve a file, with byte ranges so you can seek inside long recordings."""
@@ -692,13 +1018,14 @@ def copy_music(dest):
     print(f"Copied {n} file(s). Left {skipped} audiobook folder(s) on this computer.")
 
 def sync_files(books=False):
-    """what Phone Sync copies: your music (with covers). Audiobooks stay on the PC; books=True lists them instead."""
+    """what Phone Sync copies: your music, audiobooks and podcasts (with covers). (books=True is from when audiobooks
+    stayed on the PC: nothing is listed as one to take off the phone any more.)"""
     out = []
+    if books:
+        return out
     for dp, dn, fn in os.walk(MUSIC):
         dn.sort(key=str.lower)
         songs = [f for f in sorted(fn, key=str.lower) if f.lower().endswith(AUDIO)]
-        if songs and is_book(dp, songs) != books:
-            continue
         for f in songs:
             full = os.path.join(dp, f)
             out.append({"p": os.path.relpath(full, MUSIC).replace(os.sep, "/"), "s": os.path.getsize(full)})
@@ -712,8 +1039,60 @@ def sync_files(books=False):
     return out
 
 
+def sync_listen(theirs):
+    """Audiobooks and podcasts, both ways: where you are in each chapter / episode, which one each book or show is on,
+    what kind each playlist is, and your podcast subscriptions. Files are named the same on both sides ('Folder/file'),
+    so that's the key; the newer spot wins."""
+    if not isinstance(theirs, dict):
+        return {}
+    key = lambda src: urllib.parse.unquote(src[len("/media/"):]).lower() if isinstance(src, str) and src.startswith("/media/") else None
+    with LLOCK:
+        L = jload(LISTEN, {})
+        pos, res = L.get("lu_pos") or {}, L.get("lu_resume") or {}
+        mine = {key(k): (k, v) for k, v in pos.items() if key(k) and isinstance(v, dict)}
+        src_of = {k: k2 for k, (k2, v) in mine.items()}
+        for k, v in (theirs.get("pos") or {}).items():
+            if not isinstance(v, dict):
+                continue
+            k = k.lower()
+            have = mine.get(k)
+            if have is None or (v.get("at") or 0) > (have[1].get("at") or 0):
+                src = src_of.get(k) or "/media/" + urllib.parse.quote(k)
+                if have is None:  # a file the PC has under a different case: find its real name
+                    for root, _, fs in os.walk(MUSIC):
+                        for f in fs:
+                            rel = os.path.relpath(os.path.join(root, f), MUSIC).replace(os.sep, "/")
+                            if rel.lower() == k:
+                                src = "/media/" + urllib.parse.quote(rel)
+                pos[src] = v
+                mine[k] = (src, v)
+                src_of[k] = src
+        at = lambda k: (mine.get(k, (None, {}))[1] or {}).get("at") or 0
+        for pl, k in (theirs.get("resume") or {}).items():
+            k, mk = str(k).lower(), key(res.get(pl.lower(), ""))
+            if not mk or at(k) >= at(mk):
+                if k in src_of:
+                    res[pl.lower()] = src_of[k]
+        kinds = L.get("lu_kinds") or {}
+        kinds.update({str(n).lower(): v for n, v in (theirs.get("kinds") or {}).items() if v in ("music", "book", "pod")})
+        subs = list(L.get("lu_pod_subs") or [])
+        have = {x.get("feed") for x in subs if isinstance(x, dict)}
+        for x in theirs.get("subs") or []:
+            if isinstance(x, dict) and x.get("feed") and x["feed"] not in have:
+                subs.append({"feed": x["feed"], "name": x.get("name") or "Podcast", "art": x.get("art") or ""})
+                have.add(x["feed"])
+        L.update({"lu_pos": pos, "lu_resume": res, "lu_kinds": kinds, "lu_pod_subs": subs})
+        jsave(LISTEN, L)
+    with PLOCK:
+        P = jload(PODS, {})
+        P["subs"] = subs
+        jsave(PODS, P)
+    return {"pos": {key(k): v for k, v in pos.items() if key(k)}, "resume": {pl: key(src) for pl, src in res.items() if key(src)}, "kinds": kinds, "subs": subs}
+
+
 def sync_merge(mine):
-    """Everything from both sides: every stamp, every favourite, every caught song."""
+    """Everything from both sides: every stamp, every favourite, every caught song (and, from sync_listen, your place
+    in every audiobook and podcast)."""
     try:
         st = json.load(open(STATE, encoding="utf-8"))
     except (OSError, ValueError):
@@ -759,7 +1138,7 @@ def sync_merge(mine):
     with open(STATE + ".tmp", "w", encoding="utf-8") as w:
         json.dump(st, w)
     os.replace(STATE + ".tmp", STATE)
-    return {"pass": pas, "rfavs": [raw(x) for x in favs], "caught": r["caught"]}
+    return {"pass": pas, "rfavs": [raw(x) for x in favs], "caught": r["caught"], **({"listen": sync_listen(mine["listen"])} if mine.get("listen") else {})}
 
 
 class SyncH(BaseHTTPRequestHandler):
@@ -820,7 +1199,7 @@ class SyncH(BaseHTTPRequestHandler):
         except ValueError:
             mine = {}
         if path == "/sync/state":
-            print("  passport, favourites and caught songs merged", flush=True)
+            print("  passport, favourites, caught songs" + (", audiobooks and podcasts" if mine.get("listen") else "") + " merged", flush=True)
             return self.reply(sync_merge(mine))
         self.reply({"error": "unknown"}, 404)
 
@@ -914,6 +1293,7 @@ def main():
     srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
     url = f"http://127.0.0.1:{srv.server_address[1]}/"
     threading.Thread(target=srv.serve_forever, daemon=True).start()
+    threading.Thread(target=pod_loop, daemon=True).start()
     if "--no-window" in sys.argv:
         print(url, flush=True)
         threading.Event().wait()

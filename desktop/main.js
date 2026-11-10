@@ -23,6 +23,8 @@ function main() {
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 if (!app.requestSingleInstanceLock()) return app.quit();
 app.whenReady().then(() => {
+  // Windows shows the "new podcast episodes" notifications under Lu Cube's own name and icon
+  if (process.platform === "win32") app.setAppUserModelId(AUMID);
   // the same local player server as Lu Cube.bat (Python, no internet), started hidden
   srv = spawn(findPython(), [path.join(root, "musiccube.py"), "--no-window"], { cwd: root, windowsHide: true });
   let buf = "";

@@ -861,7 +861,7 @@ if(window.cubeDesk&&cubeDesk.onFront)cubeDesk.onFront(()=>{lastUse=performance.n
 qbtnEl.onclick=()=>{if(window.cubeDesk)cubeDesk.quit();else window.close()};
 // clicks pass through to your desktop everywhere except on the wheel, the cube and their buttons
 let deskHit=null;addEventListener('mousemove',e=>{if(!DESK||!window.cubeDesk)return;const el=document.elementFromPoint(e.clientX,e.clientY);
- const on=!!(cdrag||rs||moving||window.mxDrag||toks.some(d=>d._drag)||(el&&el.closest('.pad,.tok,.back,.dock,.hnd,.qbtn,.mxw,#vizfs'))||nearWheel(e.clientX,e.clientY)||overCube(e));if(on!==deskHit){deskHit=on;cubeDesk.hit(on)}});
+ const on=!!(cdrag||rs||moving||window.mxDrag||toks.some(d=>d._drag)||(el&&el.closest('.pad,.tok,.back,.dock,.hnd,.qbtn,.mxw,#vizfs,#plink.on,#pname.on,#pdel.on,#ptoast.on'))||nearWheel(e.clientX,e.clientY)||overCube(e));if(on!==deskHit){deskHit=on;cubeDesk.hit(on)}});
 hold.style.display='none';
 // favourites: a ★ playlist at the top of the wheel and library; volume is remembered too (saved in state.json)
 let FAVS=[];const VOL={last:.8};
@@ -887,7 +887,7 @@ function toggleFav(){const s=song();if(!s.src)return;FAVS=isFav(s)?FAVS.filter(x
 const FAVART='radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,#111 61%)';
 // a podcast episode's release date, small under its length on the playlist face ("NOV 3 2026")
 const pldt=d=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||'');return m?['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][+m[2]-1]+' '+(+m[3])+' '+m[1]:''};
-const mkPls=L=>L.playlists.map((p,i)=>({n:p.name.toUpperCase(),i,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i,0)}`:ART(i,0),songs:p.tracks.map((t,k)=>({t:t.t,a:t.a,d:t.d,dt:t.dt||'',src:t.src,lrc:t.lrc,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i+k+1,k)}`:ART(i+k+1,k)}))}));
+const mkPls=L=>L.playlists.map((p,i)=>({n:p.name.toUpperCase(),i,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i,0)}`:ART(i,0),songs:p.tracks.map((t,k)=>({t:t.t,a:t.a,d:t.d,dt:t.dt||'',fn:t.fn||'',src:t.src,lrc:t.lrc,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i+k+1,k)}`:ART(i+k+1,k)}))}));
 function applyLib(L,first){const fresh=mkPls(L);if(!fresh.length)return false;
  const cur=P.has?song().src:null,curPl=P.has&&PLS[P.pl]?PLS[P.pl].n:null,selKey=mode==='pl'&&PLS[sel]?PLS[sel].n:null,openKey=mode==='songs'&&PLS[openPl]?PLS[openPl].n:null,selSrc=openKey?(PLS[openPl].songs[sel]||{}).src:null;
  const bySrc={};fresh.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));const fs=FAVS.map(x=>bySrc[x]).filter(Boolean);if(fs.length)fresh.unshift({n:'★ FAVOURITES',fav:true,art:FAVART,songs:fs});
@@ -1651,7 +1651,8 @@ const addTrim=f=>{if(!f.querySelector(':scope>.skt')){const u=document.createEle
 document.querySelectorAll('.f').forEach(f=>{addTrim(f);new MutationObserver(()=>addTrim(f)).observe(f,{childList:true})});
 setInterval(applySkin,3000);
 
-// ---------- PC sync: songs from Lu Cube on your PC, plus passport, radio favourites and caught songs both ways ----------
+// ---------- PC sync: songs, audiobooks and podcasts from Lu Cube on your PC; passport, radio favourites, caught songs,
+// and your place in every book and show, both ways ----------
 let SYNCING=false;
 async function pcSync(){if(SYNCING)return;const pc=LS.get('lu_pc',{}),msg=t=>{SYNCMSG=t;const e=$('psmsg');if(e)e.textContent=t};
  if(!pc.addr){msg('Type the address your PC shows.');return}const base='http://'+pc.addr.replace(/^https?:\/\//,'').replace(/\/+$/,''),q='c='+encodeURIComponent(pc.code||'');
@@ -1662,12 +1663,24 @@ async function pcSync(){if(SYNCING)return;const pc=LS.get('lu_pc',{}),msg=t=>{SY
   const mg=await (await fetch(base+'/sync/state?'+q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(mine)})).json();
   if(mg&&mg.pass){PASS=mg.pass;RFAVS=(mg.rfavs||[]).filter(x=>typeof x==='string');if(MODE==='radio'){FAVS=RFAVS;if(WORLD)rebuildRadio()}LS.set('lu_caught',mg.caught||CAUGHT());bnCheck();saveState();renderFaces()}
   const lib=await (await fetch(base+'/sync/library?'+q)).json(),files=lib.files||[],done=LS.get('lu_synced',{});let k=0,got=0,pics=0,gone=0;
-  // audiobooks stay on the PC: copies an earlier sync put on the phone are removed
+  // (an older PC still lists audiobooks as ones to take off the phone; a new one lists none)
   const old=(lib.books||[]).filter(p=>done[p]!=null);if(old.length&&window.LUNATIVE.removeSynced){msg(`Taking ${old.length} audiobook files off the phone…`);try{const r=await window.LUNATIVE.removeSynced({paths:old});gone=r.removed|0}catch(e){}old.forEach(p=>delete done[p]);LS.set('lu_synced',done)}
   for(const f of files){k++;if(done[f.p]===f.s)continue;msg(`${f.img?'Cover':'Copying'} ${k} of ${files.length} · ${short(f.p.split('/').pop(),28)}`);
    try{await window.LUNATIVE.downloadFile({url:base+'/sync/file?'+q+'&p='+encodeURIComponent(f.p),dest:f.p});done[f.p]=f.s;if(f.img)pics++;else got++;if(got%5===0)LS.set('lu_synced',done)}catch(e){}}
-  LS.set('lu_synced',done);msg(`Done · ${got} new song${got===1?'':'s'}${pics?` · ${pics} cover${pics===1?'':'s'}`:''} from ${hi.name||'your PC'}${gone?` · ${gone} audiobook file${gone===1?'':'s'} removed`:''} · passport synced`);
-  if(got||pics||gone)setTimeout(relib,2500)}
+  LS.set('lu_synced',done);
+  // audiobooks and podcasts: your place in each one, what kind each playlist is, and your subscriptions, both ways
+  // (matched by folder and file name, which are the same on both sides). The new files are looked at first.
+  let spots=0;if(got||pics||gone){msg('Looking at the new songs…');for(let t=0;t<3;t++){await new Promise(r=>setTimeout(r,1500));try{await relib()}catch(e){}}}
+  try{const keyOf={},srcOf={};PLS.forEach(p=>{if(p.fav)return;(p.songs||[]).forEach(x=>{if(x.fn){const k=(p.n+'/'+x.fn).toLowerCase();keyOf[x.src]=k;srcOf[k]=x.src}})});
+   const pos=LS.get('lu_pos',{})||{},res=LS.get('lu_resume',{})||{},mp={},mr={};for(const s in pos)if(keyOf[s])mp[keyOf[s]]=pos[s];for(const n in res)if(keyOf[res[n]])mr[n]=keyOf[res[n]];
+   const lm={pos:mp,resume:mr,kinds:LS.get('lu_kinds',{})||{},subs:LS.get('lu_pod_subs',[])||[]};
+   const r=await (await fetch(base+'/sync/state?'+q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listen:lm})})).json(),L=r&&r.listen;
+   if(L){for(const k in L.pos||{}){const s=srcOf[k],v=L.pos[k];if(s&&v&&(!pos[s]||(v.at||0)>(pos[s].at||0))){pos[s]=v;spots++}}LS.set('lu_pos',pos);
+    for(const n in L.resume||{}){const s=srcOf[L.resume[n]];if(s)res[n]=s}LS.set('lu_resume',res);
+    if(L.kinds)LS.set('lu_kinds',{...(LS.get('lu_kinds',{})||{}),...L.kinds});
+    if(Array.isArray(L.subs)){LS.set('lu_pod_subs',L.subs);N('podSubs',{subs:L.subs})}}}catch(e){}
+  msg(`Done · ${got} new file${got===1?'':'s'}${pics?` · ${pics} cover${pics===1?'':'s'}`:''} from ${hi.name||'your PC'}${gone?` · ${gone} file${gone===1?'':'s'} removed`:''} · passport${spots?` · ${spots} book/podcast spot${spots===1?'':'s'}`:''} synced`);
+  try{renderFaces()}catch(e){}}
  catch(e){msg('Can\'t reach '+pc.addr+'. Same Wi-Fi? Is Phone Sync.bat running?')}finally{SYNCING=false}}
 
 // ---------- the phone's player follows the cube's settings; Android Auto gets the same lists ----------

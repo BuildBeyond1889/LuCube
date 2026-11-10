@@ -1,0 +1,58 @@
+/* ===================== LU CUBE · PC: the listening layer on a big screen =====================
+   listen.css was made for a phone: the finders fill the screen and the little sheets rise from the bottom.
+   On the PC the finders are a window in the middle of the screen and the sheets are small dialogs. */
+#plink{background:rgba(6,7,10,.28)}
+#plink .lkw{left:50%;top:50%;right:auto;bottom:auto;width:min(880px,94vw);height:min(700px,90vh);transform:translate(-50%,-48%) scale(.98)}
+#plink.on .lkw{transform:translate(-50%,-50%)}
+#plink .tbar{height:32px}
+#plink .lkw .list{scrollbar-width:thin}
+/* the chips under the search: a small scroll bar, and the mouse wheel scrolls them sideways */
+#plink .lkc{padding-bottom:6px}
+#plink .lkcbar{flex:none;position:relative;height:8px;margin:0 2px 8px;background:#b9c1cc;border:2px solid var(--k);cursor:pointer}
+#plink .lkcbar i{position:absolute;top:0;bottom:0;left:0;background:var(--k);min-width:24px}
+#plink .lkcbar i:hover,#plink .lkcbar.drag i{background:var(--b)}
+/* the genre grid has room for more columns on a PC */
+#plink .lkgrid{grid-template-columns:repeat(4,1fr)}
+
+#pname,#pdel{background:rgba(0,0,0,.4)}
+#pname .in,#pdel .in{left:50%;top:50%;right:auto;bottom:auto;width:min(440px,92vw);max-height:80vh;border:2px solid var(--o);border-radius:14px;transform:translate(-50%,-46%);padding:16px 18px 20px}
+#pname.on .in,#pdel.on .in{transform:translate(-50%,-50%)}
+#pdel .in{border-color:var(--r)}
+
+#ptoast{left:auto;right:18px;top:18px;width:340px}
+
+/* the wheel: music, audiobooks and podcasts ringed yellow, orange and red (the same as the phone) */
+/* (a thick ring with a black edge either side, so it reads even when the discs are small) */
+.tok[data-k]:before{content:"";position:absolute;inset:0;border-radius:50%;z-index:2;pointer-events:none;box-shadow:inset 0 0 0 2px #111,inset 0 0 0 9px var(--kc),inset 0 0 0 11px #111}
+.tok[data-k="music"]{--kc:var(--y)}
+.tok[data-k="book"]{--kc:var(--o)}
+.tok[data-k="pod"]{--kc:var(--r)}
+
+/* ===== the unfolded window ===== */
+.mxok{font-style:normal;color:#1a9a4a}
+.mxrow .mxdt{margin-left:auto;font:700 7px "Space Mono",monospace;font-style:normal;color:#5d6673;letter-spacing:.06em;padding-left:6px}
+.mxover{padding:8px 4px}.mxover span{display:inline-block;background:#111;color:#ffc21a;border-radius:99px;padding:5px 10px;font:700 7.5px "Space Mono",monospace;letter-spacing:.1em;cursor:pointer}
+.mxover span:hover{background:#ffc21a;color:#111}
+.mxtm{display:flex;justify-content:space-between;font:700 8px "Space Mono",monospace;margin-top:3px}
+.mxtile{position:relative}
+.mxbdg{position:absolute;left:3px;top:3px;font:700 6px "Space Mono",monospace;font-style:normal;padding:1px 3px;letter-spacing:.04em}
+.mxpills .mxrm{background:#e0281a}
+.mxlib.mxdel .mxtile{outline:2px dashed #e0281a;outline-offset:1px}
+.mxam{background:#fff}
+.mxamw{padding:7px 7px 6px;display:flex;flex-direction:column;gap:5px}
+.mxamw b{display:flex;align-items:center;gap:7px;border:2px solid #111;box-shadow:2px 2px 0 #111;padding:4px 6px;cursor:pointer}
+.mxamw b:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 #111}
+.mxamw b.on{outline:2px solid #111;outline-offset:2px}
+.mxamw b i{font-style:normal;width:16px;height:16px;flex:none;border:1.5px solid #111;background:#fff;color:#111;display:grid;place-items:center;font:700 9px "Space Mono",monospace}
+.mxamw b span{font:400 12px/1 Anton,sans-serif;letter-spacing:.03em}.mxamw b small{display:block;font:700 6px "Space Mono",monospace;letter-spacing:.05em;margin-top:2px;opacity:.85}
+.mxdl{display:none;border:2px solid #111;background:#fff;padding:4px 6px}.mxdl.on{display:block}
+.mxdl span{display:block;font:700 6.5px "Space Mono",monospace;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mxdl u{display:block;height:5px;border:1.5px solid #111;margin-top:3px;background:#fff}.mxdl u i{display:block;height:100%;width:0;background:#2f6be8}
+/* a finder open over the window: no dimming, the rest of the window stays live */
+#plink.mx{background:none;pointer-events:none}
+#plink.mx .lkw{position:fixed;transform:none!important;pointer-events:auto;box-shadow:none;border-width:2px}
+#plink.mx .mxcols{flex:1;min-height:0;display:flex;margin:0 -8px;border-top:2.5px solid var(--k)}
+#plink.mx .mxcols>.list{flex:1.6;margin:0;border-top:0;border-right:2.5px solid var(--k)}
+#plink.mx .mxside{flex:1;min-width:0;overflow:auto;padding:6px 8px 10px;scrollbar-width:thin;background:#c4ccd6}
+#plink.mx .mxside .lkgrid{grid-template-columns:1fr 1fr}
+#plink.mx .mxside .picks{grid-template-columns:minmax(0,1fr)}#plink.mx .mxside .pick{min-width:0}#plink.mx .mxside .pick span{font-size:14px}

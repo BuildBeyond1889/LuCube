@@ -533,7 +533,7 @@ if(window.cubeDesk&&cubeDesk.onFront)cubeDesk.onFront(()=>{lastUse=performance.n
 qbtnEl.onclick=()=>{if(window.cubeDesk)cubeDesk.quit();else window.close()};
 // clicks pass through to your desktop everywhere except on the wheel, the cube and their buttons
 let deskHit=null;addEventListener('mousemove',e=>{if(!DESK||!window.cubeDesk)return;const el=document.elementFromPoint(e.clientX,e.clientY);
- const on=!!(cdrag||rs||moving||window.mxDrag||toks.some(d=>d._drag)||(el&&el.closest('.pad,.tok,.back,.dock,.hnd,.qbtn,.mxw,#vizfs'))||nearWheel(e.clientX,e.clientY)||overCube(e));if(on!==deskHit){deskHit=on;cubeDesk.hit(on)}});
+ const on=!!(cdrag||rs||moving||window.mxDrag||toks.some(d=>d._drag)||(el&&el.closest('.pad,.tok,.back,.dock,.hnd,.qbtn,.mxw,#vizfs,#plink.on,#pname.on,#pdel.on,#ptoast.on'))||nearWheel(e.clientX,e.clientY)||overCube(e));if(on!==deskHit){deskHit=on;cubeDesk.hit(on)}});
 hold.style.display='none';
 // favourites: a ★ playlist at the top of the wheel and library; volume is remembered too (saved in state.json)
 let FAVS=[];const VOL={last:.8};
@@ -559,7 +559,7 @@ function toggleFav(){const s=song();if(!s.src)return;FAVS=isFav(s)?FAVS.filter(x
 const FAVART='radial-gradient(circle,#ffc21a 0 30%,#111 31% 36%,#ffc21a 37% 60%,#111 61%)';
 // a podcast episode's release date, small under its length on the playlist face ("NOV 3 2026")
 const pldt=d=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||'');return m?['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][+m[2]-1]+' '+(+m[3])+' '+m[1]:''};
-const mkPls=L=>L.playlists.map((p,i)=>({n:p.name.toUpperCase(),i,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i,0)}`:ART(i,0),songs:p.tracks.map((t,k)=>({t:t.t,a:t.a,d:t.d,dt:t.dt||'',src:t.src,lrc:t.lrc,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i+k+1,k)}`:ART(i+k+1,k)}))}));
+const mkPls=L=>L.playlists.map((p,i)=>({n:p.name.toUpperCase(),i,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i,0)}`:ART(i,0),songs:p.tracks.map((t,k)=>({t:t.t,a:t.a,d:t.d,dt:t.dt||'',fn:t.fn||'',src:t.src,lrc:t.lrc,cov:p.cover||'',art:p.cover?`url('${p.cover}') center/cover no-repeat,${ART(i+k+1,k)}`:ART(i+k+1,k)}))}));
 function applyLib(L,first){const fresh=mkPls(L);if(!fresh.length)return false;
  const cur=P.has?song().src:null,curPl=P.has&&PLS[P.pl]?PLS[P.pl].n:null,selKey=mode==='pl'&&PLS[sel]?PLS[sel].n:null,openKey=mode==='songs'&&PLS[openPl]?PLS[openPl].n:null,selSrc=openKey?(PLS[openPl].songs[sel]||{}).src:null;
  const bySrc={};fresh.forEach(p=>p.songs.forEach(x=>bySrc[x.src]=x));const fs=FAVS.map(x=>bySrc[x]).filter(Boolean);if(fs.length)fresh.unshift({n:'★ FAVOURITES',fav:true,art:FAVART,songs:fs});

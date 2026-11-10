@@ -26,10 +26,12 @@ Windows 10 or 11. If Python isn't installed, Lu Cube downloads the official port
 - Favourites, shuffle, crossfade, gapless albums, sleep timer, and media keys.
 - **Get Classical Music.bat** downloads public-domain classical recordings from the Internet Archive (CC0 / Public Domain Mark only, credited). **Get Lofi Music.bat** downloads credited Creative Commons lofi albums.
 - **Set Weather Town.bat** sets your town, and the cube takes on your weather and time of day.
+- **Add Music** is the cube's top face: pick songs or a whole folder from this PC, or open the two free libraries. **Free Music** searches the Internet Archive and Openverse (56 genres, tap to preview, GET to keep). **Books & Podcasts** has free LibriVox audiobooks and any podcast you can name; star a show and its new episodes download by themselves while Lu Cube is open (when it starts, then every 3 hours), with a Windows notification.
+- **Audiobooks and podcasts** remember where you stopped, swap ⏮ ⏭ for back 15 / forward 30, and show episode dates, newest on top. The wheel rings music, books and podcasts yellow, orange and red. The library face's red ✕ takes a playlist off the cube: what Lu Cube downloaded is deleted, your own folders are only hidden.
 - **Get Audiobooks.bat** pulls classic public-domain audiobooks from LibriVox (via the Internet Archive). Each book lands in `Music\<Book>\` with its chapters in order and a `cover.jpg`, and shows up as its own playlist.
 
 ## Unfold
-Pull the cube open and its faces lay out flat as one big window: the list on the left (channels, favourites or your playlist), the player in the middle, the world and your caught songs on the right. Pong plays itself above the player (click to join in), and one click sends the visualiser full screen. Shatter it and the pieces fly back to the wheel.
+Pull the cube open and its faces lay out flat as one big window: the list on the left (channels, favourites or your playlist), the player in the middle, the world and your caught songs on the right (in Lu mode: your library and the Add Music buttons; Free Music and Books & Podcasts open over the left and middle). Pong plays itself above the player (click to join in), and one click sends the visualiser full screen. Shatter it and the pieces fly back to the wheel.
 
 ## Radio
 Press **R** (or the 📻 bubble on the wheel) to switch. A line of light sweeps across every face, and whatever you were playing waits, paused, until you switch back.
@@ -56,7 +58,7 @@ The same cube and faces, with a thumb wheel for your playlists and a globe for t
 - **Song Catcher:** tap ♥ CATCH when a station shows a song you like; find it later in Spotify or YouTube Music.
 - **Home-screen widget, sunrise alarm** (wake to a station where it's morning right now), **even volume, data saver.**
 - **Cube skins** unlocked by passport banners.
-- **Sync with your PC:** run `Phone Sync.bat` on the PC, then ⚙ → Sync on the phone (same Wi-Fi). Songs copy over; passport stamps, radio favourites and caught songs merge both ways.
+- **Sync with your PC:** run `Phone Sync.bat` on the PC, then ⚙ → Sync on the phone (same Wi-Fi). Songs, audiobooks and podcasts copy over; passport stamps, radio favourites, caught songs, your place in every book and show, and your podcast subscriptions merge both ways.
 
 Android Auto only lists apps from the Play Store until you turn on *Unknown sources* (Android Auto settings → tap *Version* ten times → ⋮ → Developer settings).
 
@@ -64,7 +66,7 @@ Android Auto only lists apps from the Play Store until you turn on *Unknown sour
 
 Open **https://buildbeyond1889.github.io/LuCube/app/** in Safari, then Share → Add to Home Screen. No App Store or account needed. The iPhone gets the phone layout. The iPad gets the full cube, with the unfold window, Pong and the depth visualiser. Tap **＋ ADD SONGS** to copy songs in from Files; they stay in the app and play offline.
 
-Apple puts some limits on web apps: music may pause when the screen locks, volume follows the side buttons, there are no station song titles, the visualiser animates on its own instead of following the sound, and there's no remote mode or PC sync. Add Music, audiobooks, podcasts and Lu Blocks are Android only.
+Apple puts some limits on web apps: music may pause when the screen locks, volume follows the side buttons, there are no station song titles, the visualiser animates on its own instead of following the sound, and there's no remote mode or PC sync. Add Music, audiobooks and podcasts are on Android and the PC; Lu Blocks is Android only.
 
 ## Credits
 Stations: [radio-browser.info](https://www.radio-browser.info) · Weather: [Open-Meteo](https://open-meteo.com) · Free music and audiobooks: [Internet Archive](https://archive.org), [LibriVox](https://librivox.org), [Openverse](https://openverse.org) and Musopen · Podcast directory: Apple Podcasts search · Fonts: Anton, Space Mono and Inter under the SIL Open Font License (`web/fonts`).
