@@ -109,3 +109,21 @@ const cols=document.createElement('div');cols.className='mxcols';list.before(col
 if(PL)new MutationObserver(()=>{if(PL.classList.contains('mx'))split();mark()}).observe(PL,{childList:true});
 // a genre tile or a subscription on the right still works (they were wired before they moved)
 })();
+
+// ===================== more than one screen =====================
+// The desktop cube is one see-through layer over every screen, so "the middle" is the seam between them. The finders,
+// the little questions and the new-episode strip go on the screen you clicked on (else the cube's, else the wheel's).
+(function(){
+let PT=null;addEventListener('pointerdown',e=>{PT=[e.clientX,e.clientY]},true);
+function scr(){const L=DISPLAYS&&DISPLAYS.length?DISPLAYS:null;if(!L)return null;
+ const i=PT?dispAt(PT[0],PT[1]):cubeOn?dispAt(cpos[0],cpos[1]):Math.min(dockD,L.length-1);return L[i]||L[0]}
+let key='';
+function place(){const d=scr();const k=d?[d.x,d.y,d.w,d.h].join(','):'';
+ const lk=document.querySelector('#plink:not(.mx) .lkw'),ins=document.querySelectorAll('#pname .in,#pdel .in'),tb=document.getElementById('ptoast');
+ if(!d){if(key){key='';if(lk)lk.removeAttribute('style');ins.forEach(x=>x.removeAttribute('style'));if(tb)tb.removeAttribute('style')}return}
+ key=k;const cx=d.x+d.w/2,cy=d.y+d.h/2;
+ if(lk)Object.assign(lk.style,{left:cx+'px',top:cy+'px',width:Math.min(880,d.w*.94)+'px',height:Math.min(700,d.h*.9)+'px'});
+ ins.forEach(x=>Object.assign(x.style,{left:cx+'px',top:cy+'px'}));
+ if(tb)Object.assign(tb.style,{left:(d.x+d.w-358)+'px',right:'auto',top:(d.y+18)+'px'})}
+(function loop(){try{place()}catch(e){}requestAnimationFrame(loop)})();
+})();
