@@ -102,10 +102,12 @@ footer{padding:50px 0 70px;border-top:1px solid var(--line);color:var(--dim);fon
 footer .wrap{display:flex;flex-wrap:wrap;gap:30px;justify-content:space-between}
 footer b{color:#fff}
 .dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:18px;margin-top:36px}.dl .card{min-width:0;overflow-wrap:anywhere;background:#0f1116;border:1px solid var(--line);border-radius:16px;padding:26px}.dl h3{margin:6px 0 10px;font:400 30px Anton,sans-serif;letter-spacing:.03em}.dl ol{margin:0 0 22px;padding-left:20px;line-height:1.6;color:#c4cad4}.dl ol li{margin-bottom:6px}.dl a:not(.btn){color:var(--y)}.dl .small{margin:18px 0 0;font-size:13px;line-height:1.55;color:#8b93a1}@media(max-width:760px){.dl{grid-template-columns:1fr}}
+.pcg{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:40px}.pcg figure{margin:0}.pcg figcaption{margin-bottom:12px}.pcg figcaption b{display:block;font:400 22px Anton,sans-serif;letter-spacing:.03em}.pcg figcaption span{display:block;font-size:14px;color:var(--dim);margin-top:2px}.pcg figcaption i{font-style:normal;display:inline-block;width:12px;height:12px;border:2px solid #000;margin-right:8px;vertical-align:-1px}.pcg .frame{border:3px solid #000;box-shadow:6px 6px 0 #000}
+@media (max-width:860px){.pcg{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><a class="logo" href="#" aria-label="Lu Cube, home"><span>LU</span><svg width="15" height="15" viewBox="0 0 100 100" aria-hidden="true" style="display:block;flex:none"><polygon points="50,6 90,29 50,52 10,29" fill="#fff" stroke="#111" stroke-width="7" stroke-linejoin="round"/><polygon points="10,29 50,52 50,96 10,73" fill="#2f6be8" stroke="#111" stroke-width="7" stroke-linejoin="round"/><polygon points="50,52 90,29 90,73 50,96" fill="#e0281a" stroke="#111" stroke-width="7" stroke-linejoin="round"/></svg></a><div class="links"><a href="#faces">THE CUBE</a><a href="#radio">RADIO</a><a href="#books">BOOKS &amp; PODCASTS</a><a href="#blocks">LU BLOCKS</a><a href="#phone">PHONE</a><a href="#get">GET IT</a></div></div></nav>
+<nav><div class="wrap"><a class="logo" href="#" aria-label="Lu Cube, home"><span>LU</span><svg width="15" height="15" viewBox="0 0 100 100" aria-hidden="true" style="display:block;flex:none"><polygon points="50,6 90,29 50,52 10,29" fill="#fff" stroke="#111" stroke-width="7" stroke-linejoin="round"/><polygon points="10,29 50,52 50,96 10,73" fill="#2f6be8" stroke="#111" stroke-width="7" stroke-linejoin="round"/><polygon points="50,52 90,29 90,73 50,96" fill="#e0281a" stroke="#111" stroke-width="7" stroke-linejoin="round"/></svg></a><div class="links"><a href="#faces">THE CUBE</a><a href="#radio">RADIO</a><a href="#books">BOOKS &amp; PODCASTS</a><a href="#pcbooks">ON PC</a><a href="#blocks">LU BLOCKS</a><a href="#phone">PHONE</a><a href="#get">GET IT</a></div></div></nav>
 
 <header class="hero"><div class="wrap">
  <div>
@@ -226,6 +228,18 @@ footer b{color:#fff}
   <figure><figcaption><b><i style="background:var(--o)"></i>Back 15 · forward 30</b><span>An audiobook on the cube, with the jumps and START OVER, and its neighbours ringed orange on the wheel.</span></figcaption><div class="ph"><img src="img/in-book.jpg" alt="The Transport face playing a chapter of The City at World's End, with back 15 and forward 30 buttons" loading="lazy"></div></figure>
   <figure><figcaption><b><i style="background:var(--r)"></i>Newest on top</b><span>Episodes land with their release date, and a ✓ marks the ones you've finished.</span></figcaption><div class="ph" style="aspect-ratio:auto"><img src="img/in-pod.jpg" alt="A podcast's playlist face with release dates and a tick on the finished episode" loading="lazy"></div></figure>
   <figure><figcaption><b><i style="background:var(--y)"></i>On the lock screen</b><span>Pause, skip and the 15 / 30 jumps, without opening the app.</span></figcaption><div class="ph" style="aspect-ratio:auto;border-radius:22px"><img src="img/lock.jpg" alt="The Android lock-screen player with back 15 and forward 30 buttons next to skip" loading="lazy"></div></figure>
+ </div>
+</div></section>
+
+<section id="pcbooks"><div class="wrap">
+ <div class="mono kick">On your PC <span class="badge">NEW</span></div>
+ <h2>The same library, on the desktop.</h2>
+ <p class="lede">Everything on the phone is on the PC cube too: Add Music on the top face, both free libraries in a window you can drag anywhere, podcasts that download themselves while Lu Cube is open, and a download queue you can reorder.</p>
+ <div class="pcg">
+  <figure><figcaption><b><i style="background:var(--r)"></i>Books &amp; Podcasts, right on the desktop</b><span>The finder opens as its own window beside the cube. Drag it by its title bar, on whichever screen you like.</span></figcaption><div class="frame"><img src="img/pc-desk-books.jpg" alt="The cube on the desktop playing an audiobook, with the Books and Podcasts window beside it" loading="lazy"></div></figure>
+  <figure><figcaption><b><i style="background:var(--b)"></i>Free Music, next to the player</b><span>Search the Internet Archive and Openverse or pick from 56 genres. Tap to preview, GET to keep.</span></figcaption><div class="frame"><img src="img/pc-desk-free.jpg" alt="The cube's player face with back 15 and forward 30, next to the Free Music window searching ambient" loading="lazy"></div></figure>
+  <figure><figcaption><b><i style="background:var(--o)"></i>Unfolded: a book, chapter by chapter</b><span>Ticks on finished chapters, back 15 / forward 30, and every book you're partway through marked on the library.</span></figcaption><div class="frame"><img src="img/pc-unfold-book.jpg" alt="The unfolded window playing The Brothers Karamazov, chapter 9 of 95, with the chapter list, player, visualiser, library and Add Music" loading="lazy"></div></figure>
+  <figure><figcaption><b><i style="background:var(--y)"></i>A queue for big downloads</b><span>Line up whole books. See what's downloading, move one up, take one out, play what's done.</span></figcaption><div class="frame"><img src="img/pc-unfold-queue.jpg" alt="The downloads queue: A Tale of Two Cities downloading, five more books waiting" loading="lazy"></div></figure>
  </div>
 </div></section>
 
