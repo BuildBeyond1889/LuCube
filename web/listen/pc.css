@@ -1,7 +1,10 @@
 /* ===================== LU CUBE · PC: the listening layer on a big screen =====================
    listen.css was made for a phone: the finders fill the screen and the little sheets rise from the bottom.
    On the PC the finders are a window in the middle of the screen and the sheets are small dialogs. */
-#plink{background:rgba(6,7,10,.28)}
+/* on the desktop the finder is a window, not a screen-wide sheet: only the window itself catches clicks (the rest of
+   both screens stays yours), and nothing is dimmed. Close it with its red square. */
+#plink,#plink.on{background:none;pointer-events:none}
+#plink.on .lkw{pointer-events:auto;box-shadow:8px 8px 0 #000,0 30px 80px rgba(0,0,0,.55)}
 #plink .lkw{left:50%;top:50%;right:auto;bottom:auto;width:min(880px,94vw);height:min(700px,90vh);transform:translate(-50%,-48%) scale(.98)}
 #plink.on .lkw{transform:translate(-50%,-50%)}
 #plink .tbar{height:32px}
@@ -14,7 +17,8 @@
 /* the genre grid has room for more columns on a PC */
 #plink .lkgrid{grid-template-columns:repeat(4,1fr)}
 
-#pname,#pdel{background:rgba(0,0,0,.4)}
+#pname,#pdel,#pname.on,#pdel.on{background:none;pointer-events:none}
+#pname.on .in,#pdel.on .in{pointer-events:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 #pname .in,#pdel .in{left:50%;top:50%;right:auto;bottom:auto;width:min(440px,92vw);max-height:80vh;border:2px solid var(--o);border-radius:14px;transform:translate(-50%,-46%);padding:16px 18px 20px}
 #pname.on .in,#pdel.on .in{transform:translate(-50%,-50%)}
 #pdel .in{border-color:var(--r)}
@@ -50,6 +54,7 @@
 .mxdl u{display:block;height:5px;border:1.5px solid #111;margin-top:3px;background:#fff}.mxdl u i{display:block;height:100%;width:0;background:#2f6be8}
 /* a finder open over the window: no dimming, the rest of the window stays live */
 #plink.mx{background:none;pointer-events:none}
+#plink:not(.on) .lkw{pointer-events:none!important}   /* (a closed finder never catches a click) */
 #plink.mx .lkw{position:fixed;transform:none!important;pointer-events:auto;box-shadow:none;border-width:2px}
 #plink.mx .mxcols{flex:1;min-height:0;display:flex;margin:0 -8px;border-top:2.5px solid var(--k)}
 #plink.mx .mxcols>.list{flex:1.6;margin:0;border-top:0;border-right:2.5px solid var(--k)}

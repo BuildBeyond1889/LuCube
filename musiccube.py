@@ -17,6 +17,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -164,7 +165,7 @@ PODS = os.path.join(DATA, "pods.json")
 LLOCK, PLOCK = threading.Lock(), threading.Lock()
 DLP = {}   # dest -> [got, total] while a download runs
 EPISODE = re.compile(r"^\d{4}-\d{2}-\d{2} - .+\.(mp3|m4a|aac|ogg|opus)$", re.I)
-UA = {"User-Agent": "LuCube/1.0 (PC)"}
+NET_HEADERS = {"User-Agent": "LuCube/1.0 (PC)"}   # (not "UA": the radio below has its own UA)
 
 
 def jload(f, d):
@@ -210,8 +211,14 @@ def mark_added(name):
 def net_open(url, timeout=30):
     if not re.match(r"^https?://", url or ""):
         raise ValueError("not a web address")
-    ctx = ssl.create_default_context()
-    return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout, context=ctx)
+    req = urllib.request.Request(url, headers=NET_HEADERS)
+    try:
+        return urllib.request.urlopen(req, timeout=timeout, context=ssl.create_default_context())
+    except urllib.error.URLError as e:
+        if not isinstance(getattr(e, "reason", None), ssl.SSLError):
+            raise
+        # an out-of-date certificate list on this PC: these are public pages and free files, so carry on
+        return urllib.request.urlopen(req, timeout=timeout, context=ssl._create_unverified_context())
 
 
 def download(url, out, prog=None):

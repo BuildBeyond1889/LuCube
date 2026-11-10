@@ -87,7 +87,7 @@ const _act=act;act=function(a){const r=_act.apply(this,arguments);const s=String
 
 // ---- the finders, over the left and middle of the window ----
 const PL=document.getElementById('plink');
-function mark(){if(!PL)return;const on=!!(mxEl&&MXS===2&&MODE==='lu');PL.classList.toggle('mx',on);
+function mark(){if(!PL)return;const on=!!(mxEl&&MXS===2&&MODE==='lu')&&PL.classList.contains('on');PL.classList.toggle('mx',on);
  document.querySelectorAll('.mxam [data-act="am:free"],.mxam [data-act="am:find"]').forEach(b=>b.classList.toggle('on',on&&PL.classList.contains('on')&&!!PL.querySelector(b.dataset.act==='am:free'?'.lkw.music':'.lkw.books')))}
 function fit(){if(!PL||!PL.classList.contains('mx')||!PL.classList.contains('on'))return;const w=mxEl&&mxEl.querySelector('.mxw'),lk=PL.querySelector('.lkw');if(!w||!lk)return;
  const r=w.getBoundingClientRect(),k=r.width/MXW;Object.assign(lk.style,{left:r.left+2*k+'px',top:r.top+28*k+'px',width:(MXW-226)*k+'px',height:(MXH-32)*k+'px'})}
