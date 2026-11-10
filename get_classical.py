@@ -80,10 +80,10 @@ def secs(v):
         return 0
 
 
-def main():
-    gb = float(sys.argv[1]) if len(sys.argv) > 1 else 2
-    kind = (sys.argv[3] if len(sys.argv) > 3 else "classical").lower()
-    want = (sys.argv[2] if len(sys.argv) > 2 else "mp3").lower()
+def main(gb=None, want=None, kind=None):
+    gb = gb if gb is not None else float(sys.argv[1]) if len(sys.argv) > 1 else 2
+    kind = (kind or (sys.argv[3] if len(sys.argv) > 3 else "classical")).lower()
+    want = (want or (sys.argv[2] if len(sys.argv) > 2 else "mp3")).lower()
     budget, used = gb * 1e9, 0
     os.makedirs(MUSIC, exist_ok=True)
     print(f"Looking for {'Creative Commons lofi albums' if kind == 'lofi' else 'public-domain classical recordings'} (up to about {gb:g} GB, {want.upper()})...")

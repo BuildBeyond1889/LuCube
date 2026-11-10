@@ -754,6 +754,8 @@ class H(BaseHTTPRequestHandler):
             return listen_get(self, path, urllib.parse.parse_qs(self.path.split("?", 1)[1] if "?" in self.path else ""))
         if path == "/api/library":
             return self.send_json({"playlists": library(), "music": MUSIC})
+        if path == "/api/starter":
+            return self.send_json(STARTER)
         if path.startswith("/media/"):
             f = os.path.realpath(os.path.join(MUSIC, path[len("/media/"):]))
             if not f.startswith(os.path.realpath(MUSIC) + os.sep):
@@ -1293,6 +1295,65 @@ def take_stick_stuff():
         pass
 
 
+# ---------------- a fresh install: a small free library to start with ----------------
+# An empty Music folder gets a few public-domain classical albums, some Creative Commons lofi and three short LibriVox
+# audiobooks, in the background. Each playlist turns up on the wheel as soon as its first file lands (the page watches
+# /api/libsig), and plays from then on. Done once: data\starter.json. Skipped if there's any music already.
+STARTER = {"on": False, "now": ""}
+STARTER_BOOKS = ["Alice's Adventures in Wonderland", "The Time Machine", "Treasure Island"]
+
+
+def starter():
+    flag = os.path.join(DATA, "starter.json")
+    if os.path.exists(flag) or "--no-starter" in sys.argv:
+        return
+    try:
+        if library():
+            return jsave(flag, {"skipped": "there was music already"})
+    except Exception:
+        return
+
+    def load(name):
+        import importlib.util
+        f = os.path.join(ROOT, name)
+        if not os.path.exists(f):
+            return None
+        spec = importlib.util.spec_from_file_location(name[:-3], f)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        mod.MUSIC = MUSIC
+        return mod
+
+    def run():
+        STARTER["on"] = True
+        try:
+            music, books = load("get_classical.py"), load("get_audiobooks.py")
+            steps = []
+            if music:
+                steps.append(("classical music", lambda: music.main(0.2, "mp3", "classical")))
+            if books:
+                steps.append((STARTER_BOOKS[0], lambda: books.fetch_book(STARTER_BOOKS[0])))
+            if music:
+                steps.append(("lofi", lambda: music.main(0.1, "mp3", "lofi")))
+            if books:
+                steps += [(b, (lambda b=b: books.fetch_book(b))) for b in STARTER_BOOKS[1:]]
+            for label, go in steps:
+                STARTER["now"] = label
+                try:
+                    go()
+                except Exception:
+                    pass   # one that can't be reached doesn't stop the rest
+        finally:
+            STARTER.update(on=False, now="")
+            try:
+                if library():   # nothing landed (no internet): try again next time Lu Cube opens
+                    jsave(flag, {"done": int(time.time())})
+            except Exception:
+                pass
+
+    threading.Thread(target=run, daemon=True).start()
+
+
 def main():
     if "--phone-sync" in sys.argv:
         return phone_sync()
@@ -1301,6 +1362,7 @@ def main():
     if "--set-town" in sys.argv:
         return set_town(" ".join(sys.argv[sys.argv.index("--set-town") + 1:]))
     take_stick_stuff()
+    starter()
     srv = ThreadingHTTPServer(("127.0.0.1", 0), H)
     url = f"http://127.0.0.1:{srv.server_address[1]}/"
     threading.Thread(target=srv.serve_forever, daemon=True).start()

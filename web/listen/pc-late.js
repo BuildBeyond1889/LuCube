@@ -148,5 +148,7 @@ function place(){const d=scr();const k=[d.x,d.y,d.w,d.h].join(',');
  setInterval(()=>{if(typeof LUREADY==='undefined'||!LUREADY)return;
   if(first){first=false;if(empty()&&MODE==='lu'){try{switchMode(true)}catch(e){}}}
   pill.style.display=MODE==='lu'&&empty()&&!cubeOn?'':'none';
-  const li=document.getElementById('libinfo');if(li&&MODE==='lu'&&empty()&&!/^No songs yet/.test(li.textContent))li.textContent='No songs yet: tap ＋ ADD MUSIC for your own songs, free music and audiobooks.'},400)}
+  const li=document.getElementById('libinfo');if(li&&MODE==='lu'&&empty()){const t=STARTER.on?'Getting some free music and audiobooks to start you off'+(STARTER.now?' ('+STARTER.now+')':'')+'… each one turns up on the wheel as it lands.':'No songs yet: tap ＋ ADD MUSIC for your own songs, free music and audiobooks.';if(li.textContent!==t)li.textContent=t}},400);
+ // a fresh install is fetching a starter library (musiccube.py): say so while the Music folder is still empty
+ const STARTER={on:false,now:''};const look=()=>fetch('/api/starter').then(r=>r.json()).then(j=>{Object.assign(STARTER,j);if(j.on)setTimeout(look,3000)}).catch(()=>{});look()}
 })();
