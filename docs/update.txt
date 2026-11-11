@@ -115,4 +115,9 @@ Remove-Item -LiteralPath $src -Recurse -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 3
 return
 }
-Update-LuCube
+$log = Join-Path $env:TEMP 'lucube-update.log'
+try { Start-Transcript -Path $log -Force | Out-Null } catch {}
+try { Update-LuCube } catch { Write-Host ('ERROR: ' + $_.Exception.Message) -ForegroundColor Red }
+try { Stop-Transcript | Out-Null } catch {}
+Write-Host ''; Write-Host ('A record of this is in ' + $log)
+Read-Host 'Press Enter to close'
